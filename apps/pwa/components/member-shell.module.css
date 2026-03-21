@@ -141,13 +141,11 @@
   flex-shrink: 0;
 }
 
-.iconButton,
-.logoutButton {
+.iconButton {
   border: none;
   border-radius: 1rem;
   background: #353534;
   color: rgba(229, 226, 225, 0.76);
-  font-family: var(--member-font-body), "Inter", sans-serif;
   transition:
     background-color 160ms ease,
     color 160ms ease,
@@ -159,28 +157,17 @@
   height: 2.5rem;
   display: grid;
   place-items: center;
+  cursor: pointer;
 }
 
 .iconButton:hover,
-.iconButton:focus-visible,
-.logoutButton:hover,
-.logoutButton:focus-visible {
+.iconButton:focus-visible {
   background: #3d3c3c;
   color: #ffffff;
 }
 
-.iconButton:hover,
-.logoutButton:hover {
+.iconButton:hover {
   transform: translateY(-0.0625rem);
-}
-
-.logoutButton {
-  display: none;
-  min-height: 2.5rem;
-  padding: 0 0.95rem;
-  font-size: 0.86rem;
-  font-weight: 600;
-  cursor: pointer;
 }
 
 .content {
@@ -269,12 +256,6 @@
 
   .topBarInner {
     min-height: 4.35rem;
-  }
-
-  .logoutButton {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
   }
 
   .bottomDock {

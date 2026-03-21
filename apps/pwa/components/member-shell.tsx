@@ -1,7 +1,7 @@
 "use client";
 
 import { ShellSessionGate } from "@elo/ui";
-import { Bell, CalendarDays, Rocket, Trophy, UsersRound } from "lucide-react";
+import { Bell, CalendarDays, LogOut, Rocket, Trophy, UsersRound } from "lucide-react";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -107,14 +107,15 @@ export function MemberShell({ children }: { children: ReactNode }) {
                 <Bell size={18} strokeWidth={2.1} />
               </button>
               <button
-                className={styles.logoutButton}
+                className={styles.iconButton}
                 type="button"
+                aria-label="Encerrar sessao"
                 onClick={() => {
                   clearStoredAuth();
                   router.replace("/login");
                 }}
               >
-                Sair
+                <LogOut size={18} strokeWidth={2.1} />
               </button>
             </div>
           </div>
