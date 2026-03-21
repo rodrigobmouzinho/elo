@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Camera, Edit3, LogOut, Mail, MapPin, Phone, Sparkles, Star, Zap } from "lucide-react";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { passthroughImageLoader } from "@elo/ui";
 import { MemberShell } from "../../components/member-shell";
@@ -94,6 +94,14 @@ export default function PerfilPage() {
   const [activeEditor, setActiveEditor] = useState<EditorSection>(null);
   const [savingSection, setSavingSection] = useState<EditorSection>(null);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
+  const identityEditorRef = useRef<HTMLElement | null>(null);
+  const identityNameInputRef = useRef<HTMLInputElement | null>(null);
+  const avatarEditorRef = useRef<HTMLElement | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
+  const expertiseEditorRef = useRef<HTMLElement | null>(null);
+  const expertiseInputRef = useRef<HTMLInputElement | null>(null);
+  const storyEditorRef = useRef<HTMLElement | null>(null);
+  const storyInputRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     async function loadProfile() {
@@ -124,6 +132,40 @@ export default function PerfilPage() {
 
     void loadProfile();
   }, []);
+
+  useEffect(() => {
+    if (!activeEditor) return;
+
+    const editorTargets: Record<Exclude<EditorSection, null>, { container: HTMLElement | null; field: HTMLElement | null }> = {
+      identity: {
+        container: identityEditorRef.current,
+        field: identityNameInputRef.current
+      },
+      avatar: {
+        container: avatarEditorRef.current,
+        field: avatarInputRef.current
+      },
+      expertise: {
+        container: expertiseEditorRef.current,
+        field: expertiseInputRef.current
+      },
+      story: {
+        container: storyEditorRef.current,
+        field: storyInputRef.current
+      }
+    };
+
+    const target = editorTargets[activeEditor];
+    target.container?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    const timer = window.setTimeout(() => {
+      target.field?.focus();
+    }, 180);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [activeEditor]);
 
   const whatsappUrl = toWhatsappUrl(profile?.whatsapp ?? "");
 
@@ -337,7 +379,7 @@ export default function PerfilPage() {
           ))}
         </section>
 
-        <section className={styles.panel}>
+        <section className={styles.panel} ref={expertiseEditorRef}>
           <div className={styles.panelHeader}>
             <div>
               <p className={styles.panelEyebrow}>Sincronizacao de Contato</p>
@@ -386,6 +428,7 @@ export default function PerfilPage() {
               <label className={styles.fieldGroup}>
                 <span className={styles.fieldLabel}>Area de atuacao</span>
                 <input
+                  ref={expertiseInputRef}
                   className={styles.fieldControl}
                   value={draft.area}
                   onChange={(event) => setDraft((current) => ({ ...current, area: event.target.value }))}
@@ -426,7 +469,7 @@ export default function PerfilPage() {
           )}
         </section>
 
-        <section className={styles.panel}>
+        <section className={styles.panel} ref={storyEditorRef}>
           <div className={styles.panelHeader}>
             <div>
               <p className={styles.panelEyebrow}>A Historia</p>
@@ -443,6 +486,7 @@ export default function PerfilPage() {
               <label className={styles.fieldGroup}>
                 <span className={styles.fieldLabel}>Biografia</span>
                 <textarea
+                  ref={storyInputRef}
                   className={styles.storyInput}
                   value={draft.bio}
                   onChange={(event) => setDraft((current) => ({ ...current, bio: event.target.value }))}
@@ -468,7 +512,10 @@ export default function PerfilPage() {
           )}
         </section>
 
-        <section className={`${styles.panel} ${activeEditor === "identity" || activeEditor === "avatar" ? "" : styles.hidden}`}>
+        <section
+          className={`${styles.panel} ${activeEditor === "identity" || activeEditor === "avatar" ? "" : styles.hidden}`}
+          ref={activeEditor === "identity" ? identityEditorRef : avatarEditorRef}
+        >
           {activeEditor === "identity" ? (
             <form className={styles.fieldStack} onSubmit={handleIdentitySubmit}>
               <div className={styles.panelHeader}>
@@ -481,6 +528,7 @@ export default function PerfilPage() {
               <label className={styles.fieldGroup}>
                 <span className={styles.fieldLabel}>Nome completo</span>
                 <input
+                  ref={identityNameInputRef}
                   className={styles.fieldControl}
                   value={draft.fullName}
                   onChange={(event) => setDraft((current) => ({ ...current, fullName: event.target.value }))}
@@ -542,6 +590,7 @@ export default function PerfilPage() {
               <label className={styles.fieldGroup}>
                 <span className={styles.fieldLabel}>URL publica da imagem</span>
                 <input
+                  ref={avatarInputRef}
                   className={styles.fieldControl}
                   value={draft.avatarUrl}
                   onChange={(event) => setDraft((current) => ({ ...current, avatarUrl: event.target.value }))}
