@@ -13,6 +13,7 @@
   "dependencies": {
     "@elo/core": "workspace:*",
     "@elo/ui": "workspace:*",
+    "@vercel/toolbar": "^0.2.2",
     "lucide-react": "^0.577.0",
     "next": "^15.5.4",
     "react": "^19.1.1",

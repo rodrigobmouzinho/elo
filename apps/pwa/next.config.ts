@@ -1,3 +1,4 @@
+import createWithVercelToolbar from "@vercel/toolbar/plugins/next";
 import type { NextConfig } from "next";
 
 function resolveApiBaseUrl() {
@@ -20,4 +21,6 @@ const nextConfig: NextConfig = {
   }
 };
 
-export default nextConfig;
+const withVercelToolbar = createWithVercelToolbar();
+
+export default withVercelToolbar(nextConfig);

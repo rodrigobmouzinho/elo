@@ -5,7 +5,7 @@
 - `elo-pwa` -> raiz `apps/pwa`
 - `elo-api` -> raiz `apps/api`
 
-## Variáveis de ambiente mínimas
+## Variaveis de ambiente minimas
 - `NEXT_PUBLIC_API_URL` (nos projetos `elo-admin` e `elo-pwa`, apontando para a raiz do `elo-api`, sem sufixo `/api`)
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
@@ -26,6 +26,24 @@
 - Definir credenciais reais do Supabase para staging/producao no momento em que decidirmos subir os projetos: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` e `SUPABASE_SERVICE_ROLE_KEY`
 
 ## Fluxo de deploy
-1. PR abre deploy preview automático
-2. Merge em `main` habilita deploy de produção conforme regras do projeto
+1. PR abre deploy preview automatico
+2. Merge em `main` habilita deploy de producao conforme regras do projeto
 3. Tag de release para rastreabilidade
+
+## Acompanhamento da refatoracao do PWA
+- O `apps/pwa` usa `@vercel/toolbar` para habilitar a Toolbar no localhost durante a refatoracao.
+- Em preview deployments da Vercel, comentarios e share link continuam sendo a superficie principal de revisao.
+- No localhost, a Toolbar aparece apenas em `NODE_ENV=development`, evitando impacto no build publicado.
+
+## Setup minimo para revisar o PWA em tempo real
+1. Criar o projeto `elo-pwa` na Vercel apontando para a raiz `apps/pwa`.
+2. Conectar o repositorio `rodrigobmouzinho/elo`.
+3. Rodar `vercel link apps/pwa` no ambiente local para vincular o diretorio ao projeto da Vercel.
+4. Subir o PWA localmente e abrir a Toolbar para comentar, compartilhar preview e acompanhar a refatoracao tela a tela.
+5. Usar o preview deployment da PR ou da `main` como base de validacao visual antes de cada merge.
+
+## Fluxo recomendado para a refatoracao UX/UI
+1. Refatorar uma tela do PWA por vez com base no Stitch.
+2. Validar localmente com a Toolbar ativa para revisar detalhes visuais e comportamento.
+3. Publicar a alteracao no preview deployment da Vercel.
+4. Registrar comentarios direto na interface do preview quando precisar marcar ajustes finos de layout, spacing, copy ou interacao.

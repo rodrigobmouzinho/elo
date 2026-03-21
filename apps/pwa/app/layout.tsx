@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { VercelToolbar } from "@vercel/toolbar/next";
 import { Anek_Latin } from "next/font/google";
 import "./globals.css";
 
@@ -24,9 +25,14 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const shouldInjectToolbar = process.env.NODE_ENV === "development";
+
   return (
     <html lang="pt-BR">
-      <body className={anekLatin.variable}>{children}</body>
+      <body className={anekLatin.variable}>
+        {children}
+        {shouldInjectToolbar ? <VercelToolbar /> : null}
+      </body>
     </html>
   );
 }
