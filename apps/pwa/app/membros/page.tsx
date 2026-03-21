@@ -210,9 +210,8 @@ export default function MembrosPage() {
         ) : null}
 
         <section className={styles.hero}>
-          <p className={styles.eyebrow}>Diretorio Elo</p>
-          <h2 className={styles.title}>Membros</h2>
-          <p className={styles.description}>Forme novos elos com a comunidade e transforme descoberta em relacionamento.</p>
+          <h2 className={styles.title}>Forme Elos</h2>
+          <p className={styles.description}>Conecte-se com a comunidade e transforme descoberta em relacionamento.</p>
         </section>
 
         <section className={styles.controls}>
