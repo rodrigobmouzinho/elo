@@ -5,7 +5,7 @@ import { Bell, CalendarDays, Rocket, Trophy, UsersRound } from "lucide-react";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import type { ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { clearStoredAuth, fetchMe, getStoredAuth } from "../lib/auth-client";
 import styles from "./member-shell.module.css";
@@ -71,6 +71,15 @@ export function MemberShell({ children }: { children: ReactNode }) {
   const memberName = useMemo(() => firstNameOf(displayName), [displayName]);
   const heading = activeHref === "/" ? `Ol\u00e1, ${memberName}` : activeItem?.label ?? displayName;
 
+  function handlePrimaryNavigation(event: MouseEvent<HTMLAnchorElement>, href: string) {
+    if (pathname === href) {
+      return;
+    }
+
+    event.preventDefault();
+    window.location.assign(href);
+  }
+
   return (
     <ShellSessionGate ready={ready}>
       <div className={`${styles.shell} ${displayFont.variable} ${bodyFont.variable}`}>
@@ -121,8 +130,10 @@ export function MemberShell({ children }: { children: ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
+                prefetch={false}
                 className={`${styles.navItem} ${active ? styles.navItemActive : ""}`}
                 aria-current={active ? "page" : undefined}
+                onClick={(event) => handlePrimaryNavigation(event, item.href)}
               >
                 {item.icon}
                 <span className={styles.navLabel}>{item.label}</span>
