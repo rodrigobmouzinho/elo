@@ -1,0 +1,16 @@
+name: UAT Critical Gate
+
+on:
+  workflow_dispatch:
+
+jobs:
+  uat-critical-gate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate Critical UAT Bugs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash ./scripts/uat_critical_gate.sh

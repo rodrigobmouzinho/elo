@@ -1,0 +1,354 @@
+:root,
+[data-theme="light"] {
+  --elo-color-brand-primary: #865aff;
+  --elo-color-brand-primary-hover: #7b4cfc;
+  --elo-color-brand-primary-active: #6e42e8;
+
+  --elo-graphite: #06070b;
+  --elo-orbit: #865aff;
+  --elo-panel: #f4f6ff;
+  --elo-rail: #0d0e14;
+  --elo-dock: rgba(255, 255, 255, 0.86);
+  --elo-metric: #111318;
+
+  --elo-text-primary: #111111;
+  --elo-text-secondary: #374151;
+  --elo-text-tertiary: #6b7280;
+  --elo-text-muted: #9ca3af;
+  --elo-text-inverse: #ffffff;
+
+  --elo-surface-canvas: #eef2fb;
+  --elo-surface-base: #ffffff;
+  --elo-surface-raised: #f8f9ff;
+  --elo-surface-inset: #ebeef8;
+
+  --elo-border-soft: rgba(17, 17, 17, 0.06);
+  --elo-border-default: rgba(17, 17, 17, 0.12);
+  --elo-border-strong: rgba(17, 17, 17, 0.2);
+  --elo-border-focus: rgba(134, 90, 255, 0.45);
+  --elo-separator: rgba(17, 17, 17, 0.12);
+
+  --elo-control-bg: rgba(255, 255, 255, 0.96);
+  --elo-control-bg-hover: #f7f7ff;
+  --elo-control-bg-active: #f0f1ff;
+  --elo-control-bg-disabled: #e5e7eb;
+  --elo-control-border: var(--elo-border-default);
+  --elo-control-border-focus: var(--elo-border-focus);
+
+  --elo-semantic-success: #166534;
+  --elo-semantic-warning: #92400e;
+  --elo-semantic-danger: #b91c1c;
+  --elo-semantic-info: #1d4ed8;
+
+  --elo-elevation-0: none;
+  --elo-elevation-1: 0 10px 24px rgba(15, 16, 23, 0.08);
+  --elo-elevation-2: 0 22px 48px rgba(15, 16, 23, 0.12);
+
+  --elo-radius-xs: 6px;
+  --elo-radius-sm: 10px;
+  --elo-radius-md: 14px;
+  --elo-radius-lg: 20px;
+  --elo-radius-xl: 24px;
+
+  --elo-space-1: 4px;
+  --elo-space-2: 8px;
+  --elo-space-3: 12px;
+  --elo-space-4: 16px;
+  --elo-space-5: 20px;
+  --elo-space-6: 24px;
+  --elo-space-7: 28px;
+  --elo-space-8: 32px;
+  --elo-space-9: 36px;
+  --elo-space-10: 40px;
+  --elo-space-11: 44px;
+  --elo-space-12: 48px;
+
+  --elo-motion-fast: 140ms;
+  --elo-motion-normal: 220ms;
+  --elo-font-body: var(--font-anek-latin), "Anek Latin", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --elo-font-display: "Kurino", "Kurino Regular", var(--font-anek-latin), "Anek Latin", "Segoe UI", "Helvetica Neue",
+    Arial, sans-serif;
+  --elo-font-mono: "JetBrains Mono", "SFMono-Regular", "SF Mono", Consolas, "Liberation Mono", monospace;
+  --elo-tracking-display: -0.018em;
+  --elo-tracking-label: 0.012em;
+}
+
+[data-theme="dark"] {
+  --elo-color-brand-primary: #865aff;
+  --elo-color-brand-primary-hover: #9370ff;
+  --elo-color-brand-primary-active: #7b4cfc;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+@font-face {
+  font-family: "Kurino";
+  src:
+    local("Kurino"),
+    local("Kurino Regular"),
+    local("Kurino-Regular");
+  font-display: swap;
+}
+
+html {
+  min-height: 100%;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  font-family: var(--elo-font-body);
+  background:
+    radial-gradient(58% 46% at 0% 0%, rgba(134, 90, 255, 0.16), rgba(134, 90, 255, 0) 68%),
+    linear-gradient(180deg, #f8faff 0%, var(--elo-surface-canvas) 100%);
+  color: var(--elo-text-primary);
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  font-family: var(--elo-font-body);
+  letter-spacing: var(--elo-tracking-display);
+  line-height: 1.04;
+  font-weight: 800;
+}
+
+h1 {
+  font-size: clamp(1.9rem, 2.6vw, 2.6rem);
+}
+
+h2 {
+  font-size: clamp(1.45rem, 1.8vw, 1.92rem);
+}
+
+h3 {
+  font-size: clamp(1.08rem, 1.3vw, 1.26rem);
+}
+
+h4 {
+  font-size: 1rem;
+}
+
+p,
+label,
+span,
+small,
+button,
+input,
+select,
+textarea {
+  font-family: var(--elo-font-body);
+}
+
+label {
+  letter-spacing: var(--elo-tracking-label);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+code,
+pre,
+kbd,
+samp {
+  font-family: var(--elo-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.elo-control,
+input,
+select,
+textarea {
+  width: 100%;
+  background: var(--elo-control-bg);
+  color: var(--elo-text-primary);
+  border: 1px solid var(--elo-control-border);
+  border-radius: var(--elo-radius-md);
+  padding: 12px 14px;
+  transition:
+    border-color var(--elo-motion-fast) ease,
+    box-shadow var(--elo-motion-fast) ease,
+    background-color var(--elo-motion-fast) ease,
+    transform var(--elo-motion-fast) ease;
+}
+
+.elo-control::placeholder,
+input::placeholder,
+textarea::placeholder {
+  color: var(--elo-text-muted);
+}
+
+.elo-control:hover:not(:disabled),
+input:hover:not(:disabled),
+select:hover:not(:disabled),
+textarea:hover:not(:disabled) {
+  background: var(--elo-control-bg-hover);
+  border-color: var(--elo-border-strong);
+}
+
+.elo-control:active:not(:disabled),
+input:active:not(:disabled),
+select:active:not(:disabled),
+textarea:active:not(:disabled) {
+  background: var(--elo-control-bg-active);
+}
+
+.elo-control:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  border-color: var(--elo-control-border-focus);
+  box-shadow: 0 0 0 4px rgba(134, 90, 255, 0.16);
+}
+
+.elo-control[data-elo-invalid="true"],
+.elo-control[aria-invalid="true"],
+input[data-elo-invalid="true"],
+input[aria-invalid="true"],
+select[data-elo-invalid="true"],
+select[aria-invalid="true"],
+textarea[data-elo-invalid="true"],
+textarea[aria-invalid="true"] {
+  border-color: var(--elo-semantic-danger);
+}
+
+.elo-control[data-elo-invalid="true"]:focus-visible,
+.elo-control[aria-invalid="true"]:focus-visible,
+input[data-elo-invalid="true"]:focus-visible,
+input[aria-invalid="true"]:focus-visible,
+select[data-elo-invalid="true"]:focus-visible,
+select[aria-invalid="true"]:focus-visible,
+textarea[data-elo-invalid="true"]:focus-visible,
+textarea[aria-invalid="true"]:focus-visible {
+  box-shadow: 0 0 0 4px rgba(185, 28, 28, 0.16);
+}
+
+.elo-control:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background: var(--elo-control-bg-disabled);
+  color: var(--elo-text-muted);
+  cursor: not-allowed;
+}
+
+.elo-choice-control {
+  accent-color: var(--elo-orbit);
+  width: 16px;
+  height: 16px;
+}
+
+.elo-alert {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid var(--elo-border-default);
+  font-size: 0.94rem;
+}
+
+.elo-alert-title {
+  font-weight: 800;
+}
+
+.elo-alert--info {
+  background: rgba(29, 78, 216, 0.08);
+  color: var(--elo-semantic-info);
+  border-color: rgba(29, 78, 216, 0.2);
+}
+
+.elo-alert--success {
+  background: rgba(22, 101, 52, 0.09);
+  color: var(--elo-semantic-success);
+  border-color: rgba(22, 101, 52, 0.2);
+}
+
+.elo-alert--warning {
+  background: rgba(146, 64, 14, 0.1);
+  color: var(--elo-semantic-warning);
+  border-color: rgba(146, 64, 14, 0.22);
+}
+
+.elo-alert--danger {
+  background: rgba(185, 28, 28, 0.09);
+  color: var(--elo-semantic-danger);
+  border-color: rgba(185, 28, 28, 0.22);
+}
+
+.elo-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 24px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.elo-badge--neutral {
+  background: rgba(17, 19, 24, 0.05);
+  border-color: var(--elo-border-soft);
+  color: var(--elo-text-secondary);
+}
+
+.elo-badge--brand {
+  background: rgba(134, 90, 255, 0.14);
+  border-color: rgba(134, 90, 255, 0.28);
+  color: #5b31cf;
+}
+
+.elo-badge--success {
+  background: rgba(22, 101, 52, 0.12);
+  border-color: rgba(22, 101, 52, 0.24);
+  color: var(--elo-semantic-success);
+}
+
+.elo-badge--warning {
+  background: rgba(146, 64, 14, 0.12);
+  border-color: rgba(146, 64, 14, 0.24);
+  color: var(--elo-semantic-warning);
+}
+
+.elo-badge--danger {
+  background: rgba(185, 28, 28, 0.11);
+  border-color: rgba(185, 28, 28, 0.24);
+  color: var(--elo-semantic-danger);
+}
+
+.elo-badge--info {
+  background: rgba(29, 78, 216, 0.11);
+  border-color: rgba(29, 78, 216, 0.22);
+  color: var(--elo-semantic-info);
+}
+
+:focus-visible {
+  outline: 2px solid var(--elo-control-border-focus);
+  outline-offset: 2px;
+}

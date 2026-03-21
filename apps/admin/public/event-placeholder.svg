@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="420" viewBox="0 0 800 420" fill="none">
+  <rect width="800" height="420" rx="28" fill="#865AFF"/>
+  <circle cx="660" cy="70" r="130" fill="#A384FF" fill-opacity="0.5"/>
+  <circle cx="160" cy="360" r="180" fill="#9D77FF" fill-opacity="0.45"/>
+  <text x="44" y="214" fill="white" font-size="52" font-family="Anek Latin, sans-serif">Elo Networking Event</text>
+</svg>

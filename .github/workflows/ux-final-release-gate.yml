@@ -1,0 +1,79 @@
+name: UX Final Release Gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      pwa_base_url:
+        description: "URL base do PWA para visual regression (ex: https://app-staging.vercel.app)"
+        required: true
+        type: string
+      pwa_performance_url:
+        description: "URL do PWA para auditoria de performance (ex: https://app-staging.vercel.app/login)"
+        required: true
+        type: string
+      pwa_a11y_url:
+        description: "URL opcional para auditoria a11y (se vazio usa pwa_performance_url)"
+        required: false
+        default: ""
+        type: string
+      api_health_url:
+        description: "URL de health check para validacao de rollback (ex: https://api-staging.vercel.app/api/health)"
+        required: true
+        type: string
+      max_restore_minutes:
+        description: "Tempo maximo permitido para restauracao no gate de rollback"
+        required: false
+        default: "5"
+        type: string
+      expected_health_body:
+        description: "Texto opcional esperado no body do health check"
+        required: false
+        default: ""
+        type: string
+      visual_allow_missing_baseline:
+        description: "Permitir ausencia de baseline visual (true/false)"
+        required: false
+        default: "false"
+        type: string
+      visual_update_baseline:
+        description: "Atualizar baseline visual com capturas atuais (true/false)"
+        required: false
+        default: "false"
+        type: string
+
+jobs:
+  ux-final-gate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile=false
+
+      - name: Run UX Final Gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PWA_AUDIT_URL: ${{ inputs.pwa_performance_url }}
+          PWA_A11Y_URL: ${{ inputs.pwa_a11y_url != '' && inputs.pwa_a11y_url || inputs.pwa_performance_url }}
+          VISUAL_BASE_URL: ${{ inputs.pwa_base_url }}
+          VISUAL_ALLOW_MISSING_BASELINE: ${{ inputs.visual_allow_missing_baseline }}
+          VISUAL_UPDATE_BASELINE: ${{ inputs.visual_update_baseline }}
+          ROLLBACK_HEALTH_URL: ${{ inputs.api_health_url }}
+          MAX_RESTORE_MINUTES: ${{ inputs.max_restore_minutes }}
+          ROLLBACK_EXPECT_BODY: ${{ inputs.expected_health_body }}
+        run: pnpm qa:ux-final-gate
+
+      - name: Upload QA Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ux-final-gate-reports
+          path: reports/**

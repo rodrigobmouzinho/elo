@@ -1,0 +1,33 @@
+name: Rollback Recovery Gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      health_url:
+        description: "URL de health check da aplicacao apos rollback (ex: https://api.exemplo.com/api/health)"
+        required: true
+        type: string
+      max_restore_minutes:
+        description: "Tempo maximo de restauracao em minutos"
+        required: false
+        default: "5"
+        type: string
+      expected_body_contains:
+        description: "Texto opcional esperado no body da resposta de health"
+        required: false
+        default: ""
+        type: string
+
+jobs:
+  rollback-gate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate rollback recovery time
+        env:
+          ROLLBACK_HEALTH_URL: ${{ inputs.health_url }}
+          MAX_RESTORE_MINUTES: ${{ inputs.max_restore_minutes }}
+          ROLLBACK_EXPECT_BODY: ${{ inputs.expected_body_contains }}
+        run: bash ./scripts/rollback_recovery_gate.sh

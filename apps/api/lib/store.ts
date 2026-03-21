@@ -1,0 +1,192 @@
+import { mockEvents, mockMembers, mockRanking } from "@elo/core";
+
+type MockProjectIdea = {
+  id: string;
+  title: string;
+  category: string;
+  description: string;
+  lookingFor: string;
+  ownerName: string;
+  ownerMemberId?: string;
+};
+
+const projectIdeas: MockProjectIdea[] = [
+  {
+    id: "project-1",
+    title: "SaaS para RH",
+    category: "B2B SaaS",
+    description: "Buscando cofounder com perfil tecnico.",
+    lookingFor: "cto",
+    ownerName: "Ana Costa",
+    ownerMemberId: "60948757-e688-41ec-b0fc-cf30cf8cc3d8"
+  }
+];
+
+type MockProjectApplication = {
+  id: string;
+  projectId: string;
+  ownerMemberId: string;
+  applicantMemberId: string;
+  message: string | null;
+  status: "applied" | "accepted" | "rejected";
+  createdAt: string;
+};
+
+type MockEventPayment = {
+  id: string;
+  eventId: string;
+  memberId: string;
+  gateway: string;
+  gatewayPaymentId: string;
+  externalReference: string;
+  amountCents: number;
+  status: "pending" | "paid" | "expired" | "refunded";
+  checkoutUrl: string | null;
+  pixQrCode: string | null;
+  gatewayPayload: Record<string, unknown> | null;
+  paidAt: string | null;
+  createdAt: string;
+};
+
+type MockEventRegistration = {
+  eventId: string;
+  memberId: string;
+  status: "confirmed" | "canceled";
+  createdAt: string;
+};
+
+type MockMembershipPayment = {
+  id: string;
+  membershipId: string;
+  gateway: string;
+  gatewayPaymentId: string;
+  externalReference: string;
+  amountCents: number;
+  status: "pending" | "paid" | "expired" | "refunded";
+  checkoutUrl: string | null;
+  pixQrCode: string | null;
+  gatewayPayload: Record<string, unknown> | null;
+  paidAt: string | null;
+  createdAt: string;
+};
+
+type MockMembership = {
+  id: string;
+  memberId: string;
+  startedAt: string;
+  expiresAt: string;
+  status: "active" | "expired" | "canceled";
+  createdAt: string;
+};
+
+type MockSeason = {
+  id: string;
+  name: string;
+  startsAt: string;
+  endsAt: string;
+  active: boolean;
+  createdAt: string;
+};
+
+type MockPointsLedgerEntry = {
+  id: string;
+  seasonId: string;
+  memberId: string;
+  points: number;
+  reason: string;
+  createdAt: string;
+};
+
+type MockBadge = {
+  id: string;
+  name: string;
+  description: string;
+  iconUrl: string | null;
+  createdAt: string;
+};
+
+type MockMemberBadge = {
+  id: string;
+  memberId: string;
+  badgeId: string;
+  seasonId: string | null;
+  grantedAt: string;
+};
+
+type MockMemberLink = {
+  id: string;
+  followerMemberId: string;
+  followedMemberId: string;
+  createdAt: string;
+};
+
+const now = Date.now();
+const defaultMemberships: MockMembership[] = mockMembers.map((member) => ({
+  id: `membership-${member.id}`,
+  memberId: member.id,
+  startedAt: new Date(now - 30 * 24 * 3600 * 1000).toISOString(),
+  expiresAt: new Date(now + 30 * 24 * 3600 * 1000).toISOString(),
+  status: "active",
+  createdAt: new Date(now - 30 * 24 * 3600 * 1000).toISOString()
+}));
+
+const defaultSeasons: MockSeason[] = [
+  {
+    id: "7b2b6d8b-2d68-47f1-b56c-a2d28383887d",
+    name: "Temporada 2026.1",
+    startsAt: "2026-01-10T00:00:00.000Z",
+    endsAt: "2026-06-30T23:59:59.000Z",
+    active: true,
+    createdAt: new Date(now - 40 * 24 * 3600 * 1000).toISOString()
+  }
+];
+
+const defaultPointsLedger: MockPointsLedgerEntry[] = mockRanking.map((entry, index) => ({
+  id: `points-seed-${index + 1}`,
+  seasonId: defaultSeasons[0].id,
+  memberId: entry.memberId,
+  points: entry.points,
+  reason: "Seed inicial da temporada",
+  createdAt: new Date(now - (index + 1) * 3600 * 1000).toISOString()
+}));
+
+const defaultBadges: MockBadge[] = [
+  {
+    id: "badge-ouro",
+    name: "ouro",
+    description: "Top 1 da temporada ativa",
+    iconUrl: null,
+    createdAt: new Date(now - 24 * 3600 * 1000).toISOString()
+  },
+  {
+    id: "badge-prata",
+    name: "prata",
+    description: "Top 2 da temporada ativa",
+    iconUrl: null,
+    createdAt: new Date(now - 24 * 3600 * 1000).toISOString()
+  },
+  {
+    id: "badge-bronze",
+    name: "bronze",
+    description: "Top 3 da temporada ativa",
+    iconUrl: null,
+    createdAt: new Date(now - 24 * 3600 * 1000).toISOString()
+  }
+];
+
+export const memoryStore = {
+  members: [...mockMembers],
+  memberships: [...defaultMemberships],
+  seasons: [...defaultSeasons],
+  pointsLedger: [...defaultPointsLedger],
+  badges: [...defaultBadges],
+  memberBadges: [] as MockMemberBadge[],
+  memberLinks: [] as MockMemberLink[],
+  events: [...mockEvents],
+  ranking: [...mockRanking],
+  projectIdeas,
+  projectApplications: [] as MockProjectApplication[],
+  membershipPayments: [] as MockMembershipPayment[],
+  eventPayments: [] as MockEventPayment[],
+  eventRegistrations: [] as MockEventRegistration[]
+};

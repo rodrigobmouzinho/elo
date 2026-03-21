@@ -1,0 +1,67 @@
+ID,Epic,Story,Priority,Impact,Estimate,Milestone,Status
+ELO-001,Setup,"Monorepo com admin/pwa/api e comandos run/build/test/lint",Must,High,5,M1,Backlog
+ELO-002,Setup,"Design tokens Elo aplicados no admin e pwa",Must,High,3,M1,Backlog
+ELO-003,Setup,"Autenticacao por role admin/member",Must,High,5,M1,Backlog
+ELO-004,Setup,"CI/CD com preview por PR",Must,High,5,M1,Backlog
+ELO-005,Setup,"Observabilidade basica com logs e erros",Must,High,3,M1,Backlog
+ELO-010,Members,"CRUD de membros no admin",Must,High,5,M2,Backlog
+ELO-011,Members,"Controle de validade de anuidade",Must,High,5,M2,Backlog
+ELO-012,Finance,"Lancamento de cobrancas anuais",Must,High,5,M2,Backlog
+ELO-013,Finance,"Refatorar pagamentos para PIX manual com QR dinamico e aprovacao admin vinculada",Must,High,5,M2,Backlog
+ELO-014,Finance,"Dashboard financeiro com exportacao",Should,MediumHigh,3,M2,Backlog
+ELO-020,Events,"CRUD de eventos com tipo e preco",Must,High,5,M2,Backlog
+ELO-021,Events,"Upload de imagem principal e galeria",Must,MediumHigh,3,M2,Backlog
+ELO-022,Events,"Confirmacao de presenca pelo membro",Must,High,5,M3,Backlog
+ELO-023,Events,"Checkout de evento pago no app",Must,High,8,M3,Backlog
+ELO-024,Events,"Evento online com link de acesso",Must,Medium,2,M2,Backlog
+ELO-030,Gamification,"Criacao e ativacao de temporadas",Must,High,5,M3,Backlog
+ELO-031,Gamification,"Lancamento de pontos por admin",Must,High,5,M3,Backlog
+ELO-032,Gamification,"Concessao automatica de badges",Should,MediumHigh,5,M3,Backlog
+ELO-033,Gamification,"Ranking da temporada no app",Must,High,3,M3,Backlog
+ELO-034,Gamification,"Historico de temporadas e campeoes",Should,Medium,3,M3,Backlog
+ELO-040,Auth,"Login e reset por e-mail",Must,High,3,M1,Backlog
+ELO-041,PWA,"Home de eventos no PWA",Must,High,3,M3,Backlog
+ELO-042,PWA,"Diretorio de membros com busca",Must,High,3,M3,Backlog
+ELO-043,PWA,"Criacao de elo entre membros",Must,High,5,M3,Backlog
+ELO-044,PWA,"Clique em WhatsApp no perfil",Should,Medium,2,M3,Backlog
+ELO-045,PWA,"Edicao de perfil com restricao de email/celular",Must,High,5,M3,Backlog
+ELO-046,Projects,"Cadastro de projeto/ideia",Must,High,5,M3,Backlog
+ELO-047,Projects,"Inscricao em projetos/ideias",Must,MediumHigh,5,M3,Backlog
+ELO-050,Quality,"Suite unit/integration/e2e",Must,High,8,M3,Backlog
+ELO-051,Quality,"QA de performance PWA",Must,MediumHigh,3,M4,Backlog
+ELO-052,Beta,"UAT com admins Elo",Must,High,5,M4,Backlog
+ELO-053,Release,"Playbook de rollback validado",Must,High,3,M4,Backlog
+ELO-054,Quality,"Refatorar textos em pt-BR com acentuacao correta",Should,Medium,3,M4,Backlog
+ELO-055,UX Foundation,"Fundar design system semantico (tokens temas elevacao bordas spacing)",Must,High,5,M6 UX Refactor,Backlog
+ELO-056,UX Foundation,"Implantar tipografia oficial (Kurino/Anek) com fallback robusto",Must,High,3,M6 UX Refactor,Backlog
+ELO-057,UX Foundation,"Criar primitives de formulario/feedback (input/select/textarea/alert/badge)",Must,High,5,M6 UX Refactor,Backlog
+ELO-058,UX Foundation,"Unificar shells de navegacao (AdminShell/MemberShell) no novo sistema",Must,High,5,M6 UX Refactor,Backlog
+ELO-059,Admin UX,"Refatorar telas de login/admin auth feedback com nova linguagem",Must,High,3,M6 UX Refactor,Backlog
+ELO-060,Admin UX,"Refatorar dashboard admin (metricas cards e hierarquia de decisao)",Must,High,3,M6 UX Refactor,Backlog
+ELO-061,Admin UX,"Refatorar modulo Eventos admin (CRUD mais midia e estados)",Must,High,5,M6 UX Refactor,Backlog
+ELO-062,Admin UX,"Refatorar modulo Membros admin (cadastro edicao status)",Must,High,5,M6 UX Refactor,Backlog
+ELO-063,Admin UX,"Refatorar modulo Financeiro admin (overview pendencias acoes criticas)",Must,High,8,M6 UX Refactor,Backlog
+ELO-064,Admin UX,"Refatorar modulo Gamificacao admin",Should,MediumHigh,5,M6 UX Refactor,Backlog
+ELO-065,PWA UX,"Refatorar login + home de eventos PWA",Must,High,5,M6 UX Refactor,Backlog
+ELO-066,PWA UX,"Refatorar detalhe de evento mais checkout PIX e confirmacao",Must,High,8,M6 UX Refactor,Backlog
+ELO-067,PWA UX,"Refatorar diretorio de membros e criacao de elo",Must,High,5,M6 UX Refactor,Backlog
+ELO-068,PWA UX,"Refatorar perfil e projetos ideias",Must,High,5,M6 UX Refactor,Backlog
+ELO-069,PWA UX,"Refatorar gamificacao PWA (ranking/historico)",Should,MediumHigh,3,M6 UX Refactor,Backlog
+ELO-070,UX Quality/Release,"QA final UX UI (visual regression a11y performance) mais release rollback",Must,High,8,M6 UX Refactor,Backlog
+ELO-071,UX Refactor Program,"Auditoria total de UX/UI com inventario de telas, cards, copy e estados",Must,High,3,M7 Total UX Refactor,Backlog
+ELO-072,UX Refactor Program,"Arquitetura de informacao da refatoracao com hierarquia e foco por tela",Must,High,3,M7 Total UX Refactor,Backlog
+ELO-073,UX Refactor Program,"Sistema de conteudo e microcopy para reduzir texto editorial e ruido visual",Must,High,3,M7 Total UX Refactor,Backlog
+ELO-074,UX Foundation,"Refatorar fundacao visual do design system (tokens, densidade, elevacao, spacing)",Must,High,5,M7 Total UX Refactor,Backlog
+ELO-075,UX Foundation,"Refatorar primitives de layout e data display compartilhadas",Must,High,5,M7 Total UX Refactor,Backlog
+ELO-076,UX Foundation,"Refatorar shells e navegacao global de admin e pwa",Must,High,5,M7 Total UX Refactor,Backlog
+ELO-077,Admin UX,"Refatorar autenticacao e entrada do Admin",Must,MediumHigh,3,M7 Total UX Refactor,Backlog
+ELO-078,Admin UX,"Refatorar dashboard executivo do Admin",Must,High,5,M7 Total UX Refactor,Backlog
+ELO-079,Admin UX,"Refatorar modulo Membros do Admin",Must,High,5,M7 Total UX Refactor,Backlog
+ELO-080,Admin UX,"Refatorar modulo Eventos do Admin",Must,High,5,M7 Total UX Refactor,Backlog
+ELO-081,Admin UX,"Refatorar modulo Financeiro do Admin",Must,High,8,M7 Total UX Refactor,Backlog
+ELO-082,Admin UX,"Refatorar modulo Gamificacao do Admin",Should,MediumHigh,5,M7 Total UX Refactor,Backlog
+ELO-083,PWA UX,"Refatorar autenticacao e Home do PWA",Must,High,5,M7 Total UX Refactor,Backlog
+ELO-084,PWA UX,"Refatorar Diretorio e Elos do PWA",Must,High,5,M7 Total UX Refactor,Backlog
+ELO-085,PWA UX,"Refatorar Perfil e Projetos do PWA",Must,High,5,M7 Total UX Refactor,Backlog
+ELO-086,PWA UX,"Refatorar Gamificacao, Detalhe de Evento e Checkout do PWA",Must,High,8,M7 Total UX Refactor,Backlog
+ELO-087,UX Quality/Release,"QA de refatoracao total com regressao visual, a11y, responsividade e smoke tests",Must,High,5,M7 Total UX Refactor,Backlog

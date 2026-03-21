@@ -1,0 +1,36 @@
+name: PWA Performance QA
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: "URL de staging do PWA para auditoria Lighthouse (ex: https://app-staging.vercel.app/login)"
+        required: true
+        type: string
+
+jobs:
+  lighthouse-audit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile=false
+
+      - name: Lighthouse PWA Budget
+        run: PWA_AUDIT_URL="${{ inputs.target_url }}" pnpm qa:pwa-performance
+
+      - name: Upload Lighthouse Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-pwa-report
+          path: reports/lighthouse-pwa.json

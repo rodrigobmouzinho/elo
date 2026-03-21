@@ -1,0 +1,26 @@
+name: Vercel Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.pull_request.head.repo.fork == false }}
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install Vercel CLI
+        run: npm i -g vercel@latest
+      - name: Skip deploy when token is missing
+        if: ${{ env.VERCEL_TOKEN == '' }}
+        run: echo "Skipping preview deploy because VERCEL_TOKEN is not configured."
+      - name: Deploy PWA Preview
+        if: ${{ env.VERCEL_TOKEN != '' }}
+        run: vercel deploy apps/pwa --yes --token="$VERCEL_TOKEN"

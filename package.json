@@ -1,0 +1,28 @@
+{
+  "name": "elo-networking",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.28.2",
+  "scripts": {
+    "run": "turbo dev",
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "test": "turbo test",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "fix:env-macos": "bash ./scripts/fix_env_quarantine_macos.sh",
+    "qa:pwa-performance": "bash ./scripts/pwa_lighthouse_audit.sh",
+    "qa:pwa-a11y": "bash ./scripts/pwa_accessibility_audit.sh",
+    "qa:visual-regression": "bash ./scripts/pwa_visual_regression.sh",
+    "qa:uat-gate": "bash ./scripts/uat_critical_gate.sh",
+    "qa:rollback-gate": "bash ./scripts/rollback_recovery_gate.sh",
+    "qa:ux-final-gate": "bash ./scripts/ux_final_release_gate.sh",
+    "format": "prettier --check .",
+    "format:write": "prettier --write ."
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2",
+    "turbo": "^2.6.0",
+    "typescript": "^5.9.2"
+  }
+}
