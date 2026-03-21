@@ -1,0 +1,465 @@
+.page {
+  display: grid;
+  gap: 2.2rem;
+}
+
+.feedbackCard,
+.emptyCard {
+  display: grid;
+  gap: 0.45rem;
+  padding: 1.1rem 1.15rem;
+  border-radius: 1.55rem;
+  background: rgba(28, 27, 27, 0.9);
+  box-shadow: inset 0 0 0 1px rgba(72, 69, 85, 0.18);
+}
+
+.feedbackTitle,
+.emptyTitle {
+  margin: 0;
+  color: #ffffff;
+  font-family: var(--member-font-display), "Plus Jakarta Sans", sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.feedbackText,
+.emptyText {
+  margin: 0;
+  color: rgba(202, 195, 215, 0.82);
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.9rem;
+  line-height: 1.58;
+}
+
+.feedbackDanger {
+  background: rgba(147, 0, 10, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(255, 180, 171, 0.14);
+}
+
+.feedbackInfo {
+  background: rgba(28, 27, 27, 0.88);
+}
+
+.heroLink,
+.heroFallback {
+  position: relative;
+  display: block;
+  min-height: 27.5rem;
+  overflow: hidden;
+  border-radius: 2rem;
+  background: #1c1b1b;
+  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.5);
+}
+
+.heroFallback {
+  display: grid;
+  align-items: end;
+  padding: 1.6rem;
+  background:
+    radial-gradient(68% 52% at 16% 12%, rgba(89, 50, 209, 0.22), rgba(28, 27, 27, 0) 70%),
+    linear-gradient(180deg, #252327 0%, #171617 100%);
+}
+
+.heroGlow {
+  position: absolute;
+  top: -3rem;
+  left: -3rem;
+  width: 16rem;
+  height: 16rem;
+  border-radius: 999px;
+  background: rgba(89, 50, 209, 0.2);
+  filter: blur(80px);
+  pointer-events: none;
+}
+
+.heroMedia {
+  position: absolute;
+  inset: 0;
+}
+
+.heroImage {
+  object-fit: cover;
+}
+
+.heroOverlay {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(19, 19, 19, 0.04) 10%, rgba(19, 19, 19, 0.18) 42%, rgba(0, 0, 0, 0.86) 100%),
+    linear-gradient(135deg, rgba(89, 50, 209, 0.18), rgba(155, 2, 124, 0.1));
+}
+
+.heroContent {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  align-content: end;
+  gap: 0.95rem;
+  min-height: 27.5rem;
+  padding: 1.55rem 1.4rem 1.45rem;
+}
+
+.heroBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  min-height: 1.55rem;
+  padding: 0.32rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(155, 2, 124, 0.28);
+  color: #ffd8ec;
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.heroTitle {
+  margin: 0;
+  color: #ffffff;
+  font-family: var(--member-font-display), "Plus Jakarta Sans", sans-serif;
+  font-size: clamp(2.2rem, 7vw, 3rem);
+  font-weight: 800;
+  line-height: 0.96;
+  letter-spacing: -0.05em;
+}
+
+.heroSummary {
+  margin: 0;
+  max-width: 34ch;
+  color: rgba(202, 195, 215, 0.9);
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.heroMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
+.heroMetaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  color: #cbbeff;
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.section {
+  display: grid;
+  gap: 1rem;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.sectionEyebrow {
+  display: block;
+  margin-bottom: 0.32rem;
+  color: #9b027c;
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.sectionTitle {
+  margin: 0;
+  color: #ffffff;
+  font-family: var(--member-font-display), "Plus Jakarta Sans", sans-serif;
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.sectionAction {
+  color: #cbbeff;
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.eventsGrid {
+  display: grid;
+  gap: 1rem;
+}
+
+.eventCard {
+  overflow: hidden;
+  border-radius: 1.6rem;
+  background: #1c1b1b;
+  box-shadow: inset 0 0 0 1px rgba(72, 69, 85, 0.16);
+  transition:
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.eventCard:hover {
+  transform: translateY(-0.12rem);
+  background: #232222;
+}
+
+.eventMedia {
+  position: relative;
+  height: 12rem;
+  overflow: hidden;
+  background: #201f1f;
+}
+
+.eventImage {
+  object-fit: cover;
+  transition: transform 700ms ease;
+}
+
+.eventCard:hover .eventImage {
+  transform: scale(1.06);
+}
+
+.eventLimitBadge {
+  position: absolute;
+  top: 0.95rem;
+  right: 0.95rem;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.55rem;
+  padding: 0.25rem 0.72rem;
+  border-radius: 0.85rem;
+  background: rgba(0, 0, 0, 0.4);
+  color: #ffffff;
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.64rem;
+  font-weight: 700;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.eventBody {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.15rem 1.2rem 1.2rem;
+}
+
+.eventTitle {
+  margin: 0;
+  color: #ffffff;
+  font-family: var(--member-font-display), "Plus Jakarta Sans", sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.eventSummary {
+  margin: 0;
+  color: rgba(202, 195, 215, 0.82);
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.88rem;
+  line-height: 1.58;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.eventFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.attendees {
+  display: flex;
+  align-items: center;
+}
+
+.attendee,
+.attendeeMore {
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 999px;
+  border: 0.125rem solid #1c1b1b;
+  display: grid;
+  place-items: center;
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.52rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-left: -0.35rem;
+}
+
+.attendee:first-child,
+.attendeeMore:first-child {
+  margin-left: 0;
+}
+
+.attendee {
+  background: linear-gradient(135deg, rgba(89, 50, 209, 0.9), rgba(155, 2, 124, 0.9));
+}
+
+.attendeeMore {
+  background: #353534;
+  color: rgba(202, 195, 215, 0.88);
+}
+
+.eventMeta {
+  color: rgba(202, 195, 215, 0.72);
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: right;
+}
+
+.orbitTitle {
+  margin: 0;
+  color: #ffffff;
+  font-family: var(--member-font-display), "Plus Jakarta Sans", sans-serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.orbitRow {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  padding-bottom: 0.4rem;
+  scrollbar-width: none;
+}
+
+.orbitRow::-webkit-scrollbar {
+  display: none;
+}
+
+.orbitMember {
+  flex: 0 0 auto;
+  width: 5.25rem;
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+}
+
+.orbitAvatarShell {
+  position: relative;
+  width: 5rem;
+  height: 5rem;
+  padding: 0.22rem;
+}
+
+.orbitRing {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  border: 0.12rem dashed rgba(203, 190, 255, 0.28);
+}
+
+.orbitActive .orbitRing {
+  animation: spinOrbit 10s linear infinite;
+}
+
+.orbitGlow {
+  position: absolute;
+  inset: 0.5rem;
+  border-radius: 999px;
+  background: rgba(155, 2, 124, 0.18);
+  filter: blur(0.8rem);
+}
+
+.orbitAvatar {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #2a2a2a;
+  color: #ffffff;
+  font-family: var(--member-font-display), "Plus Jakarta Sans", sans-serif;
+  font-size: 0.92rem;
+  font-weight: 800;
+  box-shadow: inset 0 0 0 0.12rem rgba(72, 69, 85, 0.4);
+}
+
+.orbitActive .orbitAvatar {
+  box-shadow: inset 0 0 0 0.14rem rgba(203, 190, 255, 0.56);
+}
+
+.orbitName {
+  margin: 0;
+  color: #ffffff;
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.orbitRole {
+  margin: 0.1rem 0 0;
+  color: rgba(202, 195, 215, 0.7);
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.52rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .page {
+    gap: 2.6rem;
+  }
+
+  .heroLink,
+  .heroFallback {
+    min-height: 31rem;
+  }
+
+  .heroContent {
+    min-height: 31rem;
+    padding: 2rem 1.8rem 1.8rem;
+  }
+
+  .eventsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .orbitRow {
+    gap: 1.2rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eventCard,
+  .eventImage,
+  .orbitRing {
+    transition: none;
+    animation: none;
+  }
+}
+
+@keyframes spinOrbit {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}

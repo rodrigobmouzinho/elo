@@ -1,13 +1,13 @@
 "use client";
 
+import { passthroughImageLoader } from "@elo/ui";
+import { CalendarDays, MapPin } from "lucide-react";
 import Image from "next/image";
-import { Alert, Badge, Button, EmptyState, FeedCard, LogoMark, SocialStatPill, passthroughImageLoader } from "@elo/ui";
-import type { AlertVariant, BadgeVariant } from "@elo/ui";
-import { ArrowRight, CalendarDays, Crown, Ticket, Trophy, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { MemberShell } from "../components/member-shell";
-import { apiRequest, getStoredAuth } from "../lib/auth-client";
+import { apiRequest } from "../lib/auth-client";
+import styles from "./page.module.css";
 
 type EventItem = {
   id: string;
@@ -31,64 +31,22 @@ type MemberPreview = {
   whatsapp: string;
 };
 
-type RankingEntry = {
-  memberId: string;
-  name: string;
-  points: number;
-  rank: number;
-  medals: string[];
-};
+type FeedbackTone = "danger" | "info";
 
 type FeedbackState = {
   title: string;
   description: string;
-  variant: AlertVariant;
+  tone: FeedbackTone;
 };
 
 function normalizeApiError(raw: string) {
   const normalized = raw.trim().toLowerCase();
 
   if (normalized.includes("network") || normalized.includes("conexao")) {
-    return "Não foi possível conectar ao servidor. Tente novamente em instantes.";
+    return "N\u00e3o foi poss\u00edvel conectar ao servidor. Tente novamente em instantes.";
   }
 
   return raw;
-}
-
-function formatCurrency(cents: number) {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-    minimumFractionDigits: 2
-  }).format(cents / 100);
-}
-
-function getAccessLabel(accessType: EventItem["accessType"]) {
-  if (accessType === "free_members") return "Gratuito para membros";
-  if (accessType === "paid_members") return "Pago para membros";
-  return "Público com desconto para membros";
-}
-
-function getAccessVariant(accessType: EventItem["accessType"]): BadgeVariant {
-  if (accessType === "free_members") return "info";
-  if (accessType === "paid_members") return "brand";
-  return "warning";
-}
-
-function getEventTimingState(startsAt: string): { label: string; variant: BadgeVariant } {
-  const startsAtMs = new Date(startsAt).getTime();
-  const now = Date.now();
-
-  if (startsAtMs > now) {
-    return { label: "Programado", variant: "info" };
-  }
-
-  const sixHoursMs = 6 * 60 * 60 * 1000;
-  if (now - startsAtMs <= sixHoursMs) {
-    return { label: "Acontecendo", variant: "success" };
-  }
-
-  return { label: "Encerrado", variant: "neutral" };
 }
 
 function initials(name: string) {
@@ -100,528 +58,250 @@ function initials(name: string) {
     .join("");
 }
 
+function formatCardDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Em breve";
+  }
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "short"
+  })
+    .format(date)
+    .replace(".", "")
+    .toUpperCase();
+}
+
+function getUpcomingEvents(events: EventItem[]) {
+  const ordered = [...events].sort((left, right) => new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime());
+  const threshold = Date.now() - 6 * 60 * 60 * 1000;
+  const upcoming = ordered.filter((event) => new Date(event.startsAt).getTime() >= threshold);
+  return upcoming.length > 0 ? upcoming : ordered;
+}
+
+function rotateMembers(members: MemberPreview[], index: number, total: number) {
+  if (members.length === 0) return [];
+
+  return Array.from({ length: Math.min(total, members.length) }, (_, offset) => members[(index + offset) % members.length]);
+}
+
 export default function HomePage() {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [members, setMembers] = useState<MemberPreview[]>([]);
-  const [ranking, setRanking] = useState<RankingEntry[]>([]);
-  const [season, setSeason] = useState("Temporada Elo");
-  const [loadingHome, setLoadingHome] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
-  const [memberId, setMemberId] = useState<string | null>(null);
 
   useEffect(() => {
-    const auth = getStoredAuth();
-    setMemberId(auth?.user.memberId ?? null);
+    let active = true;
 
     async function loadHome() {
-      setLoadingHome(true);
+      setLoading(true);
       setFeedback(null);
 
-      const [eventsResult, membersResult, rankingResult] = await Promise.allSettled([
+      const [eventsResult, membersResult] = await Promise.allSettled([
         apiRequest<EventItem[]>("/app/events"),
-        apiRequest<MemberPreview[]>("/app/members"),
-        apiRequest<{ season: string; ranking: RankingEntry[] }>("/app/gamification/ranking")
+        apiRequest<MemberPreview[]>("/app/members")
       ]);
+
+      if (!active) {
+        return;
+      }
 
       if (eventsResult.status === "fulfilled") {
         setEvents(eventsResult.value);
       } else {
         setFeedback({
-          title: "Falha ao carregar a agenda",
+          title: "Falha ao carregar os eventos",
           description: normalizeApiError(eventsResult.reason instanceof Error ? eventsResult.reason.message : String(eventsResult.reason)),
-          variant: "danger"
+          tone: "danger"
         });
       }
 
       if (membersResult.status === "fulfilled") {
-        setMembers(membersResult.value.slice(0, 6));
+        setMembers(membersResult.value);
+      } else if (eventsResult.status === "fulfilled") {
+        setFeedback({
+          title: "Eventos prontos, \u00f3rbita pendente",
+          description: "A agenda est\u00e1 dispon\u00edvel, mas a lista de membros ativos ainda est\u00e1 sincronizando.",
+          tone: "info"
+        });
       }
 
-      if (rankingResult.status === "fulfilled") {
-        setSeason(rankingResult.value.season);
-        setRanking(rankingResult.value.ranking);
-      }
-
-      setLoadingHome(false);
+      setLoading(false);
     }
 
     void loadHome();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
-  const featuredEvent = events[0] ?? null;
-  const featuredTiming = featuredEvent ? getEventTimingState(featuredEvent.startsAt) : null;
-  const currentMemberRanking = useMemo(
-    () => (memberId ? ranking.find((entry) => entry.memberId === memberId) ?? null : null),
-    [memberId, ranking]
-  );
-
-  const dashboard = useMemo(() => {
-    const paid = events.filter((event) => event.accessType !== "free_members").length;
-    const online = events.filter((event) => Boolean(event.onlineUrl)).length;
-
-    return {
-      total: events.length,
-      paid,
-      online,
-      members: members.length,
-      leader: ranking[0]?.name ?? "Comunidade em aquecimento"
-    };
-  }, [events, members.length, ranking]);
+  const upcomingEvents = useMemo(() => getUpcomingEvents(events), [events]);
+  const featuredEvent = upcomingEvents[0] ?? null;
+  const listEvents = featuredEvent ? upcomingEvents.slice(1, 3) : upcomingEvents.slice(0, 2);
+  const orbitMembers = members.slice(0, 5);
 
   return (
     <MemberShell>
-      <div style={{ display: "grid", gap: "18px" }}>
-        <section
-          style={{
-            display: "grid",
-            gap: "18px",
-            padding: "20px",
-            borderRadius: "30px",
-            border: "1px solid rgba(134, 90, 255, 0.12)",
-            background:
-              "linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.8)), radial-gradient(80% 80% at 0% 0%, rgba(134, 90, 255, 0.18), transparent 52%)",
-            boxShadow: "0 18px 44px rgba(76, 59, 120, 0.1)"
-          }}
-        >
-          <div style={{ display: "grid", gap: "16px", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))" }}>
-            <div style={{ display: "grid", gap: "16px" }}>
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "14px", flexWrap: "wrap" }}>
-                <div style={{ display: "grid", gap: "10px", maxWidth: "620px" }}>
-                  <Badge variant="brand" style={{ justifySelf: "start" }}>
-                    Hoje na Elo
-                  </Badge>
-                  <h1 style={{ margin: 0, fontSize: "clamp(2rem, 6vw, 3.8rem)", lineHeight: 0.94 }}>
-                    Descubra o próximo elo entre pessoas, eventos e reputação.
-                  </h1>
-                  <p style={{ margin: 0, color: "var(--elo-text-secondary, #374151)", maxWidth: "54ch", lineHeight: 1.7 }}>
-                    A Elo agora abre como um hub social de networking: você entende o que está acontecendo, quem conhecer e qual ação vale agora em poucos segundos.
-                  </p>
-                </div>
-                <LogoMark size="lg" />
-              </div>
+      <div className={styles.page}>
+        {feedback ? (
+          <section
+            className={`${styles.feedbackCard} ${feedback.tone === "danger" ? styles.feedbackDanger : styles.feedbackInfo}`}
+            role={feedback.tone === "danger" ? "alert" : "status"}
+            aria-live="polite"
+          >
+            <h2 className={styles.feedbackTitle}>{feedback.title}</h2>
+            <p className={styles.feedbackText}>{feedback.description}</p>
+          </section>
+        ) : null}
 
-              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                <SocialStatPill label="eventos no radar" value={dashboard.total.toLocaleString("pt-BR")} icon={<CalendarDays size={16} />} />
-                <SocialStatPill label="membros para conhecer" value={dashboard.members.toLocaleString("pt-BR")} icon={<UsersRound size={16} />} />
-                <SocialStatPill label="temporada ativa" value={season} icon={<Trophy size={16} />} />
-              </div>
-
-              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                <Link href="/membros">
-                  <Button>Explorar pessoas</Button>
-                </Link>
-                <Link href="/gamificacao">
-                  <Button variant="secondary">Ver pulso da temporada</Button>
-                </Link>
-              </div>
-              <div
-                style={{
-                  display: "grid",
-                  gap: "12px",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))"
-                }}
-              >
-                {[
-                  {
-                    label: "Líder da temporada",
-                    value: dashboard.leader,
-                    hint: "quem está puxando o momento"
-                  },
-                  {
-                    label: "Agenda com presença online",
-                    value: `${dashboard.online.toLocaleString("pt-BR")} encontro(s)`,
-                    hint: "mix presencial + online"
-                  },
-                  {
-                    label: "Experiências com checkout",
-                    value: `${dashboard.paid.toLocaleString("pt-BR")} evento(s)`,
-                    hint: "jornada de confirmação ativa"
-                  }
-                ].map((item) => (
-                  <div
-                    key={item.label}
-                    style={{
-                      display: "grid",
-                      gap: "4px",
-                      padding: "15px 16px",
-                      borderRadius: "20px",
-                      background: "rgba(255,255,255,0.68)",
-                      border: "1px solid var(--elo-border-soft, rgba(17, 17, 17, 0.06))"
-                    }}
-                  >
-                    <span style={{ color: "var(--elo-text-tertiary, #6B7280)", fontSize: ".76rem", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                      {item.label}
-                    </span>
-                    <strong style={{ fontSize: "1.04rem" }}>{item.value}</strong>
-                    <span style={{ color: "var(--elo-text-secondary, #374151)", fontSize: ".88rem" }}>{item.hint}</span>
-                  </div>
-                ))}
-              </div>
+        {featuredEvent ? (
+          <Link href={`/eventos/${featuredEvent.id}`} className={styles.heroLink}>
+            <div className={styles.heroMedia}>
+              <Image
+                loader={passthroughImageLoader}
+                unoptimized
+                fill
+                priority
+                sizes="(max-width: 900px) 100vw, 42rem"
+                src={featuredEvent.heroImageUrl ?? "/event-placeholder.svg"}
+                alt={`Imagem do evento ${featuredEvent.title}`}
+                className={styles.heroImage}
+              />
+              <div className={styles.heroOverlay} aria-hidden="true" />
             </div>
 
-            <div style={{ display: "grid", gap: "14px", alignContent: "start" }}>
-              <FeedCard
-                eyebrow={
-                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                    <Badge variant="brand">Evento em destaque</Badge>
-                    {featuredTiming ? <Badge variant={featuredTiming.variant}>{featuredTiming.label}</Badge> : null}
-                  </div>
-                }
-                title={featuredEvent?.title ?? "Agenda preparando novidades"}
-                media={
-                  featuredEvent ? (
-                    <div
-                      style={{
-                        position: "relative",
-                        width: "100%",
-                        height: "240px",
-                        overflow: "hidden",
-                        borderRadius: "20px"
-                      }}
-                    >
+            <div className={styles.heroContent}>
+              <span className={styles.heroBadge}>Destaque Executivo</span>
+              <h2 className={styles.heroTitle}>{featuredEvent.title}</h2>
+              <p className={styles.heroSummary}>{featuredEvent.summary}</p>
+              <div className={styles.heroMeta}>
+                <span className={styles.heroMetaItem}>
+                  <CalendarDays size={14} strokeWidth={2.1} />
+                  {formatCardDate(featuredEvent.startsAt)}
+                </span>
+                <span className={styles.heroMetaItem}>
+                  <MapPin size={14} strokeWidth={2.1} />
+                  {featuredEvent.location}
+                </span>
+              </div>
+            </div>
+          </Link>
+        ) : (
+          <section className={styles.heroFallback}>
+            <div className={styles.heroGlow} aria-hidden="true" />
+            <div className={styles.heroContent}>
+              <span className={styles.heroBadge}>Curadoria Elo</span>
+              <h2 className={styles.heroTitle}>{"Pr\u00f3ximos encontros em prepara\u00e7\u00e3o"}</h2>
+              <p className={styles.heroSummary}>
+                Assim que novos eventos forem publicados, esta vitrine passa a destacar o encontro mais importante do momento.
+              </p>
+            </div>
+          </section>
+        )}
+
+        <section className={styles.section} id="event-list">
+          <div className={styles.sectionHeader}>
+            <div>
+              <span className={styles.sectionEyebrow}>Curadoria</span>
+              <h3 className={styles.sectionTitle}>{"Pr\u00f3ximos Eventos"}</h3>
+            </div>
+            {listEvents.length > 0 ? (
+              <a href="#event-list" className={styles.sectionAction}>
+                Ver Tudo
+              </a>
+            ) : null}
+          </div>
+
+          {listEvents.length > 0 ? (
+            <div className={styles.eventsGrid}>
+              {listEvents.map((event, index) => {
+                const attendeeGroup = rotateMembers(members, index, 3);
+
+                return (
+                  <Link key={event.id} href={`/eventos/${event.id}`} className={styles.eventCard}>
+                    <div className={styles.eventMedia}>
                       <Image
                         loader={passthroughImageLoader}
                         unoptimized
                         fill
-                        priority
-                        sizes="(max-width: 900px) 100vw, 36vw"
-                        src={featuredEvent.heroImageUrl ?? "/event-placeholder.svg"}
-                        alt={`Imagem do evento ${featuredEvent.title}`}
-                        style={{ objectFit: "cover" }}
+                        sizes="(max-width: 768px) 100vw, 22rem"
+                        src={event.heroImageUrl ?? "/event-placeholder.svg"}
+                        alt={`Imagem do evento ${event.title}`}
+                        className={styles.eventImage}
                       />
+                      {index === 0 ? <span className={styles.eventLimitBadge}>Vagas Limitadas</span> : null}
                     </div>
-                  ) : undefined
-                }
-                description={
-                  featuredEvent ? (
-                    <div style={{ display: "grid", gap: "10px" }}>
-                      <span>{featuredEvent.summary}</span>
-                      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                        <Badge variant={getAccessVariant(featuredEvent.accessType)}>{getAccessLabel(featuredEvent.accessType)}</Badge>
-                        <Badge variant={featuredEvent.onlineUrl ? "info" : "neutral"}>
-                          {featuredEvent.onlineUrl ? "Online disponível" : "Presencial"}
-                        </Badge>
-                      </div>
-                    </div>
-                  ) : "Assim que um novo encontro for publicado, ele aparece aqui com contexto e ação direta."
-                }
-                footer={
-                  featuredEvent ? (
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-                      <div style={{ display: "grid", gap: "4px" }}>
-                        <span style={{ color: "var(--elo-text-secondary, #374151)", fontSize: ".9rem" }}>
-                          {new Date(featuredEvent.startsAt).toLocaleString("pt-BR")}
-                        </span>
-                        <span style={{ color: "var(--elo-text-tertiary, #6B7280)", fontSize: ".86rem" }}>{featuredEvent.location}</span>
-                      </div>
-                      <Link href={`/eventos/${featuredEvent.id}`}>
-                        <Button>
-                          {featuredEvent.accessType === "free_members" ? "Ver e confirmar" : "Ver e pagar"}
-                          <ArrowRight size={16} />
-                        </Button>
-                      </Link>
-                    </div>
-                  ) : (
-                    <Link href="/membros">
-                      <Button>Explorar comunidade</Button>
-                    </Link>
-                  )
-                }
-                style={{
-                  borderRadius: "28px",
-                  background:
-                    "linear-gradient(180deg, rgba(255,255,255,0.95), rgba(247,249,255,0.9)), radial-gradient(120% 120% at 100% 0%, rgba(134, 90, 255, 0.12), transparent 54%)"
-                }}
-              />
 
-              <article
-                style={{
-                  display: "grid",
-                  gap: "10px",
-                  padding: "18px",
-                  borderRadius: "24px",
-                  border: "1px solid var(--elo-border-soft, rgba(17, 17, 17, 0.06))",
-                  background: "linear-gradient(180deg, rgba(255,255,255,0.88), rgba(248,250,255,0.74))"
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
-                  <div style={{ display: "grid", gap: "4px" }}>
-                    <Badge variant="info" style={{ justifySelf: "start" }}>
-                      Pulso imediato
-                    </Badge>
-                    <strong style={{ fontSize: "1.08rem" }}>Radar do dia</strong>
-                  </div>
-                  <LogoMark size="sm" />
-                </div>
-                <span style={{ color: "var(--elo-text-secondary, #374151)", fontSize: ".94rem", lineHeight: 1.6 }}>
-                  Abra a comunidade já sabendo onde está a próxima conversa, quem está subindo no ranking e qual evento merece sua atenção.
-                </span>
-              </article>
+                    <div className={styles.eventBody}>
+                      <h4 className={styles.eventTitle}>{event.title}</h4>
+                      <p className={styles.eventSummary}>{event.summary}</p>
+
+                      <div className={styles.eventFooter}>
+                        <div className={styles.attendees} aria-hidden="true">
+                          {attendeeGroup.map((member) => (
+                            <span key={`${event.id}-${member.id}`} className={styles.attendee}>
+                              {initials(member.fullName)}
+                            </span>
+                          ))}
+                          {members.length > attendeeGroup.length ? (
+                            <span className={styles.attendeeMore}>+{members.length - attendeeGroup.length}</span>
+                          ) : null}
+                        </div>
+                        <span className={styles.eventMeta}>{`${formatCardDate(event.startsAt)} \u2022 ${event.location}`}</span>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
-          </div>
+          ) : (
+            <section className={styles.emptyCard}>
+              <h4 className={styles.emptyTitle}>{loading ? "Carregando agenda" : "Nenhum evento dispon\u00edvel"}</h4>
+              <p className={styles.emptyText}>
+                {loading
+                  ? "Estamos montando a curadoria de pr\u00f3ximos encontros para voc\u00ea."
+                  : "Assim que a equipe publicar novos encontros, eles aparecer\u00e3o aqui para valida\u00e7\u00e3o e confirma\u00e7\u00e3o."}
+              </p>
+            </section>
+          )}
         </section>
 
-        {feedback ? (
-          <Alert variant={feedback.variant} title={feedback.title}>
-            {feedback.description}
-          </Alert>
-        ) : null}
+        <section className={styles.section} id="orbit">
+          <h3 className={styles.orbitTitle}>{"\u00d3rbita Ativa"}</h3>
 
-        {loadingHome ? (
-          <Alert variant="info" title="Montando sua home">
-            Carregando agenda, diretório e pulso da comunidade.
-          </Alert>
-        ) : null}
-
-        <section style={{ display: "grid", gap: "18px", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
-          <div style={{ display: "grid", gap: "14px" }}>
-            <FeedCard
-              eyebrow={<Badge variant="info">Pessoas para conhecer</Badge>}
-              title="Radar social para continuar a conversa"
-              description="O diretório aparece como uma shortlist social: contexto, localização e atalho de contato para você agir sem fricção."
-              footer={
-                <Link href="/membros">
-                  <Button variant="secondary">Abrir diretório completo</Button>
+          {orbitMembers.length > 0 ? (
+            <div className={styles.orbitRow}>
+              {orbitMembers.map((member, index) => (
+                <Link
+                  key={member.id}
+                  href="/membros"
+                  className={`${styles.orbitMember} ${index === 0 ? styles.orbitActive : ""}`}
+                >
+                  <div className={styles.orbitAvatarShell}>
+                    <span className={styles.orbitRing} aria-hidden="true" />
+                    <span className={styles.orbitGlow} aria-hidden="true" />
+                    <span className={styles.orbitAvatar}>{initials(member.fullName)}</span>
+                  </div>
+                  <div>
+                    <p className={styles.orbitName}>{member.fullName}</p>
+                    <p className={styles.orbitRole}>{member.area}</p>
+                  </div>
                 </Link>
-              }
-            />
-
-            <div style={{ display: "grid", gap: "10px" }}>
-              {members.length > 0 ? (
-                members.slice(0, 4).map((member) => (
-                  <article
-                    key={member.id}
-                    style={{
-                      display: "grid",
-                      gap: "10px",
-                      padding: "16px 18px",
-                      borderRadius: "22px",
-                      border: "1px solid var(--elo-border-soft, rgba(17, 17, 17, 0.06))",
-                      background:
-                        "linear-gradient(180deg, rgba(255,255,255,0.92), rgba(249,250,255,0.82)), radial-gradient(90% 120% at 0% 0%, rgba(134, 90, 255, 0.08), transparent 48%)",
-                      boxShadow: "0 10px 28px rgba(22, 24, 40, 0.06)"
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                        <span
-                          style={{
-                            width: "48px",
-                            height: "48px",
-                            display: "grid",
-                            placeItems: "center",
-                            borderRadius: "18px",
-                            background: "rgba(134, 90, 255, 0.12)",
-                            color: "var(--elo-orbit, #865AFF)",
-                            fontWeight: 800
-                          }}
-                        >
-                          {initials(member.fullName)}
-                        </span>
-                        <div style={{ display: "grid", gap: "4px" }}>
-                          <strong>{member.fullName}</strong>
-                          <span style={{ color: "var(--elo-text-secondary, #374151)", fontSize: ".9rem" }}>{member.area}</span>
-                        </div>
-                      </div>
-                      <Badge variant="neutral">{member.city}/{member.state}</Badge>
-                    </div>
-                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                      {member.whatsapp ? (
-                        <a
-                          href={`https://wa.me/${member.whatsapp.replace(/\D/g, "")}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          style={{ display: "inline-flex" }}
-                        >
-                          <Button size="sm">Chamar no WhatsApp</Button>
-                        </a>
-                      ) : null}
-                      <Link href="/membros">
-                        <Button size="sm" variant="secondary">Ver diretório</Button>
-                      </Link>
-                    </div>
-                  </article>
-                ))
-              ) : (
-                <EmptyState
-                  icon={<UsersRound size={18} />}
-                  title="Sem sugestões de membros no momento"
-                  description="Assim que o diretório carregar, esta área volta a sugerir pessoas relevantes para criar novos elos."
-                />
-              )}
+              ))}
             </div>
-
-            <section style={{ display: "grid", gap: "10px" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
-                <div style={{ display: "grid", gap: "4px" }}>
-                  <strong style={{ fontSize: "1.1rem" }}>Agenda em fluxo</strong>
-                  <span style={{ color: "var(--elo-text-secondary, #374151)", fontSize: ".92rem" }}>
-                    A agenda vira stream: capa, contexto e ação principal visíveis antes do clique.
-                  </span>
-                </div>
-                <Badge variant="info">{dashboard.paid} pago(s)</Badge>
-              </div>
-
-              {events.length > 0 ? (
-                events.slice(0, 5).map((event) => {
-                  const timing = getEventTimingState(event.startsAt);
-
-                  return (
-                    <article
-                      key={event.id}
-                      style={{
-                        display: "grid",
-                        gap: "14px",
-                        padding: "16px",
-                        borderRadius: "24px",
-                        border: "1px solid var(--elo-border-soft, rgba(17, 17, 17, 0.06))",
-                        background: "linear-gradient(180deg, rgba(255,255,255,0.92), rgba(249,250,255,0.84))",
-                        boxShadow: "0 10px 24px rgba(20, 22, 34, 0.05)"
-                      }}
-                    >
-                      <div style={{ display: "grid", gap: "14px", gridTemplateColumns: "108px minmax(0, 1fr)" }}>
-                        <div
-                          style={{
-                            position: "relative",
-                            width: "108px",
-                            height: "96px",
-                            overflow: "hidden",
-                            borderRadius: "18px",
-                            background: "rgba(134, 90, 255, 0.1)"
-                          }}
-                        >
-                          <Image
-                            loader={passthroughImageLoader}
-                            unoptimized
-                            fill
-                            sizes="108px"
-                            src={event.heroImageUrl ?? "/event-placeholder.svg"}
-                            alt={`Imagem do evento ${event.title}`}
-                            style={{ objectFit: "cover" }}
-                          />
-                        </div>
-
-                        <div style={{ display: "grid", gap: "8px", minWidth: 0 }}>
-                          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                            <Badge variant={timing.variant}>{timing.label}</Badge>
-                            <Badge variant={getAccessVariant(event.accessType)}>{getAccessLabel(event.accessType)}</Badge>
-                          </div>
-                          <div style={{ display: "grid", gap: "6px" }}>
-                            <strong style={{ fontSize: "1.06rem", lineHeight: 1.2 }}>{event.title}</strong>
-                            <span style={{ color: "var(--elo-text-secondary, #374151)", fontSize: ".93rem", lineHeight: 1.6 }}>
-                              {event.summary}
-                            </span>
-                          </div>
-                          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                            <Badge variant="neutral">{new Date(event.startsAt).toLocaleString("pt-BR")}</Badge>
-                            <Badge variant="neutral">{event.location}</Badge>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-                        <span style={{ color: "var(--elo-text-secondary, #374151)", fontSize: ".92rem" }}>
-                          {event.accessType === "free_members" ? "Entrada gratuita para membros" : formatCurrency(event.priceCents ?? 0)}
-                        </span>
-                        <Link href={`/eventos/${event.id}`}>
-                          <Button variant="secondary" size="sm">
-                            Abrir detalhe
-                          </Button>
-                        </Link>
-                      </div>
-                    </article>
-                  );
-                })
-              ) : (
-                <EmptyState
-                  icon={<Ticket size={18} />}
-                  title="Nenhum evento publicado"
-                  description="Quando a agenda receber novos encontros, esta seção vira o stream principal da comunidade."
-                />
-              )}
+          ) : (
+            <section className={styles.emptyCard}>
+              <h4 className={styles.emptyTitle}>{loading ? "Sincronizando membros" : "\u00d3rbita em aquecimento"}</h4>
+              <p className={styles.emptyText}>
+                {loading
+                  ? "A comunidade ativa est\u00e1 chegando para compor a \u00f3rbita desta tela."
+                  : "Quando mais membros estiverem ativos, esta faixa passa a destacar quem est\u00e1 movimentando a rede."}
+              </p>
             </section>
-          </div>
-
-          <div style={{ display: "grid", gap: "14px", alignContent: "start" }}>
-            <FeedCard
-              eyebrow={<Badge variant="brand">Pulso da comunidade</Badge>}
-              title="Ranking curto da temporada"
-              description="Leia a energia da comunidade em poucos segundos: quem lidera, quem está subindo e onde você entra nessa história."
-              footer={
-                <Link href="/gamificacao">
-                  <Button variant="secondary">Ver ranking completo</Button>
-                </Link>
-              }
-            />
-
-            <div style={{ display: "grid", gap: "10px" }}>
-              {ranking.length > 0 ? (
-                ranking.slice(0, 4).map((entry) => (
-                  <article
-                    key={entry.memberId}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: "12px",
-                      padding: "14px 16px",
-                      borderRadius: "20px",
-                      border: "1px solid var(--elo-border-soft, rgba(17, 17, 17, 0.06))",
-                      background:
-                        entry.memberId === memberId
-                          ? "linear-gradient(135deg, rgba(134, 90, 255, 0.16), rgba(255,255,255,0.92))"
-                          : "linear-gradient(180deg, rgba(255,255,255,0.92), rgba(249,250,255,0.82))"
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                      <span
-                        style={{
-                          width: "38px",
-                          height: "38px",
-                          display: "grid",
-                          placeItems: "center",
-                          borderRadius: "14px",
-                          background: "rgba(17, 19, 24, 0.06)",
-                          fontWeight: 800
-                        }}
-                      >
-                        #{entry.rank}
-                      </span>
-                      <div style={{ display: "grid", gap: "3px" }}>
-                        <strong>{entry.name}</strong>
-                        <span style={{ color: "var(--elo-text-tertiary, #6B7280)", fontSize: ".84rem" }}>
-                          {entry.medals.length > 0 ? entry.medals.join(", ") : "Sem medalhas ainda"}
-                        </span>
-                      </div>
-                    </div>
-                    <Badge variant={entry.rank === 1 ? "brand" : "info"}>{entry.points.toLocaleString("pt-BR")} pts</Badge>
-                  </article>
-                ))
-              ) : (
-                <EmptyState
-                  icon={<Crown size={18} />}
-                  title="Ranking em preparação"
-                  description="Assim que os primeiros pontos entrarem, o pulso da temporada aparece aqui."
-                />
-              )}
-            </div>
-
-            <FeedCard
-              eyebrow={<Badge variant="success">Seu momento</Badge>}
-              title={currentMemberRanking ? `Você está em #${currentMemberRanking.rank}` : "Sua trilha está começando"}
-              description={
-                currentMemberRanking
-                  ? `Você soma ${currentMemberRanking.points.toLocaleString("pt-BR")} pontos na temporada ${season}.`
-                  : "Participe dos próximos eventos e interações para aparecer no ranking desta temporada."
-              }
-              footer={
-                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                  <Badge variant="info">Líder atual: {dashboard.leader}</Badge>
-                  <Badge variant="neutral">{dashboard.online} evento(s) online</Badge>
-                </div>
-              }
-            />
-          </div>
+          )}
         </section>
       </div>
     </MemberShell>
