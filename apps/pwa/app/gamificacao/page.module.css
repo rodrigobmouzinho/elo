@@ -1,0 +1,512 @@
+.page {
+  display: grid;
+  gap: 2rem;
+}
+
+.statusCard {
+  display: grid;
+  gap: 0.45rem;
+  padding: 1.1rem 1.15rem;
+  border-radius: 1.45rem;
+  background: rgba(28, 27, 27, 0.9);
+  box-shadow: inset 0 0 0 1px rgba(72, 69, 85, 0.18);
+}
+
+.statusTitle {
+  margin: 0;
+  color: #ffffff;
+  font-family: var(--member-font-display), "Plus Jakarta Sans", sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.statusText {
+  margin: 0;
+  color: rgba(202, 195, 215, 0.84);
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.9rem;
+  line-height: 1.58;
+}
+
+.statusDanger {
+  background: rgba(147, 0, 10, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(255, 180, 171, 0.14);
+}
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 2rem;
+  padding: 1.55rem 1.35rem;
+  background: linear-gradient(135deg, #5932d1 0%, #9b027c 100%);
+}
+
+.heroGlow {
+  position: absolute;
+  right: -3rem;
+  top: -3rem;
+  width: 12rem;
+  height: 12rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  filter: blur(3rem);
+  pointer-events: none;
+}
+
+.heroContent {
+  position: relative;
+  z-index: 1;
+}
+
+.heroEyebrow {
+  display: block;
+  color: rgba(255, 255, 255, 0.72);
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.heroPointsRow {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  margin-top: 0.45rem;
+}
+
+.heroPoints {
+  margin: 0;
+  color: #ffffff;
+  font-family: var(--member-font-display), "Plus Jakarta Sans", sans-serif;
+  font-size: clamp(3rem, 14vw, 4.1rem);
+  font-weight: 800;
+  letter-spacing: -0.08em;
+  line-height: 0.92;
+}
+
+.heroPointsLabel {
+  color: rgba(255, 255, 255, 0.92);
+  font-family: var(--member-font-display), "Plus Jakarta Sans", sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.heroRankLine {
+  margin: 0.8rem 0 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: rgba(231, 222, 255, 0.9);
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.84rem;
+  font-weight: 500;
+}
+
+.section {
+  display: grid;
+  gap: 0.95rem;
+}
+
+.sectionTitle {
+  margin: 0;
+  color: #ffffff;
+  font-family: var(--member-font-display), "Plus Jakarta Sans", sans-serif;
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.achievementsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.rareCard {
+  position: relative;
+  grid-column: 1 / -1;
+  overflow: hidden;
+  border-radius: 1.35rem;
+  padding: 1.2rem;
+  background: #1c1b1b;
+  box-shadow: inset 0 0 0 1px rgba(72, 69, 85, 0.14);
+}
+
+.rareCardGlow {
+  position: absolute;
+  right: -2rem;
+  bottom: -2.6rem;
+  width: 8rem;
+  height: 8rem;
+  border-radius: 999px;
+  background: rgba(155, 2, 124, 0.12);
+  filter: blur(2.5rem);
+  transition: transform 220ms ease;
+}
+
+.rareCard:hover .rareCardGlow {
+  transform: scale(1.16);
+}
+
+.rareCardInner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.rareEyebrow {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: #ffaedf;
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.rareTitle {
+  margin: 0;
+  color: #ffffff;
+  font-family: var(--member-font-display), "Plus Jakarta Sans", sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.rareDescription {
+  margin: 0.45rem 0 0;
+  max-width: 18ch;
+  color: rgba(202, 195, 215, 0.82);
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.77rem;
+  line-height: 1.58;
+}
+
+.rareIcon {
+  width: 4rem;
+  height: 4rem;
+  flex-shrink: 0;
+  border-radius: 1.1rem;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, rgba(155, 2, 124, 0.18), rgba(89, 50, 209, 0.18));
+  border: 1px solid rgba(72, 69, 85, 0.14);
+  color: #ffaedf;
+}
+
+.achievementCard {
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  padding: 1rem 0.75rem;
+  border-radius: 1.2rem;
+  background: #1c1b1b;
+  box-shadow: inset 0 0 0 1px rgba(72, 69, 85, 0.14);
+  text-align: center;
+}
+
+.achievementIcon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #353534;
+}
+
+.achievementIconPrimary {
+  color: #cbbeff;
+}
+
+.achievementIconSecondary {
+  color: #ffaedf;
+}
+
+.achievementTitle {
+  margin: 0;
+  color: #ffffff;
+  font-family: var(--member-font-display), "Plus Jakarta Sans", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.achievementCaption {
+  margin: 0;
+  color: rgba(202, 195, 215, 0.76);
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.6rem;
+  line-height: 1.4;
+}
+
+.rankingHeader {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.rankingSeason {
+  color: #cbbeff;
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-align: right;
+}
+
+.rankingList {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.rankRow {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.95rem 1rem;
+  border-radius: 1.2rem;
+  background: #1c1b1b;
+  box-shadow: inset 0 0 0 1px rgba(72, 69, 85, 0.14);
+  transition: background-color 160ms ease;
+}
+
+.rankRow:hover {
+  background: #232222;
+}
+
+.rankCurrent {
+  background: #2a2a2a;
+  box-shadow: inset 0 0 0 1px rgba(203, 190, 255, 0.16);
+}
+
+.rankNumber,
+.rankMuted {
+  width: 1.9rem;
+  flex-shrink: 0;
+  text-align: center;
+  font-family: var(--member-font-display), "Plus Jakarta Sans", sans-serif;
+  font-size: 1.55rem;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: -0.06em;
+}
+
+.rankNumber {
+  color: #cbbeff;
+}
+
+.rankMuted {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+.rankAvatarWrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.rankAvatar {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, rgba(89, 50, 209, 0.9), rgba(155, 2, 124, 0.9));
+  color: #ffffff;
+  font-family: var(--member-font-display), "Plus Jakarta Sans", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.rankLeader .rankAvatar {
+  box-shadow: 0 0 0 2px rgba(155, 2, 124, 0.7), 0 0 20px rgba(155, 2, 124, 0.26);
+}
+
+.rankCrown {
+  position: absolute;
+  right: -0.2rem;
+  bottom: -0.18rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #9b027c;
+  border: 2px solid #1c1b1b;
+  color: #ffffff;
+}
+
+.rankBody {
+  min-width: 0;
+  flex: 1;
+}
+
+.rankName {
+  margin: 0;
+  color: #ffffff;
+  font-family: var(--member-font-display), "Plus Jakarta Sans", sans-serif;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.rankRole {
+  margin: 0.14rem 0 0;
+  color: rgba(202, 195, 215, 0.7);
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.rankPoints {
+  text-align: right;
+}
+
+.rankPointsValue {
+  margin: 0;
+  color: #ffffff;
+  font-family: var(--member-font-display), "Plus Jakarta Sans", sans-serif;
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.rankPointsLabel {
+  margin: 0.12rem 0 0;
+  color: rgba(202, 195, 215, 0.7);
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.58rem;
+}
+
+.hallHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.hallLabel {
+  color: rgba(202, 195, 215, 0.72);
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.72rem;
+}
+
+.hallRow {
+  display: flex;
+  gap: 0.9rem;
+  overflow-x: auto;
+  padding-bottom: 0.4rem;
+  scrollbar-width: none;
+}
+
+.hallRow::-webkit-scrollbar {
+  display: none;
+}
+
+.hallCard {
+  flex: 0 0 10rem;
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 1.3rem;
+  background: #1c1b1b;
+  box-shadow: inset 0 0 0 1px rgba(72, 69, 85, 0.14);
+}
+
+.hallIcon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.9rem;
+  display: grid;
+  place-items: center;
+}
+
+.hallIconPrimary {
+  background: rgba(89, 50, 209, 0.2);
+  color: #cbbeff;
+}
+
+.hallIconSecondary {
+  background: rgba(155, 2, 124, 0.2);
+  color: #ffaedf;
+}
+
+.hallIconMuted {
+  background: #353534;
+  color: rgba(202, 195, 215, 0.7);
+}
+
+.hallSeason {
+  margin: 0;
+  color: rgba(202, 195, 215, 0.7);
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.hallName {
+  margin: 0.2rem 0 0;
+  color: #ffffff;
+  font-family: var(--member-font-display), "Plus Jakarta Sans", sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.hallBar {
+  width: 100%;
+  height: 0.28rem;
+  border-radius: 999px;
+  background: #353534;
+  overflow: hidden;
+}
+
+.hallBarFill {
+  height: 100%;
+  border-radius: inherit;
+}
+
+.hallBarPrimary {
+  background: #5932d1;
+}
+
+.hallBarSecondary {
+  background: #9b027c;
+}
+
+.hallBarMuted {
+  background: #77727f;
+}
+
+@media (min-width: 768px) {
+  .page {
+    gap: 2.35rem;
+  }
+
+  .hero {
+    padding: 1.8rem 1.6rem;
+  }
+
+  .rankingList {
+    gap: 0.9rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rareCardGlow,
+  .rankRow {
+    transition: none;
+  }
+}
