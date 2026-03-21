@@ -375,11 +375,15 @@
   border: none;
   border-radius: 1.15rem;
   padding: 0.95rem 1rem;
-  background: #2a2a2a;
-  color: #ffffff;
+  background: #2a2a2a !important;
+  color: #ffffff !important;
+  caret-color: #ffffff;
   font-family: var(--member-font-body), "Inter", sans-serif;
   font-size: 0.94rem;
   line-height: 1.5;
+  appearance: none;
+  -webkit-appearance: none;
+  color-scheme: dark;
   transition:
     background-color 160ms ease,
     box-shadow 160ms ease;
@@ -393,8 +397,20 @@
 .fieldControl:focus-visible,
 .storyInput:focus-visible {
   outline: none;
-  background: #393939;
+  background: #393939 !important;
+  color: #ffffff !important;
   box-shadow: 0 0 0 1px rgba(203, 190, 255, 0.58);
+}
+
+.fieldControl:-webkit-autofill,
+.fieldControl:-webkit-autofill:hover,
+.fieldControl:-webkit-autofill:focus-visible,
+.storyInput:-webkit-autofill,
+.storyInput:-webkit-autofill:hover,
+.storyInput:-webkit-autofill:focus-visible {
+  -webkit-text-fill-color: #ffffff;
+  -webkit-box-shadow: 0 0 0 1000px #393939 inset;
+  transition: background-color 9999s ease-in-out 0s;
 }
 
 .storyInput {
