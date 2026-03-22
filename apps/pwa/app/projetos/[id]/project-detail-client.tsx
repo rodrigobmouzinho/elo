@@ -8,13 +8,17 @@ import {
   BadgeCheck,
   Ban,
   Check,
+  ChevronLeft,
+  ChevronRight,
   Clock3,
   Eye,
   FileText,
+  Images,
   PencilLine,
   Sparkles,
   Trash2,
-  UsersRound
+  UsersRound,
+  X
 } from "lucide-react";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { MemberShell } from "../../../components/member-shell";
@@ -189,6 +193,7 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [advancedProjectApiAvailable, setAdvancedProjectApiAvailable] = useState(true);
   const [applicationsApiAvailable, setApplicationsApiAvailable] = useState(true);
+  const [activeGalleryIndex, setActiveGalleryIndex] = useState<number | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -269,6 +274,47 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
       tone: "success"
     });
   }, [projectId]);
+
+  useEffect(() => {
+    if (activeGalleryIndex === null || typeof window === "undefined") {
+      return;
+    }
+
+    const previousOverflow = window.document.body.style.overflow;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (!idea || idea.galleryImageUrls.length === 0) return;
+
+      if (event.key === "Escape") {
+        setActiveGalleryIndex(null);
+        return;
+      }
+
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        setActiveGalleryIndex((current) => {
+          if (current === null) return current;
+          return current === 0 ? idea.galleryImageUrls.length - 1 : current - 1;
+        });
+      }
+
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        setActiveGalleryIndex((current) => {
+          if (current === null) return current;
+          return current === idea.galleryImageUrls.length - 1 ? 0 : current + 1;
+        });
+      }
+    }
+
+    window.document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [activeGalleryIndex, idea]);
 
   async function refreshProject() {
     const viewerMemberId = getStoredAuth()?.user.memberId ?? null;
@@ -457,10 +503,37 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
   const applicationBanner = buildApplicationBanner(idea);
   const businessAreas = useMemo(() => idea?.businessAreas.slice(0, 4) ?? [], [idea]);
   const documentationFiles = idea?.documentationFiles ?? [];
+  const galleryImages = idea?.galleryImageUrls ?? [];
   const isOwner = idea?.viewerAccess.isOwner ?? false;
   const canApply = idea?.viewerAccess.canApply ?? false;
   const hasApplicantRoster = Boolean(idea?.viewerAccess.canViewApplicants && applications);
   const detailHeaderTitle = idea?.title ?? "Detalhes do Projeto";
+  const activeGalleryImage =
+    activeGalleryIndex !== null ? galleryImages[activeGalleryIndex] ?? null : null;
+  const currentGalleryIndex = activeGalleryIndex ?? 0;
+
+  function openGallery(index: number) {
+    if (galleryImages.length === 0) return;
+    setActiveGalleryIndex(index);
+  }
+
+  function closeGallery() {
+    setActiveGalleryIndex(null);
+  }
+
+  function showPreviousGalleryImage() {
+    setActiveGalleryIndex((current) => {
+      if (current === null || galleryImages.length === 0) return current;
+      return current === 0 ? galleryImages.length - 1 : current - 1;
+    });
+  }
+
+  function showNextGalleryImage() {
+    setActiveGalleryIndex((current) => {
+      if (current === null || galleryImages.length === 0) return current;
+      return current === galleryImages.length - 1 ? 0 : current + 1;
+    });
+  }
 
   function renderApplicantCard(applicant: ProjectApplicant, group: "pending" | "approved" | "rejected") {
     const isRejecting = rejectingId === applicant.id;
@@ -746,18 +819,39 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
             </section>
 
             <section className={styles.gallerySection}>
-              <h4 className={styles.galleryTitle}>Galeria &amp; Mockups</h4>
+              <div className={styles.galleryHeader}>
+                <h4 className={styles.galleryTitle}>Galeria &amp; Mockups</h4>
+                {galleryImages.length > 0 ? (
+                  <button
+                    className={styles.galleryActionButton}
+                    type="button"
+                    onClick={() => openGallery(0)}
+                  >
+                    Ver todas
+                    <Images size={15} strokeWidth={2.1} />
+                  </button>
+                ) : null}
+              </div>
 
               <div className={styles.galleryTrack}>
-                {idea.galleryImageUrls.length > 0 ? (
-                  idea.galleryImageUrls.map((imageUrl) => (
-                    <article key={imageUrl} className={styles.galleryCard}>
+                {galleryImages.length > 0 ? (
+                  galleryImages.map((imageUrl, index) => (
+                    <button
+                      key={`${imageUrl}-${index}`}
+                      type="button"
+                      className={styles.galleryCard}
+                      onClick={() => openGallery(index)}
+                    >
                       <img
                         src={imageUrl}
                         alt="Imagem de apoio do projeto"
                         className={styles.galleryImage}
                       />
-                    </article>
+                      <span className={styles.galleryCardOverlay}>
+                        Visualizar
+                        <Eye size={15} strokeWidth={2.1} />
+                      </span>
+                    </button>
                   ))
                 ) : (
                   <article className={styles.galleryCardPlaceholder}>
@@ -925,6 +1019,90 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
               </footer>
             ) : null}
           </>
+        ) : null}
+
+        {activeGalleryImage ? (
+          <div
+            className={styles.galleryModal}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Galeria de imagens do projeto"
+            onClick={closeGallery}
+          >
+            <div className={styles.galleryModalBackdrop} aria-hidden="true" />
+            <div className={styles.galleryModalCard} onClick={(event) => event.stopPropagation()}>
+              <div className={styles.galleryModalHeader}>
+                <div className={styles.galleryModalCopy}>
+                  <p className={styles.eyebrow}>Galeria do projeto</p>
+                  <p className={styles.galleryModalCounter}>
+                    {currentGalleryIndex + 1} de {galleryImages.length}
+                  </p>
+                </div>
+
+                <button
+                  className={styles.galleryModalClose}
+                  type="button"
+                  onClick={closeGallery}
+                  aria-label="Fechar galeria"
+                >
+                  <X size={18} strokeWidth={2.2} />
+                </button>
+              </div>
+
+              <div className={styles.galleryModalViewport}>
+                {galleryImages.length > 1 ? (
+                  <button
+                    className={`${styles.galleryNavButton} ${styles.galleryNavPrev}`}
+                    type="button"
+                    onClick={showPreviousGalleryImage}
+                    aria-label="Imagem anterior"
+                  >
+                    <ChevronLeft size={18} strokeWidth={2.2} />
+                  </button>
+                ) : null}
+
+                <img
+                  src={activeGalleryImage}
+                  alt={`Imagem ${currentGalleryIndex + 1} do projeto`}
+                  className={styles.galleryModalImage}
+                />
+
+                {galleryImages.length > 1 ? (
+                  <button
+                    className={`${styles.galleryNavButton} ${styles.galleryNavNext}`}
+                    type="button"
+                    onClick={showNextGalleryImage}
+                    aria-label="Proxima imagem"
+                  >
+                    <ChevronRight size={18} strokeWidth={2.2} />
+                  </button>
+                ) : null}
+              </div>
+
+              {galleryImages.length > 1 ? (
+                <div className={styles.galleryThumbRow}>
+                  {galleryImages.map((imageUrl, index) => (
+                    <button
+                      key={`${imageUrl}-thumb-${index}`}
+                      type="button"
+                      className={`${styles.galleryThumb} ${
+                        index === currentGalleryIndex ? styles.galleryThumbActive : ""
+                      }`}
+                      onClick={() => setActiveGalleryIndex(index)}
+                      aria-label={`Abrir imagem ${index + 1}`}
+                    >
+                      <img
+                        src={imageUrl}
+                        alt=""
+                        className={styles.galleryThumbImage}
+                        aria-hidden="true"
+                      />
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </div>
         ) : null}
       </div>
     </MemberShell>
