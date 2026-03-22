@@ -70,3 +70,8 @@ ELO-089,Projects,"Moderacao de candidaturas em projetos com aprovacao, recusa ju
 ELO-090,Projects,"Inbox de notificacoes de projetos no app para aprovacoes e recusas",Must,MediumHigh,5,M7 Total UX Refactor,Done
 ELO-091,PWA UX,"Operacao completa de projetos no PWA com status, equipe e moderacao",Must,High,8,M7 Total UX Refactor,Done
 ELO-092,Projects,"Upload de galeria e documentacao PDF em projetos com selecao de arquivos, limites e compressao de imagem",Must,High,8,M7 Total UX Refactor,Done
+ELO-093,PWA UX,"Solicitacao publica de adesao com formulario mobile-first e feedback de envio",Must,High,5,M7 Total UX Refactor,Done
+ELO-094,Members,"Workflow de adesao com status intermediarios, historico e status finais reservados",Must,High,8,M7 Total UX Refactor,Done
+ELO-095,Admin UX,"Painel admin de adesoes com filtros, notas, aprovacao, recusa e cadastro de status",Must,High,8,M7 Total UX Refactor,Done
+ELO-096,Auth,"Aprovacao de adesao com provisionamento automatico de conta, role, membership e senha temporaria",Must,High,8,M7 Total UX Refactor,Done
+ELO-097,PWA UX,"Primeiro acesso no PWA com troca obrigatoria de senha forte apos aprovacao da adesao",Must,High,5,M7 Total UX Refactor,Done
