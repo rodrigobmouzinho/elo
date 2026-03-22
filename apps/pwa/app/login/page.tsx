@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import { login, requestPasswordReset } from "../../lib/auth-client";
+import { login } from "../../lib/auth-client";
 import styles from "./page.module.css";
 
 const displayFont = Plus_Jakarta_Sans({
@@ -69,35 +69,13 @@ export default function LoginPage() {
     }
   }
 
-  async function handleReset() {
-    if (!email) {
-      setFeedback({
-        title: "E-mail obrigat\u00f3rio",
-        description: "Informe o e-mail para recuperar sua senha.",
-        tone: "warning"
-      });
-      return;
-    }
+  function handleResetNavigation() {
+    const normalizedEmail = email.trim();
+    const destination = normalizedEmail
+      ? `/recuperar-senha?email=${encodeURIComponent(normalizedEmail)}`
+      : "/recuperar-senha";
 
-    setLoading(true);
-    setFeedback(null);
-
-    try {
-      const result = await requestPasswordReset(email);
-      setFeedback({
-        title: "Solicita\u00e7\u00e3o enviada",
-        description: result.message,
-        tone: "success"
-      });
-    } catch (resetError) {
-      setFeedback({
-        title: "Falha ao solicitar reset",
-        description: normalizeApiError((resetError as Error).message),
-        tone: "danger"
-      });
-    } finally {
-      setLoading(false);
-    }
+    router.push(destination);
   }
 
   return (
@@ -172,7 +150,7 @@ export default function LoginPage() {
             </form>
 
             <div className={styles.footerActions}>
-              <button className={styles.textAction} type="button" onClick={handleReset} disabled={loading}>
+              <button className={styles.textAction} type="button" onClick={handleResetNavigation} disabled={loading}>
                 Esqueceu a senha?
               </button>
 
