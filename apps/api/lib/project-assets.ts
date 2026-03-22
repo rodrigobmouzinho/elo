@@ -19,6 +19,7 @@ export type ProjectUploadedAsset = {
 };
 
 const PROJECT_UPLOAD_KINDS = ["gallery", "documentation"] as const;
+let projectAssetBucketEnsured = false;
 
 function sanitizeFileName(value: string) {
   const normalized = value
@@ -81,6 +82,38 @@ function buildStoragePath(kind: ProjectUploadKind, memberId: string, fileName: s
   return `projects/${memberId}/${kind}/${uniqueSuffix}-${normalizedName}${extension}`;
 }
 
+function isBucketAlreadyAvailableError(error: { message?: string } | null | undefined) {
+  const message = error?.message?.toLowerCase() ?? "";
+  return (
+    message.includes("already exists") ||
+    message.includes("duplicate") ||
+    message.includes("the resource already exists")
+  );
+}
+
+function isBucketMissingError(error: { message?: string } | null | undefined) {
+  const message = error?.message?.toLowerCase() ?? "";
+  return message.includes("bucket not found");
+}
+
+async function ensureProjectAssetBucket() {
+  if (!hasSupabase || !supabaseAdmin || projectAssetBucketEnsured) {
+    return;
+  }
+
+  const { error } = await supabaseAdmin.storage.createBucket(PROJECT_ASSET_BUCKET, {
+    public: true,
+    fileSizeLimit: PROJECT_DOCUMENT_MAX_BYTES,
+    allowedMimeTypes: [...PROJECT_GALLERY_ACCEPTED_TYPES, ...PROJECT_DOCUMENT_ACCEPTED_TYPES]
+  });
+
+  if (error && !isBucketAlreadyAvailableError(error)) {
+    throw error;
+  }
+
+  projectAssetBucketEnsured = true;
+}
+
 export function isProjectUploadKind(value: FormDataEntryValue | null): value is ProjectUploadKind {
   return typeof value === "string" && PROJECT_UPLOAD_KINDS.includes(value as ProjectUploadKind);
 }
@@ -106,6 +139,8 @@ export async function uploadProjectFiles(payload: {
   }
 
   const uploads: ProjectUploadedAsset[] = [];
+
+  await ensureProjectAssetBucket();
 
   for (const file of files) {
     if (!isAllowedContentType(kind, file)) {
@@ -139,13 +174,23 @@ export async function uploadProjectFiles(payload: {
     }
 
     const storagePath = buildStoragePath(kind, memberId, file.name);
-    const { error } = await supabaseAdmin.storage
+    let { error } = await supabaseAdmin.storage
       .from(PROJECT_ASSET_BUCKET)
       .upload(storagePath, arrayBuffer, {
         contentType: file.type || undefined,
         upsert: false,
         cacheControl: "3600"
       });
+
+    if (isBucketMissingError(error)) {
+      projectAssetBucketEnsured = false;
+      await ensureProjectAssetBucket();
+      ({ error } = await supabaseAdmin.storage.from(PROJECT_ASSET_BUCKET).upload(storagePath, arrayBuffer, {
+        contentType: file.type || undefined,
+        upsert: false,
+        cacheControl: "3600"
+      }));
+    }
 
     if (error) {
       throw error;
