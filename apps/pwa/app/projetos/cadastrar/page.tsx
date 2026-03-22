@@ -20,15 +20,13 @@ type IdeaForm = {
   title: string;
   pitch: string;
   category: string;
-  stage: string;
   description: string;
 };
 
 const initialForm: IdeaForm = {
   title: "",
   pitch: "",
-  category: "Fintech",
-  stage: "Ideacao",
+  category: "",
   description: ""
 };
 
@@ -42,10 +40,9 @@ function normalizeApiError(raw: string) {
   return raw;
 }
 
-function buildLookingFor(stage: string, pitch: string) {
-  const composed = `${stage} · ${pitch}`.trim();
-  if (composed.length <= 120) return composed;
-  return `${stage} · ${pitch.slice(0, Math.max(0, 116 - stage.length)).trimEnd()}`.trim();
+function buildLookingFor(pitch: string) {
+  if (pitch.length <= 120) return pitch;
+  return `${pitch.slice(0, 117).trimEnd()}...`;
 }
 
 export default function CadastrarIdeiaPage() {
@@ -62,9 +59,9 @@ export default function CadastrarIdeiaPage() {
     try {
       const payload = {
         title: form.title.trim(),
-        category: form.category,
+        category: form.category.trim(),
         description: `${form.pitch.trim()}\n\n${form.description.trim()}`.trim(),
-        lookingFor: buildLookingFor(form.stage, form.pitch.trim())
+        lookingFor: buildLookingFor(form.pitch.trim())
       };
 
       await apiRequest("/app/projects", {
@@ -132,36 +129,18 @@ export default function CadastrarIdeiaPage() {
               />
             </label>
 
-            <div className={styles.gridFields}>
-              <label className={styles.fieldGroup}>
-                <span className={styles.fieldLabel}>Industria</span>
-                <select
-                  className={styles.fieldControl}
-                  value={form.category}
-                  onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))}
-                >
-                  <option>Fintech</option>
-                  <option>Healthtech</option>
-                  <option>Edtech</option>
-                  <option>SaaS</option>
-                  <option>Energia Limpa</option>
-                </select>
-              </label>
-
-              <label className={styles.fieldGroup}>
-                <span className={styles.fieldLabel}>Estagio de Investimento</span>
-                <select
-                  className={styles.fieldControl}
-                  value={form.stage}
-                  onChange={(event) => setForm((current) => ({ ...current, stage: event.target.value }))}
-                >
-                  <option>Ideacao</option>
-                  <option>MVP</option>
-                  <option>Seed</option>
-                  <option>Serie A</option>
-                </select>
-              </label>
-            </div>
+            <label className={styles.fieldGroup}>
+              <span className={styles.fieldLabel}>Industria</span>
+              <input
+                className={styles.fieldControl}
+                placeholder="ex: Fintech B2B para gestao de recebiveis"
+                value={form.category}
+                onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))}
+                minLength={3}
+                maxLength={80}
+                required
+              />
+            </label>
 
             <label className={styles.fieldGroup}>
               <span className={styles.fieldLabel}>Descricao da Ideia</span>
