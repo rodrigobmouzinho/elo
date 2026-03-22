@@ -425,9 +425,6 @@ export default function ProjetosPage() {
           })}
         </section>
 
-        <button className={styles.fabButton} type="button" onClick={() => setComposerOpen(true)} aria-label="Cadastrar nova ideia">
-          <Rocket size={24} strokeWidth={2.1} />
-        </button>
       </div>
     </MemberShell>
   );

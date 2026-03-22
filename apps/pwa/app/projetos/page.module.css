@@ -144,8 +144,7 @@
 .primaryButton,
 .secondaryButton,
 .compactButton,
-.iconButton,
-.fabButton {
+.iconButton {
   border: none;
   cursor: pointer;
   transition:
@@ -504,26 +503,10 @@
   line-height: 1.58;
 }
 
-.fabButton {
-  position: fixed;
-  right: 1.35rem;
-  bottom: 7rem;
-  z-index: 24;
-  width: 3.9rem;
-  height: 3.9rem;
-  border-radius: 999px;
-  display: grid;
-  place-items: center;
-  background: #5932d1;
-  color: #ffffff;
-  box-shadow: 0 22px 42px -20px rgba(89, 50, 209, 0.96);
-}
-
 .primaryButton:hover,
 .secondaryButton:hover,
 .compactButton:hover,
-.iconButton:hover,
-.fabButton:hover {
+.iconButton:hover {
   transform: translateY(-0.0625rem);
 }
 
@@ -538,8 +521,7 @@
 .primaryButton:focus-visible,
 .secondaryButton:focus-visible,
 .compactButton:focus-visible,
-.iconButton:focus-visible,
-.fabButton:focus-visible {
+.iconButton:focus-visible {
   outline: 2px solid rgba(203, 190, 255, 0.75);
   outline-offset: 2px;
 }
@@ -565,10 +547,5 @@
 
   .projectCardCompact {
     grid-column: span 1;
-  }
-
-  .fabButton {
-    right: calc(50% - 18rem);
-    bottom: 2rem;
   }
 }
