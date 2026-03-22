@@ -187,6 +187,7 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
   const [rejectReasons, setRejectReasons] = useState<Record<string, string>>({});
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [advancedProjectApiAvailable, setAdvancedProjectApiAvailable] = useState(true);
+  const [applicationsApiAvailable, setApplicationsApiAvailable] = useState(true);
 
   useEffect(() => {
     let active = true;
@@ -203,13 +204,30 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
         setIdea(project);
 
         if (project.viewerAccess.canViewApplicants && !usingFallback) {
-          const nextApplications = await apiRequest<ProjectApplicationsView>(
-            `/app/projects/${projectId}/applications`
-          );
-          if (!active) return;
-          setApplications(nextApplications);
+          try {
+            const nextApplications = await apiRequest<ProjectApplicationsView>(
+              `/app/projects/${projectId}/applications`
+            );
+            if (!active) return;
+            setApplications(nextApplications);
+            setApplicationsApiAvailable(true);
+          } catch (applicationsError) {
+            if (!active) return;
+            setApplications(null);
+            setApplicationsApiAvailable(false);
+            setFeedback((current) =>
+              current?.tone === "danger"
+                ? current
+                : {
+                    title: "Moderacao indisponivel no momento",
+                    description: normalizeApiError((applicationsError as Error).message),
+                    tone: "info"
+                  }
+            );
+          }
         } else if (active) {
           setApplications(null);
+          setApplicationsApiAvailable(usingFallback ? false : true);
         }
       } catch (requestError) {
         if (!active) return;
@@ -217,6 +235,7 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
         setIdea(null);
         setApplications(null);
         setAdvancedProjectApiAvailable(false);
+        setApplicationsApiAvailable(false);
         setFeedback({
           title: "Falha ao carregar projeto",
           description: normalizeApiError((requestError as Error).message),
@@ -257,12 +276,28 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
     setAdvancedProjectApiAvailable(!usingFallback);
 
     if (project.viewerAccess.canViewApplicants && !usingFallback) {
-      const nextApplications = await apiRequest<ProjectApplicationsView>(
-        `/app/projects/${projectId}/applications`
-      );
-      setApplications(nextApplications);
+      try {
+        const nextApplications = await apiRequest<ProjectApplicationsView>(
+          `/app/projects/${projectId}/applications`
+        );
+        setApplications(nextApplications);
+        setApplicationsApiAvailable(true);
+      } catch (applicationsError) {
+        setApplications(null);
+        setApplicationsApiAvailable(false);
+        setFeedback((current) =>
+          current?.tone === "danger"
+            ? current
+            : {
+                title: "Moderacao indisponivel no momento",
+                description: normalizeApiError((applicationsError as Error).message),
+                tone: "info"
+              }
+        );
+      }
     } else {
       setApplications(null);
+      setApplicationsApiAvailable(usingFallback ? false : true);
     }
   }
 
@@ -702,6 +737,13 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
                     <h4 className={styles.managementTitle}>Gerencie o ciclo deste projeto</h4>
                   </div>
                 </div>
+
+                {!applicationsApiAvailable ? (
+                  <p className={styles.managementHint}>
+                    A listagem de interessados ainda depende da migration mais nova do Supabase.
+                    As acoes principais do projeto continuam disponiveis.
+                  </p>
+                ) : null}
 
                 <div className={styles.managementActions}>
                   <Link href={`/projetos/${idea.id}/editar`} className={styles.primaryActionLink}>

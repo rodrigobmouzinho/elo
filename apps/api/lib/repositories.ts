@@ -334,6 +334,8 @@ let projectEnhancedColumnsSupported: boolean | null = null;
 let projectEnhancedColumnsSupportProbe: Promise<boolean> | null = null;
 let projectLifecycleColumnsSupported: boolean | null = null;
 let projectLifecycleColumnsSupportProbe: Promise<boolean> | null = null;
+let projectApplicationReviewColumnsSupported: boolean | null = null;
+let projectApplicationReviewColumnsSupportProbe: Promise<boolean> | null = null;
 let memberNotificationsSupported: boolean | null = null;
 let memberNotificationsSupportProbe: Promise<boolean> | null = null;
 
@@ -460,6 +462,57 @@ async function ensureProjectLifecycleColumnsSupport() {
   }
 
   return projectLifecycleColumnsSupportProbe;
+}
+
+function isMissingProjectApplicationReviewColumnsError(error: unknown) {
+  const code = (error as { code?: string })?.code ?? "";
+  const message = ((error as { message?: string })?.message ?? "").toLowerCase();
+
+  if (code === "42703") {
+    return true;
+  }
+
+  return (
+    message.includes("reviewed_at") ||
+    message.includes("reviewed_by_member_id") ||
+    message.includes("rejection_reason")
+  );
+}
+
+async function ensureProjectApplicationReviewColumnsSupport() {
+  if (!hasSupabase) {
+    return true;
+  }
+
+  if (projectApplicationReviewColumnsSupported !== null) {
+    return projectApplicationReviewColumnsSupported;
+  }
+
+  if (!projectApplicationReviewColumnsSupportProbe) {
+    projectApplicationReviewColumnsSupportProbe = (async () => {
+      const supabase = assertSupabase();
+      const { error } = await supabase
+        .from("project_applications")
+        .select("reviewed_at, reviewed_by_member_id, rejection_reason")
+        .limit(1);
+
+      if (error) {
+        if (isMissingProjectApplicationReviewColumnsError(error)) {
+          projectApplicationReviewColumnsSupported = false;
+          return false;
+        }
+
+        throw error;
+      }
+
+      projectApplicationReviewColumnsSupported = true;
+      return true;
+    })().finally(() => {
+      projectApplicationReviewColumnsSupportProbe = null;
+    });
+  }
+
+  return projectApplicationReviewColumnsSupportProbe;
 }
 
 function isMissingMemberNotificationsTableError(error: unknown) {
@@ -677,19 +730,51 @@ async function listProjectApplicationRows(projectId: string): Promise<ProjectApp
   }
 
   const supabase = assertSupabase();
-  const { data, error } = await supabase
-    .from("project_applications")
-    .select(
-      "id, project_id, applicant_member_id, status, message, reviewed_at, reviewed_by_member_id, rejection_reason, created_at"
-    )
-    .eq("project_id", projectId)
-    .order("created_at", { ascending: true });
+  let supportsReviewColumns = await ensureProjectApplicationReviewColumnsSupport();
 
-  if (error) {
+  for (;;) {
+    const selectClause = supportsReviewColumns
+      ? "id, project_id, applicant_member_id, status, message, reviewed_at, reviewed_by_member_id, rejection_reason, created_at"
+      : "id, project_id, applicant_member_id, status, message, created_at";
+    const { data, error } = await (supabase
+      .from("project_applications")
+      .select(selectClause) as unknown as {
+      eq: (column: string, value: string) => {
+        order: (column: string, options: { ascending: boolean }) => Promise<{
+          data: Array<Record<string, unknown>> | null;
+          error: unknown;
+        }>;
+      };
+    })
+      .eq("project_id", projectId)
+      .order("created_at", { ascending: true });
+
+    if (!error) {
+      return (data ?? []).map((row) => ({
+        id: row.id,
+        project_id: row.project_id,
+        applicant_member_id: row.applicant_member_id,
+        status: row.status as ProjectApplicationStatus,
+        message: row.message ?? null,
+        reviewed_at: "reviewed_at" in row ? (row.reviewed_at as string | null) ?? null : null,
+        reviewed_by_member_id:
+          "reviewed_by_member_id" in row
+            ? (row.reviewed_by_member_id as string | null) ?? null
+            : null,
+        rejection_reason:
+          "rejection_reason" in row ? (row.rejection_reason as string | null) ?? null : null,
+        created_at: row.created_at as string
+      })) as ProjectApplicationRow[];
+    }
+
+    if (supportsReviewColumns && isMissingProjectApplicationReviewColumnsError(error)) {
+      projectApplicationReviewColumnsSupported = false;
+      supportsReviewColumns = false;
+      continue;
+    }
+
     throw error;
   }
-
-  return (data ?? []) as ProjectApplicationRow[];
 }
 
 async function loadProjectApplicantProfileMap(applicantIds: string[]) {
