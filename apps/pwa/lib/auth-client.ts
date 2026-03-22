@@ -72,7 +72,7 @@ async function parseApiResponse<T>(response: Response, fallbackError: string): P
       return {
         ok: false,
         status: response.status,
-        error: "Não foi possível conectar com a API. Verifique NEXT_PUBLIC_API_URL no deploy do PWA."
+        error: "Nao foi possivel conectar com a API. Verifique NEXT_PUBLIC_API_URL no deploy do PWA."
       };
     }
 
@@ -97,7 +97,7 @@ async function parseApiResponse<T>(response: Response, fallbackError: string): P
     return {
       ok: false,
       status: response.status,
-      error: "Resposta inválida do servidor."
+      error: "Resposta invalida do servidor."
     };
   }
 
@@ -154,7 +154,7 @@ export async function requestPasswordReset(email: string) {
 export async function fetchMe() {
   const auth = getStoredAuth();
   if (!auth?.session?.accessToken) {
-    throw new Error("Sessão ausente");
+    throw new Error("Sessao ausente");
   }
 
   const response = await fetch("/backend/auth/me", {
@@ -169,7 +169,7 @@ export async function fetchMe() {
     email: string;
     role: "member";
     memberId: string | null;
-  }>(response, "Sessão inválida");
+  }>(response, "Sessao invalida");
 
   if (!parsed.ok) {
     clearStoredAuth();
@@ -178,7 +178,7 @@ export async function fetchMe() {
 
   if (parsed.data.role !== "member") {
     clearStoredAuth();
-    throw new Error("Usuário sem permissão de membro");
+    throw new Error("Usuario sem permissao de membro");
   }
 
   return parsed.data;
@@ -188,20 +188,26 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}) {
   const auth = getStoredAuth();
 
   if (!auth?.session?.accessToken) {
-    throw new Error("Você precisa estar autenticado.");
+    throw new Error("Voce precisa estar autenticado.");
   }
+
+  const isFormDataRequest =
+    typeof FormData !== "undefined" && init.body instanceof FormData;
+  const headers = new Headers(init.headers);
+
+  if (!isFormDataRequest && !headers.has("content-type")) {
+    headers.set("content-type", "application/json");
+  }
+
+  headers.set("authorization", `Bearer ${auth.session.accessToken}`);
 
   const response = await fetch(`/backend${path}`, {
     ...init,
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${auth.session.accessToken}`,
-      ...(init.headers ?? {})
-    },
+    headers,
     cache: "no-store"
   });
 
-  const parsed = await parseApiResponse<T>(response, "Falha de requisição");
+  const parsed = await parseApiResponse<T>(response, "Falha de requisicao");
 
   if (!parsed.ok) {
     if (parsed.status === 401 || parsed.status === 403) {

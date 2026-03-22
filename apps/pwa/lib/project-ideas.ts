@@ -1,8 +1,14 @@
-export type ProjectStatus = "active" | "completed" | "inactive";
-export type ProjectApplicationStatus = "applied" | "accepted" | "rejected";
-export type ProjectNotificationType =
-  | "project_application_accepted"
-  | "project_application_rejected";
+import type {
+  ProjectApplicationStatus as CoreProjectApplicationStatus,
+  ProjectDocumentFile as CoreProjectDocumentFile,
+  ProjectNotificationType as CoreProjectNotificationType,
+  ProjectStatus as CoreProjectStatus
+} from "@elo/core";
+
+export type ProjectStatus = CoreProjectStatus;
+export type ProjectApplicationStatus = CoreProjectApplicationStatus;
+export type ProjectNotificationType = CoreProjectNotificationType;
+export type ProjectDocumentFile = CoreProjectDocumentFile;
 
 export type ProjectNeed = {
   title: string;
@@ -68,6 +74,7 @@ export type ProjectIdea = {
   vision: string;
   needs: ProjectNeed[];
   galleryImageUrls: string[];
+  documentationFiles?: ProjectDocumentFile[];
   ownerName?: string;
   ownerAvatarUrl?: string | null;
   ownerMemberId?: string | null;
@@ -83,20 +90,67 @@ export type ProjectDetail = ProjectIdea & {
   viewerAccess: ProjectViewerAccess;
 };
 
+export type ProjectDraftAsset = {
+  id: string;
+  name: string;
+  url: string | null;
+  sizeBytes: number | null;
+  contentType: string | null;
+  path?: string | null;
+  file: File | null;
+  previewUrl: string | null;
+};
+
 export type ProjectDraft = {
   title: string;
   summary: string;
   businessAreas: string[];
   vision: string;
   needs: ProjectNeed[];
-  galleryImageUrls: string[];
+  galleryFiles: ProjectDraftAsset[];
+  documentationFiles: ProjectDraftAsset[];
 };
+
+function cleanString(value: string | null | undefined) {
+  return typeof value === "string" ? value.trim() : "";
+}
 
 export function createEmptyProjectNeed(): ProjectNeed {
   return {
     title: "",
     description: ""
   };
+}
+
+export function createDraftAsset(input?: Partial<ProjectDraftAsset>): ProjectDraftAsset {
+  return {
+    id: input?.id ?? crypto.randomUUID(),
+    name: input?.name ?? "",
+    url: input?.url ?? null,
+    sizeBytes: input?.sizeBytes ?? null,
+    contentType: input?.contentType ?? null,
+    path: input?.path ?? null,
+    file: input?.file ?? null,
+    previewUrl: input?.previewUrl ?? null
+  };
+}
+
+export function createStoredDraftAssetFromUrl(url: string): ProjectDraftAsset {
+  return createDraftAsset({
+    name: extractFileNameFromUrl(url),
+    url,
+    previewUrl: url
+  });
+}
+
+export function createStoredDraftAssetFromDocument(file: ProjectDocumentFile): ProjectDraftAsset {
+  return createDraftAsset({
+    name: file.name,
+    url: file.url,
+    sizeBytes: file.sizeBytes,
+    contentType: file.contentType,
+    path: file.path ?? null
+  });
 }
 
 export function createEmptyProjectDraft(): ProjectDraft {
@@ -106,7 +160,8 @@ export function createEmptyProjectDraft(): ProjectDraft {
     businessAreas: [""],
     vision: "",
     needs: [createEmptyProjectNeed()],
-    galleryImageUrls: [""]
+    galleryFiles: [],
+    documentationFiles: []
   };
 }
 
@@ -175,6 +230,30 @@ function cleanNeeds(needs: ProjectNeed[]) {
     .slice(0, 6);
 }
 
+function cleanGalleryUrls(files: ProjectDraftAsset[]) {
+  return [...new Set(files.map((file) => cleanString(file.url)).filter(Boolean))].slice(0, 8);
+}
+
+function cleanDocumentationFiles(files: ProjectDraftAsset[]): ProjectDocumentFile[] {
+  return files
+    .map((file) => ({
+      name: cleanString(file.name),
+      url: cleanString(file.url),
+      sizeBytes: file.sizeBytes ?? 0,
+      contentType: cleanString(file.contentType) || "application/pdf",
+      path: cleanString(file.path ?? "") || undefined
+    }))
+    .filter((file) => file.name.length > 0 && file.url.length > 0 && file.sizeBytes > 0)
+    .slice(0, 3)
+    .map((file) => ({
+      name: file.name,
+      url: file.url,
+      sizeBytes: file.sizeBytes,
+      contentType: "application/pdf",
+      path: file.path
+    }));
+}
+
 export function buildProjectSearchIndex(project: ProjectIdea) {
   return normalizeSearchValue(
     [
@@ -184,9 +263,31 @@ export function buildProjectSearchIndex(project: ProjectIdea) {
       project.businessAreas.join(" "),
       project.vision,
       project.lookingFor,
+      (project.documentationFiles ?? []).map((file) => file.name).join(" "),
       project.needs.map((need) => `${need.title} ${need.description}`).join(" ")
     ].join(" ")
   );
+}
+
+export function extractFileNameFromUrl(url: string) {
+  const cleanedUrl = cleanString(url);
+
+  if (!cleanedUrl) {
+    return "arquivo";
+  }
+
+  if (cleanedUrl.startsWith("data:")) {
+    return "arquivo";
+  }
+
+  try {
+    const parsed = new URL(cleanedUrl);
+    const lastPathSegment = parsed.pathname.split("/").filter(Boolean).pop();
+    return decodeURIComponent(lastPathSegment ?? "arquivo");
+  } catch {
+    const lastPathSegment = cleanedUrl.split("/").filter(Boolean).pop();
+    return lastPathSegment ?? "arquivo";
+  }
 }
 
 export function projectDraftFromIdea(project: ProjectIdea): ProjectDraft {
@@ -196,8 +297,14 @@ export function projectDraftFromIdea(project: ProjectIdea): ProjectDraft {
     businessAreas: project.businessAreas.length > 0 ? [...project.businessAreas] : [project.category],
     vision: project.vision,
     needs: project.needs.length > 0 ? project.needs.map((need) => ({ ...need })) : [createEmptyProjectNeed()],
-    galleryImageUrls:
-      project.galleryImageUrls.length > 0 ? [...project.galleryImageUrls] : [""]
+    galleryFiles:
+      project.galleryImageUrls.length > 0
+        ? project.galleryImageUrls.map((url) => createStoredDraftAssetFromUrl(url))
+        : [],
+    documentationFiles:
+      (project.documentationFiles ?? []).length > 0
+        ? (project.documentationFiles ?? []).map((file) => createStoredDraftAssetFromDocument(file))
+        : []
   };
 }
 
@@ -208,6 +315,7 @@ export function projectPayloadFromDraft(draft: ProjectDraft) {
     businessAreas: cleanStringList(draft.businessAreas, 5),
     vision: draft.vision.trim(),
     needs: cleanNeeds(draft.needs),
-    galleryImageUrls: cleanStringList(draft.galleryImageUrls, 8)
+    galleryImageUrls: cleanGalleryUrls(draft.galleryFiles),
+    documentationFiles: cleanDocumentationFiles(draft.documentationFiles)
   };
 }

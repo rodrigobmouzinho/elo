@@ -1,9 +1,20 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
+import {
+  PROJECT_DOCUMENT_MAX_FILES,
+  PROJECT_GALLERY_MAX_FILES
+} from "@elo/core";
 import Link from "next/link";
-import { CirclePlus, ImagePlus, Sparkles, Trash2 } from "lucide-react";
-import { type FormEvent, useState } from "react";
+import {
+  CirclePlus,
+  FilePlus2,
+  ImagePlus,
+  Sparkles,
+  Trash2,
+  Upload
+} from "lucide-react";
+import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MemberShell } from "../../../components/member-shell";
 import { apiRequest } from "../../../lib/auth-client";
@@ -12,8 +23,16 @@ import {
   createEmptyProjectNeed,
   normalizeApiError,
   projectPayloadFromDraft,
-  type ProjectDraft
+  type ProjectDraft,
+  type ProjectDraftAsset
 } from "../../../lib/project-ideas";
+import {
+  formatProjectFileSize,
+  prepareDocumentationDraftAssets,
+  prepareGalleryDraftAssets,
+  revokeDraftAssetPreview,
+  uploadProjectDraftAssets
+} from "../../../lib/project-upload-client";
 import styles from "./page.module.css";
 
 type FeedbackTone = "danger" | "info" | "success";
@@ -24,15 +43,32 @@ type FeedbackState = {
   tone: FeedbackTone;
 };
 
-function isValidImageUrl(value: string) {
-  return /^https?:\/\//i.test(value.trim());
+function releaseDraftAssets(assets: ProjectDraftAsset[]) {
+  for (const asset of assets) {
+    revokeDraftAssetPreview(asset);
+  }
 }
 
 export default function CadastrarIdeiaPage() {
   const router = useRouter();
   const [form, setForm] = useState<ProjectDraft>(createEmptyProjectDraft());
   const [saving, setSaving] = useState(false);
+  const [processingGallery, setProcessingGallery] = useState(false);
+  const [processingDocumentation, setProcessingDocumentation] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
+  const galleryInputRef = useRef<HTMLInputElement | null>(null);
+  const documentationInputRef = useRef<HTMLInputElement | null>(null);
+  const assetsRef = useRef<ProjectDraftAsset[]>([]);
+
+  useEffect(() => {
+    assetsRef.current = [...form.galleryFiles, ...form.documentationFiles];
+  }, [form.documentationFiles, form.galleryFiles]);
+
+  useEffect(() => {
+    return () => {
+      releaseDraftAssets(assetsRef.current);
+    };
+  }, []);
 
   function updateBusinessArea(index: number, value: string) {
     setForm((current) => {
@@ -87,38 +123,130 @@ export default function CadastrarIdeiaPage() {
     });
   }
 
-  function updateGalleryImage(index: number, value: string) {
+  function removeGalleryAsset(assetId: string) {
     setForm((current) => {
-      const galleryImageUrls = [...current.galleryImageUrls];
-      galleryImageUrls[index] = value;
-      return { ...current, galleryImageUrls };
-    });
-  }
+      const target = current.galleryFiles.find((asset) => asset.id === assetId);
+      if (target) {
+        revokeDraftAssetPreview(target);
+      }
 
-  function addGalleryImage() {
-    setForm((current) => ({
-      ...current,
-      galleryImageUrls: [...current.galleryImageUrls, ""].slice(0, 8)
-    }));
-  }
-
-  function removeGalleryImage(index: number) {
-    setForm((current) => {
-      const galleryImageUrls = current.galleryImageUrls.filter((_, itemIndex) => itemIndex !== index);
       return {
         ...current,
-        galleryImageUrls: galleryImageUrls.length > 0 ? galleryImageUrls : [""]
+        galleryFiles: current.galleryFiles.filter((asset) => asset.id !== assetId)
       };
     });
   }
 
+  function removeDocumentationAsset(assetId: string) {
+    setForm((current) => ({
+      ...current,
+      documentationFiles: current.documentationFiles.filter((asset) => asset.id !== assetId)
+    }));
+  }
+
+  async function handleGallerySelection(event: ChangeEvent<HTMLInputElement>) {
+    const selectedFiles = event.target.files;
+    event.target.value = "";
+
+    if (!selectedFiles || selectedFiles.length === 0) {
+      return;
+    }
+
+    setProcessingGallery(true);
+    setFeedback(null);
+
+    try {
+      const preparedAssets = await prepareGalleryDraftAssets(
+        selectedFiles,
+        PROJECT_GALLERY_MAX_FILES - form.galleryFiles.length
+      );
+
+      setForm((current) => ({
+        ...current,
+        galleryFiles: [...current.galleryFiles, ...preparedAssets]
+      }));
+    } catch (selectionError) {
+      setFeedback({
+        title: "Falha ao preparar imagens",
+        description: normalizeApiError((selectionError as Error).message),
+        tone: "danger"
+      });
+    } finally {
+      setProcessingGallery(false);
+    }
+  }
+
+  async function handleDocumentationSelection(event: ChangeEvent<HTMLInputElement>) {
+    const selectedFiles = event.target.files;
+    event.target.value = "";
+
+    if (!selectedFiles || selectedFiles.length === 0) {
+      return;
+    }
+
+    setProcessingDocumentation(true);
+    setFeedback(null);
+
+    try {
+      const preparedAssets = await prepareDocumentationDraftAssets(
+        selectedFiles,
+        PROJECT_DOCUMENT_MAX_FILES - form.documentationFiles.length
+      );
+
+      setForm((current) => ({
+        ...current,
+        documentationFiles: [...current.documentationFiles, ...preparedAssets]
+      }));
+    } catch (selectionError) {
+      setFeedback({
+        title: "Falha ao preparar documentacao",
+        description: normalizeApiError((selectionError as Error).message),
+        tone: "danger"
+      });
+    } finally {
+      setProcessingDocumentation(false);
+    }
+  }
+
+  async function resolveDraftUploads(currentForm: ProjectDraft) {
+    const storedGalleryFiles = currentForm.galleryFiles.filter((asset) => !asset.file && asset.url);
+    const pendingGalleryFiles = currentForm.galleryFiles.filter((asset) => asset.file);
+    const storedDocumentationFiles = currentForm.documentationFiles.filter(
+      (asset) => !asset.file && asset.url
+    );
+    const pendingDocumentationFiles = currentForm.documentationFiles.filter((asset) => asset.file);
+
+    const uploadedGalleryFiles = await uploadProjectDraftAssets("gallery", pendingGalleryFiles);
+    const uploadedDocumentationFiles = await uploadProjectDraftAssets(
+      "documentation",
+      pendingDocumentationFiles
+    );
+
+    return {
+      ...currentForm,
+      galleryFiles: [...storedGalleryFiles, ...uploadedGalleryFiles],
+      documentationFiles: [...storedDocumentationFiles, ...uploadedDocumentationFiles]
+    };
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (processingGallery || processingDocumentation) {
+      setFeedback({
+        title: "Aguarde os arquivos",
+        description: "Finalize o preparo das imagens e PDFs antes de publicar.",
+        tone: "info"
+      });
+      return;
+    }
+
     setSaving(true);
     setFeedback(null);
 
     try {
-      const payload = projectPayloadFromDraft(form);
+      let resolvedForm = form;
+      let payload = projectPayloadFromDraft(form);
 
       if (payload.businessAreas.length === 0) {
         throw new Error("Adicione ao menos uma area de negocio.");
@@ -127,6 +255,10 @@ export default function CadastrarIdeiaPage() {
       if (payload.needs.length === 0) {
         throw new Error("Descreva pelo menos uma necessidade do projeto.");
       }
+
+      resolvedForm = await resolveDraftUploads(form);
+      setForm(resolvedForm);
+      payload = projectPayloadFromDraft(resolvedForm);
 
       await apiRequest("/app/projects", {
         method: "POST",
@@ -144,10 +276,6 @@ export default function CadastrarIdeiaPage() {
       setSaving(false);
     }
   }
-
-  const galleryPreview = form.galleryImageUrls
-    .map((value) => value.trim())
-    .filter((value) => isValidImageUrl(value));
 
   return (
     <MemberShell>
@@ -168,7 +296,8 @@ export default function CadastrarIdeiaPage() {
             <div className={styles.headerAccent} aria-hidden="true" />
             <h2 className={styles.title}>Cadastrar Projetos &amp; Ideias</h2>
             <p className={styles.subtitle}>
-              Estruture a oportunidade como ela sera vista no detalhe: tese, areas, necessidades e prova visual.
+              Estruture a oportunidade como ela sera vista no detalhe: tese, areas,
+              necessidades, documentacao e prova visual.
             </p>
           </div>
 
@@ -313,51 +442,133 @@ export default function CadastrarIdeiaPage() {
             <section className={styles.sectionBlock}>
               <div className={styles.sectionHeader}>
                 <div>
-                  <p className={styles.fieldLabel}>Galeria de Imagens e Mockups</p>
-                  <p className={styles.sectionText}>Cole URLs publicas de mockups, dashboards ou telas do produto.</p>
+                  <p className={styles.fieldLabel}>Documentacao do Projeto</p>
+                  <p className={styles.sectionText}>
+                    PDFs reais do projeto. Ate {PROJECT_DOCUMENT_MAX_FILES} arquivos de 10 MB cada.
+                  </p>
                 </div>
                 <button
                   className={styles.inlineAddButton}
                   type="button"
-                  onClick={addGalleryImage}
-                  disabled={form.galleryImageUrls.length >= 8}
+                  onClick={() => documentationInputRef.current?.click()}
+                  disabled={
+                    processingDocumentation ||
+                    form.documentationFiles.length >= PROJECT_DOCUMENT_MAX_FILES
+                  }
                 >
-                  <ImagePlus size={15} strokeWidth={2.1} />
-                  Adicionar imagem
+                  <FilePlus2 size={15} strokeWidth={2.1} />
+                  {processingDocumentation ? "Preparando..." : "Selecionar PDFs"}
                 </button>
               </div>
 
-              <div className={styles.dynamicStack}>
-                {form.galleryImageUrls.map((imageUrl, index) => (
-                  <div key={`gallery-${index}`} className={styles.inlineFieldRow}>
-                    <input
-                      className={styles.fieldControl}
-                      placeholder="https://..."
-                      type="url"
-                      value={imageUrl}
-                      onChange={(event) => updateGalleryImage(index, event.target.value)}
-                    />
-                    <button
-                      className={styles.inlineRemoveButton}
-                      type="button"
-                      onClick={() => removeGalleryImage(index)}
-                      aria-label={`Remover imagem ${index + 1}`}
-                    >
-                      <Trash2 size={15} strokeWidth={2.1} />
-                    </button>
-                  </div>
-                ))}
+              <input
+                ref={documentationInputRef}
+                className={styles.hiddenInput}
+                type="file"
+                accept="application/pdf"
+                multiple
+                onChange={(event) => void handleDocumentationSelection(event)}
+              />
+
+              {form.documentationFiles.length > 0 ? (
+                <div className={styles.assetList}>
+                  {form.documentationFiles.map((file) => (
+                    <article key={file.id} className={styles.assetCard}>
+                      <div className={styles.assetCopy}>
+                        <p className={styles.assetTitle}>{file.name || "Documento PDF"}</p>
+                        <p className={styles.assetMeta}>
+                          {formatProjectFileSize(file.sizeBytes)}{" "}
+                          {file.file ? "• aguardando upload" : "• pronto"}
+                        </p>
+                      </div>
+                      <button
+                        className={styles.inlineRemoveButton}
+                        type="button"
+                        onClick={() => removeDocumentationAsset(file.id)}
+                        aria-label={`Remover documento ${file.name || "PDF"}`}
+                      >
+                        <Trash2 size={15} strokeWidth={2.1} />
+                      </button>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <div className={styles.emptyUploadState}>
+                  <Upload size={16} strokeWidth={2.1} className={styles.emptyUploadIcon} />
+                  <p className={styles.emptyUploadText}>
+                    Nenhum PDF selecionado ainda. A documentacao sera enviada junto com a publicacao.
+                  </p>
+                </div>
+              )}
+            </section>
+
+            <section className={styles.sectionBlock}>
+              <div className={styles.sectionHeader}>
+                <div>
+                  <p className={styles.fieldLabel}>Galeria de Imagens e Mockups</p>
+                  <p className={styles.sectionText}>
+                    Ate {PROJECT_GALLERY_MAX_FILES} imagens. O app comprime antes do envio para manter a galeria leve.
+                  </p>
+                </div>
+                <button
+                  className={styles.inlineAddButton}
+                  type="button"
+                  onClick={() => galleryInputRef.current?.click()}
+                  disabled={processingGallery || form.galleryFiles.length >= PROJECT_GALLERY_MAX_FILES}
+                >
+                  <ImagePlus size={15} strokeWidth={2.1} />
+                  {processingGallery ? "Preparando..." : "Selecionar imagens"}
+                </button>
               </div>
 
-              {galleryPreview.length > 0 ? (
+              <input
+                ref={galleryInputRef}
+                className={styles.hiddenInput}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                onChange={(event) => void handleGallerySelection(event)}
+              />
+
+              {form.galleryFiles.length > 0 ? (
                 <div className={styles.previewGrid}>
-                  {galleryPreview.map((imageUrl) => (
-                    <div key={imageUrl} className={styles.previewTile}>
-                      <img src={imageUrl} alt="Preview do mockup do projeto" className={styles.previewImage} />
+                  {form.galleryFiles.map((file) => (
+                    <div key={file.id} className={styles.previewTile}>
+                      {file.previewUrl || file.url ? (
+                        <img
+                          src={file.previewUrl ?? file.url ?? ""}
+                          alt={file.name || "Preview do mockup do projeto"}
+                          className={styles.previewImage}
+                        />
+                      ) : null}
+                      <div className={styles.previewOverlay}>
+                        <div className={styles.previewCopy}>
+                          <p className={styles.previewName}>{file.name || "Imagem"}</p>
+                          <p className={styles.previewMeta}>
+                            {formatProjectFileSize(file.sizeBytes)}{" "}
+                            {file.file ? "• aguardando upload" : "• pronta"}
+                          </p>
+                        </div>
+                        <button
+                          className={styles.previewRemoveButton}
+                          type="button"
+                          onClick={() => removeGalleryAsset(file.id)}
+                          aria-label={`Remover imagem ${file.name || "da galeria"}`}
+                        >
+                          <Trash2 size={15} strokeWidth={2.1} />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
-              ) : null}
+              ) : (
+                <div className={styles.emptyUploadState}>
+                  <Upload size={16} strokeWidth={2.1} className={styles.emptyUploadIcon} />
+                  <p className={styles.emptyUploadText}>
+                    Nenhuma imagem selecionada ainda. O app aceita JPG, PNG e WebP e faz compressao no envio.
+                  </p>
+                </div>
+              )}
             </section>
 
             <div className={styles.actions}>
@@ -375,7 +586,8 @@ export default function CadastrarIdeiaPage() {
           <article className={styles.tipCard}>
             <Sparkles size={16} strokeWidth={2.1} className={styles.tipIconPrimary} />
             <p className={styles.tipText}>
-              Projetos com visao clara, necessidades objetivas e mockups ganham leitura mais rapida no detalhe.
+              Imagens claras, PDFs objetivos e necessidades precisas tornam o detalhe do projeto
+              mais confiavel para novos parceiros.
             </p>
           </article>
         </section>

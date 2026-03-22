@@ -324,18 +324,77 @@
   font-weight: 700;
 }
 
-.gallerySection {
+.gallerySection,
+.documentationSection {
   display: grid;
   gap: 0.85rem;
 }
 
 .galleryTitle {
   margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
   color: #ffffff;
   font-family: var(--member-font-display), "Plus Jakarta Sans", sans-serif;
   font-size: 0.9rem;
   font-weight: 700;
   letter-spacing: -0.02em;
+}
+
+.galleryTitle svg {
+  color: #cbbeff;
+}
+
+.documentationList {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.documentationCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9rem;
+  padding: 1rem 1.05rem;
+  border-radius: 1.2rem;
+  background: #1c1b1b;
+  box-shadow: inset 0 0 0 1px rgba(72, 69, 85, 0.14);
+  text-decoration: none;
+}
+
+.documentationCopy {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.documentationName {
+  margin: 0;
+  color: #ffffff;
+  font-family: var(--member-font-display), "Plus Jakarta Sans", sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.documentationMeta {
+  margin: 0;
+  color: rgba(202, 195, 215, 0.72);
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.documentationAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  color: #cbbeff;
+  font-family: var(--member-font-display), "Plus Jakarta Sans", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  flex-shrink: 0;
 }
 
 .galleryTrack {
@@ -558,6 +617,7 @@
 .dangerActionButton:hover,
 .approveButton:hover,
 .rejectButton:hover,
+.documentationCard:hover,
 .confirmRejectButton:hover,
 .cancelRejectButton:hover,
 .primaryButton:hover,
@@ -568,6 +628,7 @@
 .dangerActionButton:focus-visible,
 .approveButton:focus-visible,
 .rejectButton:focus-visible,
+.documentationCard:focus-visible,
 .confirmRejectButton:focus-visible,
 .cancelRejectButton:focus-visible,
 .primaryButton:focus-visible,

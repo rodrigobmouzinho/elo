@@ -69,3 +69,4 @@ ELO-088,Projects,"Ciclo de vida de projetos com status ativo/concluido/inativo e
 ELO-089,Projects,"Moderacao de candidaturas em projetos com aprovacao, recusa justificada e privacidade",Must,High,8,M7 Total UX Refactor,Done
 ELO-090,Projects,"Inbox de notificacoes de projetos no app para aprovacoes e recusas",Must,MediumHigh,5,M7 Total UX Refactor,Done
 ELO-091,PWA UX,"Operacao completa de projetos no PWA com status, equipe e moderacao",Must,High,8,M7 Total UX Refactor,Done
+ELO-092,Projects,"Upload de galeria e documentacao PDF em projetos com selecao de arquivos, limites e compressao de imagem",Must,High,8,M7 Total UX Refactor,Done

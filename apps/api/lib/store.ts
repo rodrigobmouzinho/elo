@@ -12,6 +12,13 @@ type MockProjectIdea = {
     description: string;
   }>;
   galleryImageUrls: string[];
+  documentationFiles?: Array<{
+    name: string;
+    url: string;
+    sizeBytes: number;
+    contentType: "application/pdf";
+    path?: string | null;
+  }>;
   description: string;
   lookingFor: string;
   ownerName: string;
@@ -41,6 +48,7 @@ const projectIdeas: MockProjectIdea[] = [
       }
     ],
     galleryImageUrls: [],
+    documentationFiles: [],
     description:
       "Operacao de RH com automacao e analytics para PMEs.\n\nConstruir uma plataforma de RH para PMEs que combine automacao operacional, acompanhamento de performance e inteligencia de dados para liderancas.",
     lookingFor: "Cofounder tecnico",

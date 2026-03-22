@@ -1,4 +1,10 @@
 import { z } from "zod";
+import {
+  PROJECT_DOCUMENT_ACCEPTED_TYPES,
+  PROJECT_DOCUMENT_MAX_BYTES,
+  PROJECT_DOCUMENT_MAX_FILES,
+  PROJECT_GALLERY_MAX_FILES
+} from "./constants";
 
 function isHttpUrl(value: string) {
   try {
@@ -7,6 +13,14 @@ function isHttpUrl(value: string) {
   } catch {
     return false;
   }
+}
+
+function isDataUrl(value: string) {
+  return value.startsWith("data:");
+}
+
+function isAssetUrl(value: string) {
+  return value.startsWith("/") || isHttpUrl(value) || isDataUrl(value);
 }
 
 export const loginSchema = z.object({
@@ -21,8 +35,8 @@ export const resetPasswordSchema = z.object({
 const eventImageSchema = z
   .string()
   .trim()
-  .refine((value) => value.startsWith("/") || isHttpUrl(value), {
-    message: "URL de imagem deve ser válida ou caminho local iniciado com /"
+  .refine((value) => isAssetUrl(value), {
+    message: "URL de arquivo deve ser valida, data URL ou caminho local iniciado com /"
   });
 
 export const memberSchema = z.object({
@@ -66,7 +80,7 @@ export const eventSchema = eventBaseSchema.superRefine((payload, ctx) => {
     ctx.addIssue({
       code: "custom",
       path: ["priceCents"],
-      message: "Eventos gratuitos não devem ter preço"
+      message: "Eventos gratuitos nao devem ter preco"
     });
   }
 });
@@ -103,6 +117,14 @@ export const projectNeedSchema = z.object({
   description: z.string().trim().min(3).max(180)
 });
 
+export const projectDocumentFileSchema = z.object({
+  name: z.string().trim().min(1).max(180),
+  url: eventImageSchema,
+  sizeBytes: z.number().int().positive().max(PROJECT_DOCUMENT_MAX_BYTES),
+  contentType: z.enum(PROJECT_DOCUMENT_ACCEPTED_TYPES),
+  path: z.string().trim().min(3).max(255).optional()
+});
+
 export const projectStatusSchema = z.enum(["active", "completed", "inactive"]);
 
 export const projectStatusUpdateSchema = z.object({
@@ -115,5 +137,6 @@ export const projectIdeaSchema = z.object({
   businessAreas: z.array(z.string().trim().min(2).max(40)).min(1).max(5),
   vision: z.string().trim().min(20).max(2000),
   needs: z.array(projectNeedSchema).min(1).max(6),
-  galleryImageUrls: z.array(eventImageSchema).max(8).default([])
+  galleryImageUrls: z.array(eventImageSchema).max(PROJECT_GALLERY_MAX_FILES).default([]),
+  documentationFiles: z.array(projectDocumentFileSchema).max(PROJECT_DOCUMENT_MAX_FILES).default([])
 });

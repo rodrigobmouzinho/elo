@@ -11,6 +11,15 @@ export type ProjectApplicationStatus = "applied" | "accepted" | "rejected";
 export type ProjectNotificationType =
   | "project_application_accepted"
   | "project_application_rejected";
+export type ProjectUploadKind = "gallery" | "documentation";
+
+export type ProjectDocumentFile = {
+  name: string;
+  url: string;
+  sizeBytes: number;
+  contentType: "application/pdf";
+  path?: string | null;
+};
 
 export type Member = {
   id: string;

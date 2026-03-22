@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { eventSchema, loginSchema, memberSchema } from "../src/schemas";
+import {
+  eventSchema,
+  loginSchema,
+  memberSchema,
+  projectIdeaSchema
+} from "../src/schemas";
 
 describe("core schemas", () => {
   it("validates login payload", () => {
@@ -46,13 +51,44 @@ describe("core schemas", () => {
 
   it("rejects paid event without price", () => {
     const payload = {
-      title: "Evento pago sem preço",
-      description: "Descrição válida para garantir que o erro seja apenas de regra de acesso e preço.",
+      title: "Evento pago sem preco",
+      description: "Descricao valida para garantir que o erro seja apenas de regra de acesso e preco.",
       startsAt: "2026-04-21T19:30:00.000Z",
       location: "Online",
       accessType: "paid_members"
     };
 
     expect(eventSchema.safeParse(payload).success).toBe(false);
+  });
+
+  it("validates project payload with uploaded documentation metadata", () => {
+    const payload = {
+      title: "Plataforma de conexoes B2B",
+      summary: "Produto para aproximar founders e investidores com networking validado.",
+      businessAreas: ["Marketplace", "B2B"],
+      vision:
+        "Criar um ambiente de conexoes de negocio que ajude founders e investidores a se encontrarem com mais contexto, afinidade estrategica e velocidade.",
+      needs: [
+        {
+          title: "Cofounder de tecnologia",
+          description: "Experiencia com produto digital e arquitetura de marketplace B2B."
+        }
+      ],
+      galleryImageUrls: [
+        "https://example.com/mockup-1.webp",
+        "data:image/webp;base64,UklGRiIAAABXRUJQVlA4IC4AAADQAgCdASoCAAIALmk0mk0iIiIi"
+      ],
+      documentationFiles: [
+        {
+          name: "pitch-deck.pdf",
+          url: "https://example.com/pitch-deck.pdf",
+          sizeBytes: 820000,
+          contentType: "application/pdf",
+          path: "projects/member/documentation/pitch-deck.pdf"
+        }
+      ]
+    };
+
+    expect(projectIdeaSchema.safeParse(payload).success).toBe(true);
   });
 });

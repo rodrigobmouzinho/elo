@@ -52,6 +52,7 @@ describe("projects idea publish", () => {
     expect(createPayload.data.summary).toBe(
       "Produto para aproximar founders e investidores com networking validado."
     );
+    expect(createPayload.data.documentationFiles).toEqual([]);
 
     const listResponse = await listProjectsGet(
       new Request("http://localhost/api/app/projects", {
@@ -72,5 +73,73 @@ describe("projects idea publish", () => {
           project.id === createdId && project.title === "Plataforma de conexoes B2B"
       )
     ).toBe(true);
+  });
+
+  it("uploads project media in mock mode and persists documentation metadata on publish", async () => {
+    const { POST: uploadProjectFilesPost } = await import(
+      "../../app/api/app/projects/uploads/route"
+    );
+    const { POST: createProjectPost } = await import("../../app/api/app/projects/route");
+
+    const uploadForm = new FormData();
+    uploadForm.append("kind", "documentation");
+    uploadForm.append(
+      "files",
+      new File(["%PDF-1.4 mock"], "pitch-deck.pdf", {
+        type: "application/pdf"
+      })
+    );
+
+    const uploadResponse = await uploadProjectFilesPost(
+      new Request("http://localhost/api/app/projects/uploads", {
+        method: "POST",
+        headers: {
+          authorization: "Bearer mock-token",
+          "x-dev-role": "member"
+        },
+        body: uploadForm
+      })
+    );
+    const uploadPayload = await uploadResponse.json();
+
+    expect(uploadResponse.status).toBe(201);
+    expect(uploadPayload.success).toBe(true);
+    expect(uploadPayload.data.files).toHaveLength(1);
+    expect(uploadPayload.data.files[0].contentType).toBe("application/pdf");
+    expect(uploadPayload.data.files[0].url).toContain("data:application/pdf;base64,");
+
+    const createResponse = await createProjectPost(
+      new Request("http://localhost/api/app/projects", {
+        method: "POST",
+        headers: {
+          authorization: "Bearer mock-token",
+          "x-dev-role": "member",
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({
+          title: "Projeto com documentacao",
+          summary: "Projeto com anexo PDF e mockups reais.",
+          businessAreas: ["Marketplace", "B2B"],
+          vision:
+            "Criar um ambiente com proposta objetiva, documentacao em PDF e provas visuais para a captacao de parceiros.",
+          needs: [
+            {
+              title: "Produto",
+              description: "Pessoa para acelerar produto e estrutura de MVP."
+            }
+          ],
+          galleryImageUrls: ["https://example.com/mockup-1.webp"],
+          documentationFiles: uploadPayload.data.files
+        })
+      })
+    );
+    const createPayload = await createResponse.json();
+
+    expect(createResponse.status).toBe(201);
+    expect(createPayload.data.documentationFiles).toHaveLength(1);
+    expect(createPayload.data.documentationFiles[0]).toMatchObject({
+      name: "pitch-deck.pdf",
+      contentType: "application/pdf"
+    });
   });
 });

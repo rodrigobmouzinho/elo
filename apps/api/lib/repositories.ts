@@ -17,7 +17,9 @@ import {
 } from "@elo/core";
 import {
   buildProjectDbPayload,
+  PROJECT_DOCUMENTATION_SELECT,
   buildProjectLifecycleDbPayload,
+  isMissingProjectDocumentationColumnsError,
   isMissingProjectEnhancedColumnsError,
   isMissingProjectLifecycleColumnsError,
   normalizeProjectRow,
@@ -334,6 +336,8 @@ let projectEnhancedColumnsSupported: boolean | null = null;
 let projectEnhancedColumnsSupportProbe: Promise<boolean> | null = null;
 let projectLifecycleColumnsSupported: boolean | null = null;
 let projectLifecycleColumnsSupportProbe: Promise<boolean> | null = null;
+let projectDocumentationColumnsSupported: boolean | null = null;
+let projectDocumentationColumnsSupportProbe: Promise<boolean> | null = null;
 let projectApplicationReviewColumnsSupported: boolean | null = null;
 let projectApplicationReviewColumnsSupportProbe: Promise<boolean> | null = null;
 let memberNotificationsSupported: boolean | null = null;
@@ -464,6 +468,39 @@ async function ensureProjectLifecycleColumnsSupport() {
   return projectLifecycleColumnsSupportProbe;
 }
 
+async function ensureProjectDocumentationColumnsSupport() {
+  if (!hasSupabase) {
+    return true;
+  }
+
+  if (projectDocumentationColumnsSupported !== null) {
+    return projectDocumentationColumnsSupported;
+  }
+
+  if (!projectDocumentationColumnsSupportProbe) {
+    projectDocumentationColumnsSupportProbe = (async () => {
+      const supabase = assertSupabase();
+      const { error } = await supabase.from("projects").select("documentation_files").limit(1);
+
+      if (error) {
+        if (isMissingProjectDocumentationColumnsError(error)) {
+          projectDocumentationColumnsSupported = false;
+          return false;
+        }
+
+        throw error;
+      }
+
+      projectDocumentationColumnsSupported = true;
+      return true;
+    })().finally(() => {
+      projectDocumentationColumnsSupportProbe = null;
+    });
+  }
+
+  return projectDocumentationColumnsSupportProbe;
+}
+
 function isMissingProjectApplicationReviewColumnsError(error: unknown) {
   const code = (error as { code?: string })?.code ?? "";
   const message = ((error as { message?: string })?.message ?? "").toLowerCase();
@@ -555,20 +592,26 @@ async function ensureMemberNotificationsSupport() {
   return memberNotificationsSupportProbe;
 }
 
-function buildProjectListSelectClause(options: { enhanced: boolean; lifecycle: boolean }) {
+function buildProjectListSelectClause(options: {
+  enhanced: boolean;
+  lifecycle: boolean;
+  documentation: boolean;
+}) {
+  let clause = PROJECT_LIST_SELECT_BASE;
+
   if (options.enhanced && options.lifecycle) {
-    return PROJECT_LIST_SELECT_WITH_ENHANCED_AND_LIFECYCLE;
+    clause = PROJECT_LIST_SELECT_WITH_ENHANCED_AND_LIFECYCLE;
+  } else if (options.enhanced) {
+    clause = PROJECT_LIST_SELECT_WITH_ENHANCED;
+  } else if (options.lifecycle) {
+    clause = PROJECT_LIST_SELECT_WITH_LIFECYCLE;
   }
 
-  if (options.enhanced) {
-    return PROJECT_LIST_SELECT_WITH_ENHANCED;
+  if (options.documentation) {
+    clause = `${clause}, ${PROJECT_DOCUMENTATION_SELECT}`;
   }
 
-  if (options.lifecycle) {
-    return PROJECT_LIST_SELECT_WITH_LIFECYCLE;
-  }
-
-  return PROJECT_LIST_SELECT_BASE;
+  return clause;
 }
 
 function normalizeProjectTimestamp(value: string | null | undefined) {
@@ -2361,6 +2404,7 @@ export async function listProjects(viewerMemberId?: string | null) {
           vision: project.vision,
           needs: project.needs,
           gallery_image_urls: project.galleryImageUrls,
+          documentation_files: project.documentationFiles ?? [],
           owner_member_id: project.ownerMemberId ?? null,
           member_profiles: {
             full_name: project.ownerName,
@@ -2387,12 +2431,14 @@ export async function listProjects(viewerMemberId?: string | null) {
   const supabase = assertSupabase();
   let supportsEnhanced = await ensureProjectEnhancedColumnsSupport();
   let supportsLifecycle = await ensureProjectLifecycleColumnsSupport();
+  let supportsDocumentation = await ensureProjectDocumentationColumnsSupport();
   let data: unknown[] | null = null;
 
   for (;;) {
     const selectClause = buildProjectListSelectClause({
       enhanced: supportsEnhanced,
-      lifecycle: supportsLifecycle
+      lifecycle: supportsLifecycle,
+      documentation: supportsDocumentation
     });
     const response = await supabase
       .from("projects")
@@ -2413,6 +2459,12 @@ export async function listProjects(viewerMemberId?: string | null) {
     if (supportsLifecycle && isMissingProjectLifecycleColumnsError(response.error)) {
       projectLifecycleColumnsSupported = false;
       supportsLifecycle = false;
+      continue;
+    }
+
+    if (supportsDocumentation && isMissingProjectDocumentationColumnsError(response.error)) {
+      projectDocumentationColumnsSupported = false;
+      supportsDocumentation = false;
       continue;
     }
 
@@ -2453,6 +2505,13 @@ export async function createProject(payload: ProjectInput, ownerMemberId: string
         description: need.description.trim()
       })),
       galleryImageUrls: payload.galleryImageUrls.map((entry) => entry.trim()).filter(Boolean),
+      documentationFiles: payload.documentationFiles.map((file) => ({
+        name: file.name.trim(),
+        url: file.url.trim(),
+        sizeBytes: file.sizeBytes,
+        contentType: file.contentType,
+        path: file.path ?? null
+      })),
       description: `${payload.summary.trim()}\n\n${payload.vision.trim()}`.trim(),
       lookingFor: payload.needs.map((need) => need.title.trim()).filter(Boolean).join(" | "),
       status: lifecycle.status,
@@ -2468,10 +2527,16 @@ export async function createProject(payload: ProjectInput, ownerMemberId: string
   const supabase = assertSupabase();
   let supportsEnhanced = await ensureProjectEnhancedColumnsSupport();
   let supportsLifecycle = await ensureProjectLifecycleColumnsSupport();
+  let supportsDocumentation = await ensureProjectDocumentationColumnsSupport();
   let projectId: string | null = null;
 
   for (;;) {
-    const dbPayload = buildProjectDbPayload(payload, supportsEnhanced, lifecycle);
+    const dbPayload = buildProjectDbPayload(
+      payload,
+      supportsEnhanced,
+      lifecycle,
+      supportsDocumentation
+    );
     const response = await supabase
       .from("projects")
       .insert({
@@ -2496,6 +2561,12 @@ export async function createProject(payload: ProjectInput, ownerMemberId: string
     if (supportsLifecycle && isMissingProjectLifecycleColumnsError(response.error)) {
       projectLifecycleColumnsSupported = false;
       supportsLifecycle = false;
+      continue;
+    }
+
+    if (supportsDocumentation && isMissingProjectDocumentationColumnsError(response.error)) {
+      projectDocumentationColumnsSupported = false;
+      supportsDocumentation = false;
       continue;
     }
 
@@ -2604,6 +2675,13 @@ export async function updateProject(projectId: string, payload: ProjectInput, ed
         description: need.description.trim()
       })),
       galleryImageUrls: payload.galleryImageUrls.map((entry) => entry.trim()).filter(Boolean),
+      documentationFiles: payload.documentationFiles.map((file) => ({
+        name: file.name.trim(),
+        url: file.url.trim(),
+        sizeBytes: file.sizeBytes,
+        contentType: file.contentType,
+        path: file.path ?? null
+      })),
       description: `${payload.summary.trim()}\n\n${payload.vision.trim()}`.trim(),
       lookingFor: payload.needs.map((need) => need.title.trim()).filter(Boolean).join(" | "),
       updatedAt: new Date().toISOString()
@@ -2644,10 +2722,16 @@ export async function updateProject(projectId: string, payload: ProjectInput, ed
 
   let supportsEnhanced = await ensureProjectEnhancedColumnsSupport();
   let supportsLifecycle = lifecycleColumnsSupported;
+  let supportsDocumentation = await ensureProjectDocumentationColumnsSupport();
   let updatedProjectId: string | null = null;
 
   for (;;) {
-    const dbPayload = buildProjectDbPayload(payload, supportsEnhanced, lifecycle);
+    const dbPayload = buildProjectDbPayload(
+      payload,
+      supportsEnhanced,
+      lifecycle,
+      supportsDocumentation
+    );
     const response = await supabase
       .from("projects")
       .update({
@@ -2672,6 +2756,12 @@ export async function updateProject(projectId: string, payload: ProjectInput, ed
     if (supportsLifecycle && isMissingProjectLifecycleColumnsError(response.error)) {
       projectLifecycleColumnsSupported = false;
       supportsLifecycle = false;
+      continue;
+    }
+
+    if (supportsDocumentation && isMissingProjectDocumentationColumnsError(response.error)) {
+      projectDocumentationColumnsSupported = false;
+      supportsDocumentation = false;
       continue;
     }
 
@@ -2744,6 +2834,7 @@ export async function updateProjectStatus(
       vision: project.vision,
       needs: project.needs,
       gallery_image_urls: project.galleryImageUrls,
+      documentation_files: project.documentationFiles ?? [],
       owner_member_id: project.ownerMemberId ?? null,
       member_profiles: {
         full_name: project.ownerName,
@@ -2757,19 +2848,49 @@ export async function updateProjectStatus(
   }
 
   const supabase = assertSupabase();
-  const lifecycleColumnsSupported = await ensureProjectLifecycleColumnsSupport();
-  const enhancedColumnsSupported = await ensureProjectEnhancedColumnsSupport();
-  const selectClause = buildProjectListSelectClause({
-    enhanced: enhancedColumnsSupported,
-    lifecycle: lifecycleColumnsSupported
-  });
-  const { data: existing, error: lookupError } = await supabase
-    .from("projects")
-    .select(selectClause)
-    .eq("id", projectId)
-    .maybeSingle();
+  let lifecycleColumnsSupported = await ensureProjectLifecycleColumnsSupport();
+  let enhancedColumnsSupported = await ensureProjectEnhancedColumnsSupport();
+  let documentationColumnsSupported = await ensureProjectDocumentationColumnsSupport();
+  let existing: unknown = null;
 
-  if (lookupError) throw lookupError;
+  for (;;) {
+    const selectClause = buildProjectListSelectClause({
+      enhanced: enhancedColumnsSupported,
+      lifecycle: lifecycleColumnsSupported,
+      documentation: documentationColumnsSupported
+    });
+    const response = await supabase
+      .from("projects")
+      .select(selectClause)
+      .eq("id", projectId)
+      .maybeSingle();
+
+    if (!response.error) {
+      existing = response.data;
+      break;
+    }
+
+    if (enhancedColumnsSupported && isMissingProjectEnhancedColumnsError(response.error)) {
+      projectEnhancedColumnsSupported = false;
+      enhancedColumnsSupported = false;
+      continue;
+    }
+
+    if (lifecycleColumnsSupported && isMissingProjectLifecycleColumnsError(response.error)) {
+      projectLifecycleColumnsSupported = false;
+      lifecycleColumnsSupported = false;
+      continue;
+    }
+
+    if (documentationColumnsSupported && isMissingProjectDocumentationColumnsError(response.error)) {
+      projectDocumentationColumnsSupported = false;
+      documentationColumnsSupported = false;
+      continue;
+    }
+
+    throw response.error;
+  }
+
   if (!existing) {
     throw new Error("Projeto nao encontrado");
   }

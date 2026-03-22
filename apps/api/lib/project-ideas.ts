@@ -1,4 +1,5 @@
 import {
+  type ProjectDocumentFile,
   projectIdeaSchema,
   type ProjectApplicationStatus,
   type ProjectStatus
@@ -22,6 +23,7 @@ type ProjectMeta = {
   vision: string;
   needs: ProjectNeed[];
   galleryImageUrls: string[];
+  documentationFiles: ProjectDocumentFile[];
   status?: ProjectStatus;
   completedAt?: string | null;
   inactivatedAt?: string | null;
@@ -44,6 +46,7 @@ export type ProjectRow = {
   vision?: string | null;
   needs?: unknown;
   gallery_image_urls?: string[] | null;
+  documentation_files?: unknown;
   owner_member_id?: string | null;
   member_profiles?: ProjectOwnerProfileRow | ProjectOwnerProfileRow[] | null;
   status?: string | null;
@@ -63,6 +66,7 @@ export type NormalizedProjectIdea = {
   vision: string;
   needs: ProjectNeed[];
   galleryImageUrls: string[];
+  documentationFiles: ProjectDocumentFile[];
   ownerName: string;
   ownerAvatarUrl: string | null;
   ownerMemberId: string | null;
@@ -79,6 +83,7 @@ export const PROJECT_LIST_SELECT_BASE =
 export const PROJECT_LIST_SELECT_WITH_ENHANCED = `${PROJECT_LIST_SELECT_BASE}, summary, business_areas, vision, needs, gallery_image_urls`;
 export const PROJECT_LIST_SELECT_WITH_LIFECYCLE = `${PROJECT_LIST_SELECT_BASE}, status, completed_at, inactivated_at, updated_at`;
 export const PROJECT_LIST_SELECT_WITH_ENHANCED_AND_LIFECYCLE = `${PROJECT_LIST_SELECT_WITH_ENHANCED}, status, completed_at, inactivated_at, updated_at`;
+export const PROJECT_DOCUMENTATION_SELECT = "documentation_files";
 
 function trimText(value: string | null | undefined) {
   return typeof value === "string" ? value.trim() : "";
@@ -108,6 +113,41 @@ function sanitizeGalleryImageUrls(value: string[] | null | undefined) {
     .filter(Boolean);
 
   return cleaned.slice(0, 8);
+}
+
+function sanitizeDocumentationFiles(value: unknown): ProjectDocumentFile[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map<ProjectDocumentFile | null>((entry) => {
+      if (!entry || typeof entry !== "object") return null;
+
+      const name = trimText((entry as { name?: string }).name);
+      const url = trimText((entry as { url?: string }).url);
+      const sizeBytes = Number((entry as { sizeBytes?: number }).sizeBytes ?? 0);
+      const contentType = trimText((entry as { contentType?: string }).contentType);
+      const path = trimText((entry as { path?: string | null }).path ?? "");
+
+      if (!name || !url || !Number.isFinite(sizeBytes) || sizeBytes <= 0) {
+        return null;
+      }
+
+      if (contentType !== "application/pdf") {
+        return null;
+      }
+
+      return {
+        name: truncateText(name, 180),
+        url,
+        sizeBytes: Math.trunc(sizeBytes),
+        contentType: "application/pdf" as const,
+        path: path || undefined
+      };
+    })
+    .filter((entry): entry is ProjectDocumentFile => entry !== null)
+    .slice(0, 3);
 }
 
 function sanitizeProjectStatus(value: unknown): ProjectStatus {
@@ -173,6 +213,7 @@ function decodeProjectMeta(rawLookingFor: string | null | undefined): ProjectMet
       vision: trimText(parsed.vision),
       needs: sanitizeNeeds(parsed.needs),
       galleryImageUrls: sanitizeGalleryImageUrls(parsed.galleryImageUrls),
+      documentationFiles: sanitizeDocumentationFiles(parsed.documentationFiles),
       status: sanitizeProjectStatus(parsed.status),
       completedAt: trimOptionalIso(parsed.completedAt),
       inactivatedAt: trimOptionalIso(parsed.inactivatedAt),
@@ -270,6 +311,11 @@ export function normalizeProjectRow(row: ProjectRow): NormalizedProjectIdea {
   const projectGallery = sanitizeGalleryImageUrls(row.gallery_image_urls);
   const galleryImageUrls =
     projectGallery.length > 0 ? projectGallery : (decodedMeta?.galleryImageUrls ?? []);
+  const projectDocumentation = sanitizeDocumentationFiles(row.documentation_files);
+  const documentationFiles =
+    projectDocumentation.length > 0
+      ? projectDocumentation
+      : (decodedMeta?.documentationFiles ?? []);
   const ownerProfile = resolveOwnerProfile(row.member_profiles);
   const status = sanitizeProjectStatus(row.status ?? decodedMeta?.status);
   const completedAt = trimOptionalIso(row.completed_at) ?? decodedMeta?.completedAt ?? null;
@@ -287,6 +333,7 @@ export function normalizeProjectRow(row: ProjectRow): NormalizedProjectIdea {
     vision,
     needs: normalizedNeeds,
     galleryImageUrls,
+    documentationFiles,
     ownerName: ownerProfile.ownerName,
     ownerAvatarUrl: ownerProfile.ownerAvatarUrl,
     ownerMemberId: row.owner_member_id ?? null,
@@ -300,7 +347,13 @@ export function normalizeProjectRow(row: ProjectRow): NormalizedProjectIdea {
 
 export function toProjectInput(project: Pick<
   NormalizedProjectIdea,
-  "title" | "summary" | "businessAreas" | "vision" | "needs" | "galleryImageUrls"
+  | "title"
+  | "summary"
+  | "businessAreas"
+  | "vision"
+  | "needs"
+  | "galleryImageUrls"
+  | "documentationFiles"
 >): ProjectInput {
   return {
     title: project.title,
@@ -308,7 +361,14 @@ export function toProjectInput(project: Pick<
     businessAreas: project.businessAreas,
     vision: project.vision,
     needs: project.needs,
-    galleryImageUrls: project.galleryImageUrls
+    galleryImageUrls: project.galleryImageUrls,
+    documentationFiles: project.documentationFiles.map((file) => ({
+      name: file.name,
+      url: file.url,
+      sizeBytes: file.sizeBytes,
+      contentType: file.contentType,
+      ...(file.path ? { path: file.path } : {})
+    }))
   };
 }
 
@@ -320,6 +380,7 @@ function encodeProjectMeta(payload: ProjectInput, lifecycle?: Partial<ProjectLif
     vision: payload.vision.trim(),
     needs: sanitizeNeeds(payload.needs),
     galleryImageUrls: sanitizeGalleryImageUrls(payload.galleryImageUrls),
+    documentationFiles: sanitizeDocumentationFiles(payload.documentationFiles),
     status: sanitizeProjectStatus(lifecycle?.status),
     completedAt: lifecycle?.completedAt ?? null,
     inactivatedAt: lifecycle?.inactivatedAt ?? null,
@@ -332,11 +393,13 @@ function encodeProjectMeta(payload: ProjectInput, lifecycle?: Partial<ProjectLif
 export function buildProjectDbPayload(
   payload: ProjectInput,
   enhancedColumnsSupported: boolean,
-  lifecycle?: Partial<ProjectLifecycleState>
+  lifecycle?: Partial<ProjectLifecycleState>,
+  documentationColumnsSupported = false
 ) {
   const businessAreas = sanitizeBusinessAreas(payload.businessAreas);
   const needs = sanitizeNeeds(payload.needs);
   const galleryImageUrls = sanitizeGalleryImageUrls(payload.galleryImageUrls);
+  const documentationFiles = sanitizeDocumentationFiles(payload.documentationFiles);
   const summary = payload.summary.trim();
   const vision = payload.vision.trim();
 
@@ -351,13 +414,22 @@ export function buildProjectDbPayload(
     return basePayload;
   }
 
-  return {
+  const enhancedPayload = {
     ...basePayload,
     summary,
     business_areas: businessAreas,
     vision,
     needs,
     gallery_image_urls: galleryImageUrls
+  };
+
+  if (!documentationColumnsSupported) {
+    return enhancedPayload;
+  }
+
+  return {
+    ...enhancedPayload,
+    documentation_files: documentationFiles
   };
 }
 
@@ -401,5 +473,19 @@ export function isMissingProjectLifecycleColumnsError(error: unknown) {
     message.includes("completed_at") ||
     message.includes("inactivated_at") ||
     message.includes("updated_at")
+  );
+}
+
+export function isMissingProjectDocumentationColumnsError(error: unknown) {
+  const code = (error as { code?: string })?.code ?? "";
+  const message = ((error as { message?: string })?.message ?? "").toLowerCase();
+
+  if (code === "42703") {
+    return true;
+  }
+
+  return (
+    message.includes("documentation_files") ||
+    message.includes("column projects.documentation_files does not exist")
   );
 }

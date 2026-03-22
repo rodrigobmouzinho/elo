@@ -76,3 +76,4 @@
 | ELO-089 | Moderacao de candidaturas em projetos | Given membro interessado, When dono aprovar ou recusar com justificativa, Then a visibilidade dos candidatos respeita dono, aprovados e recusados sem exposicao indevida | Must | 13 | 8 |
 | ELO-090 | Inbox de notificacoes de projetos | Given candidatura aprovada ou recusada, When decisao for registrada, Then o membro recebe notificacao interna no app com contexto suficiente para agir | Must | 10 | 5 |
 | ELO-091 | Operacao de projetos no PWA | Given dono, aprovados e interessados no PWA, When abrir lista/detalhe/notificacoes, Then status, equipe, moderacao e bloqueios de candidatura ficam claros e seguros | Must | 12 | 8 |
+| ELO-092 | Upload de galeria e documentacao em projetos | Given dono criando ou editando um projeto, When selecionar imagens e PDFs locais, Then o sistema faz upload real com limites, compressao de imagem e exibe os arquivos no detalhe sem depender de URLs manuais | Must | 12 | 8 |

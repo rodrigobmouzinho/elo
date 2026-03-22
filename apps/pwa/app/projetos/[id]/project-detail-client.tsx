@@ -10,6 +10,7 @@ import {
   Check,
   Clock3,
   Eye,
+  FileText,
   PencilLine,
   Sparkles,
   Trash2,
@@ -455,6 +456,7 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
 
   const applicationBanner = buildApplicationBanner(idea);
   const businessAreas = useMemo(() => idea?.businessAreas.slice(0, 4) ?? [], [idea]);
+  const documentationFiles = idea?.documentationFiles ?? [];
   const isOwner = idea?.viewerAccess.isOwner ?? false;
   const canApply = idea?.viewerAccess.canApply ?? false;
   const hasApplicantRoster = Boolean(idea?.viewerAccess.canViewApplicants && applications);
@@ -702,6 +704,46 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
                 </ul>
               </section>
             </div>
+
+            <section className={styles.documentationSection}>
+              <h4 className={styles.galleryTitle}>
+                <FileText size={16} strokeWidth={2.1} />
+                Documentacao do Projeto
+              </h4>
+
+              {documentationFiles.length > 0 ? (
+                <div className={styles.documentationList}>
+                  {documentationFiles.map((file) => (
+                    <a
+                      key={`${file.url}-${file.name}`}
+                      href={file.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={styles.documentationCard}
+                    >
+                      <div className={styles.documentationCopy}>
+                        <p className={styles.documentationName}>{file.name}</p>
+                        <p className={styles.documentationMeta}>
+                          PDF • {Math.max(1, Math.round(file.sizeBytes / 1024))} KB
+                        </p>
+                      </div>
+                      <span className={styles.documentationAction}>
+                        Abrir
+                        <ArrowUpRight size={15} strokeWidth={2.1} />
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <article className={styles.galleryCardPlaceholder}>
+                  <span className={styles.placeholderBadge}>Sem documentacao ainda</span>
+                  <p className={styles.placeholderText}>
+                    Este projeto ainda nao publicou PDFs de apoio. A leitura segue concentrada
+                    na tese, nas necessidades e na galeria visual.
+                  </p>
+                </article>
+              )}
+            </section>
 
             <section className={styles.gallerySection}>
               <h4 className={styles.galleryTitle}>Galeria &amp; Mockups</h4>
