@@ -20,6 +20,7 @@ type IdeaForm = {
   title: string;
   pitch: string;
   category: string;
+  partnerProfiles: string;
   description: string;
 };
 
@@ -27,6 +28,7 @@ const initialForm: IdeaForm = {
   title: "",
   pitch: "",
   category: "",
+  partnerProfiles: "",
   description: ""
 };
 
@@ -40,9 +42,9 @@ function normalizeApiError(raw: string) {
   return raw;
 }
 
-function buildLookingFor(pitch: string) {
-  if (pitch.length <= 120) return pitch;
-  return `${pitch.slice(0, 117).trimEnd()}...`;
+function buildLookingFor(partnerProfiles: string) {
+  if (partnerProfiles.length <= 120) return partnerProfiles;
+  return `${partnerProfiles.slice(0, 117).trimEnd()}...`;
 }
 
 export default function CadastrarIdeiaPage() {
@@ -61,7 +63,7 @@ export default function CadastrarIdeiaPage() {
         title: form.title.trim(),
         category: form.category.trim(),
         description: `${form.pitch.trim()}\n\n${form.description.trim()}`.trim(),
-        lookingFor: buildLookingFor(form.pitch.trim())
+        lookingFor: buildLookingFor(form.partnerProfiles.trim())
       };
 
       await apiRequest("/app/projects", {
@@ -98,7 +100,7 @@ export default function CadastrarIdeiaPage() {
         <section className={styles.formCard}>
           <div className={styles.header}>
             <div className={styles.headerAccent} aria-hidden="true" />
-            <h2 className={styles.title}>Cadastrar Ideia</h2>
+            <h2 className={styles.title}>Cadastrar Projetos &amp; Ideias</h2>
             <p className={styles.subtitle}>Capture a atencao de inovadores e investidores de classe mundial.</p>
           </div>
 
@@ -138,6 +140,19 @@ export default function CadastrarIdeiaPage() {
                 onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))}
                 minLength={3}
                 maxLength={80}
+                required
+              />
+            </label>
+
+            <label className={styles.fieldGroup}>
+              <span className={styles.fieldLabel}>Perfis de parceiros buscados</span>
+              <input
+                className={styles.fieldControl}
+                placeholder="ex: CTO com experiencia em IA, comercial B2B e investidor com rede em varejo"
+                value={form.partnerProfiles}
+                onChange={(event) => setForm((current) => ({ ...current, partnerProfiles: event.target.value }))}
+                minLength={3}
+                maxLength={120}
                 required
               />
             </label>
