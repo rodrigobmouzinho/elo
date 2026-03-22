@@ -173,7 +173,9 @@ describe("projects application moderation", () => {
     expect(memoryStore.projectApplications[1]?.status).toBe("rejected");
     expect(memoryStore.projectApplications[1]?.rejectionReason).toContain("perfil mais aderente");
     expect(memoryStore.auditLogs.map((item) => item.action)).toEqual([
+      "member.notification_created",
       "project.application_rejected",
+      "member.notification_created",
       "project.application_approved"
     ]);
   });

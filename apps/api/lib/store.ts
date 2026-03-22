@@ -77,6 +77,17 @@ type MockAuditLog = {
   createdAt: string;
 };
 
+type MockMemberNotification = {
+  id: string;
+  memberId: string;
+  type: "project_application_accepted" | "project_application_rejected";
+  title: string;
+  body: string;
+  metadata: Record<string, unknown> | null;
+  readAt: string | null;
+  createdAt: string;
+};
+
 type MockEventPayment = {
   id: string;
   eventId: string;
@@ -230,6 +241,7 @@ export const memoryStore = {
   ranking: [...mockRanking],
   projectIdeas,
   projectApplications: [] as MockProjectApplication[],
+  memberNotifications: [] as MockMemberNotification[],
   auditLogs: [] as MockAuditLog[],
   membershipPayments: [] as MockMembershipPayment[],
   eventPayments: [] as MockEventPayment[],

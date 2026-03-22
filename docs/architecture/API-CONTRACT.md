@@ -34,6 +34,8 @@ Base URL local: `http://localhost:3002`
 - `POST /api/app/members/:id/elo`
 - `GET /api/app/profile`
 - `PATCH /api/app/profile`
+- `GET /api/app/notifications`
+- `POST /api/app/notifications/:id/read`
 - `GET /api/app/gamification/ranking`
 - `GET /api/app/projects`
 - `POST /api/app/projects`
@@ -57,6 +59,8 @@ Base URL local: `http://localhost:3002`
 - `POST /api/app/members/:id/elo` cria vinculo de elo de forma idempotente e bloqueia auto-elo.
 - `GET /api/app/profile` e `GET /api/app/members` retornam `whatsapp` para abrir conversa com um toque no PWA.
 - `PATCH /api/app/profile` atualiza somente dados permitidos do perfil; `email` e `phone` permanecem inalterados.
+- `GET /api/app/notifications` retorna a inbox privada do membro com `items[]` e `unreadCount`.
+- `POST /api/app/notifications/:id/read` marca como lida apenas uma notificacao pertencente ao proprio membro.
 - `POST /api/app/projects` publica projeto/ideia valida e o item fica disponivel na listagem `GET /api/app/projects`.
 - `PATCH /api/app/projects/:id` permite atualizacao somente pelo dono do projeto.
 - `PATCH /api/app/projects/:id/status` controla ciclo de vida do projeto com `active|completed|inactive`; `inactive` e exclusao logica e nao reabre pelo PWA nesta fase.
@@ -66,6 +70,7 @@ Base URL local: `http://localhost:3002`
 - `GET /api/app/projects/:id/applications` expande a privacidade por perfil: dono ve pendentes, aprovados e recusados; membro aprovado ve apenas pendentes e aprovados; recusados nunca aparecem publicamente.
 - `POST /api/app/projects/:id/applications/:applicationId/approve` e `.../reject` sao exclusivos do dono e so moderam candidaturas pendentes.
 - `POST /api/app/projects/:id/applications/:applicationId/reject` exige justificativa e preserva a recusa como dado privado.
+- Moderacao de candidatura aprovada/recusada gera notificacao privada em `member_notifications` para o candidato afetado.
 - `POST /api/app/projects/:id/apply` registra candidatura idempotente e vincula a inscricao ao dono do projeto.
 - `POST /api/app/projects/:id/apply` bloqueia novas candidaturas quando o projeto esta `completed` ou `inactive`.
 - Projetos agora expoem `summary`, `businessAreas`, `vision`, `needs[]`, `galleryImageUrls[]`, `status` e `acceptingApplications`, preservando `category`, `description` e `lookingFor` como compatibilidade legada.

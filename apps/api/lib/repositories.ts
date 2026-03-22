@@ -3,6 +3,7 @@ import type {
   Member,
   PaymentStatus,
   ProjectApplicationStatus,
+  ProjectNotificationType,
   ProjectStatus,
   SeasonRankingEntry
 } from "@elo/core";
@@ -89,6 +90,16 @@ type ProjectApplicationRow = {
   reviewed_at?: string | null;
   reviewed_by_member_id?: string | null;
   rejection_reason?: string | null;
+  created_at: string;
+};
+type MemberNotificationRow = {
+  id: string;
+  member_id: string;
+  type: ProjectNotificationType;
+  title: string;
+  body: string;
+  metadata: unknown;
+  read_at: string | null;
   created_at: string;
 };
 type MembershipPaymentRow = {
@@ -288,6 +299,22 @@ export type ProjectApplicationsView = {
   rejected: ProjectApplicantView[];
 };
 
+export type MemberNotification = {
+  id: string;
+  memberId: string;
+  type: ProjectNotificationType;
+  title: string;
+  body: string;
+  metadata: Record<string, unknown> | null;
+  readAt: string | null;
+  createdAt: string;
+};
+
+export type MemberNotificationsFeed = {
+  items: MemberNotification[];
+  unreadCount: number;
+};
+
 const EVENT_IMAGE_FALLBACK = "/event-placeholder.svg";
 const SEASON_BADGE_RULES = [
   { rank: 1, badgeName: "ouro", description: "Top 1 da temporada ativa" },
@@ -307,6 +334,8 @@ let projectEnhancedColumnsSupported: boolean | null = null;
 let projectEnhancedColumnsSupportProbe: Promise<boolean> | null = null;
 let projectLifecycleColumnsSupported: boolean | null = null;
 let projectLifecycleColumnsSupportProbe: Promise<boolean> | null = null;
+let memberNotificationsSupported: boolean | null = null;
+let memberNotificationsSupportProbe: Promise<boolean> | null = null;
 
 const EVENT_LIST_SELECT_BASE =
   "id, title, description, starts_at, location, online_url, access_type, price_cents, hero_image_url";
@@ -431,6 +460,46 @@ async function ensureProjectLifecycleColumnsSupport() {
   }
 
   return projectLifecycleColumnsSupportProbe;
+}
+
+function isMissingMemberNotificationsTableError(error: unknown) {
+  const code = (error as { code?: string })?.code ?? "";
+  const message = ((error as { message?: string })?.message ?? "").toLowerCase();
+
+  return code === "42P01" || message.includes("member_notifications");
+}
+
+async function ensureMemberNotificationsSupport() {
+  if (!hasSupabase) {
+    return true;
+  }
+
+  if (memberNotificationsSupported !== null) {
+    return memberNotificationsSupported;
+  }
+
+  if (!memberNotificationsSupportProbe) {
+    memberNotificationsSupportProbe = (async () => {
+      const supabase = assertSupabase();
+      const { error } = await supabase.from("member_notifications").select("id").limit(1);
+
+      if (error) {
+        if (isMissingMemberNotificationsTableError(error)) {
+          memberNotificationsSupported = false;
+          return false;
+        }
+
+        throw error;
+      }
+
+      memberNotificationsSupported = true;
+      return true;
+    })().finally(() => {
+      memberNotificationsSupportProbe = null;
+    });
+  }
+
+  return memberNotificationsSupportProbe;
 }
 
 function buildProjectListSelectClause(options: { enhanced: boolean; lifecycle: boolean }) {
@@ -717,6 +786,105 @@ function toProjectApplicantView(
     message: includePrivateFields ? application.message : null,
     rejectionReason: includePrivateFields ? application.rejection_reason ?? null : null
   };
+}
+
+function toMemberNotification(row: MemberNotificationRow): MemberNotification {
+  return {
+    id: row.id,
+    memberId: row.member_id,
+    type: row.type,
+    title: row.title,
+    body: row.body,
+    metadata: toJsonRecord(row.metadata),
+    readAt: row.read_at,
+    createdAt: row.created_at
+  };
+}
+
+async function createMemberNotification(payload: {
+  memberId: string;
+  type: ProjectNotificationType;
+  title: string;
+  body: string;
+  metadata?: Record<string, unknown> | null;
+}) {
+  const createdAt = new Date().toISOString();
+
+  if (!hasSupabase) {
+    const notification: MemberNotification = {
+      id: crypto.randomUUID(),
+      memberId: payload.memberId,
+      type: payload.type,
+      title: payload.title,
+      body: payload.body,
+      metadata: payload.metadata ?? null,
+      readAt: null,
+      createdAt
+    };
+
+    memoryStore.memberNotifications.unshift(notification);
+
+    await recordAuditLog({
+      actorId: payload.memberId,
+      actorRole: "member",
+      action: "member.notification_created",
+      entityType: "member_notification",
+      entityId: notification.id,
+      details: {
+        memberId: payload.memberId,
+        type: payload.type,
+        metadata: payload.metadata ?? null
+      }
+    });
+
+    return notification;
+  }
+
+  const supported = await ensureMemberNotificationsSupport();
+  if (!supported) {
+    return null;
+  }
+
+  const supabase = assertSupabase();
+  const { data, error } = await supabase
+    .from("member_notifications")
+    .insert({
+      member_id: payload.memberId,
+      type: payload.type,
+      title: payload.title,
+      body: payload.body,
+      metadata: payload.metadata ?? {},
+      read_at: null,
+      created_at: createdAt
+    })
+    .select("id, member_id, type, title, body, metadata, read_at, created_at")
+    .single();
+
+  if (error) {
+    if (isMissingMemberNotificationsTableError(error)) {
+      memberNotificationsSupported = false;
+      return null;
+    }
+
+    throw error;
+  }
+
+  const notification = toMemberNotification(data as MemberNotificationRow);
+
+  await recordAuditLog({
+    actorId: payload.memberId,
+    actorRole: "member",
+    action: "member.notification_created",
+    entityType: "member_notification",
+    entityId: notification.id,
+    details: {
+      memberId: payload.memberId,
+      type: payload.type,
+      metadata: payload.metadata ?? null
+    }
+  });
+
+  return notification;
 }
 
 function withGalleryFallback<T extends EventRowMaybeGallery>(
@@ -2889,6 +3057,18 @@ export async function approveProjectApplication(
       }
     });
 
+    await createMemberNotification({
+      memberId: application.applicantMemberId,
+      type: "project_application_accepted",
+      title: `Voce entrou em ${project.title}`,
+      body: `Sua candidatura para ${project.title} foi aprovada. Agora voce faz parte da equipe do projeto.`,
+      metadata: {
+        projectId,
+        projectTitle: project.title,
+        applicationId
+      }
+    });
+
     const profileMap = await loadProjectApplicantProfileMap([application.applicantMemberId]);
     return toProjectApplicantView(
       {
@@ -2950,6 +3130,18 @@ export async function approveProjectApplication(
     entityId: applicationId,
     details: {
       projectId
+    }
+  });
+
+  await createMemberNotification({
+    memberId: application.applicant_member_id,
+    type: "project_application_accepted",
+    title: `Voce entrou em ${project.title}`,
+    body: `Sua candidatura para ${project.title} foi aprovada. Agora voce faz parte da equipe do projeto.`,
+    metadata: {
+      projectId,
+      projectTitle: project.title,
+      applicationId
     }
   });
 
@@ -3021,6 +3213,19 @@ export async function rejectProjectApplication(
       }
     });
 
+    await createMemberNotification({
+      memberId: application.applicantMemberId,
+      type: "project_application_rejected",
+      title: `Atualizacao sobre ${project.title}`,
+      body: `Sua candidatura para ${project.title} nao foi aprovada. Motivo: ${trimmedReason}`,
+      metadata: {
+        projectId,
+        projectTitle: project.title,
+        applicationId,
+        rejectionReason: trimmedReason
+      }
+    });
+
     const profileMap = await loadProjectApplicantProfileMap([application.applicantMemberId]);
     return toProjectApplicantView(
       {
@@ -3085,6 +3290,19 @@ export async function rejectProjectApplication(
     }
   });
 
+  await createMemberNotification({
+    memberId: application.applicant_member_id,
+    type: "project_application_rejected",
+    title: `Atualizacao sobre ${project.title}`,
+    body: `Sua candidatura para ${project.title} nao foi aprovada. Motivo: ${trimmedReason}`,
+    metadata: {
+      projectId,
+      projectTitle: project.title,
+      applicationId,
+      rejectionReason: trimmedReason
+    }
+  });
+
   const profileMap = await loadProjectApplicantProfileMap([application.applicant_member_id]);
   return toProjectApplicantView(
     {
@@ -3097,6 +3315,128 @@ export async function rejectProjectApplication(
     profileMap,
     true
   );
+}
+
+export async function listMemberNotifications(memberId: string): Promise<MemberNotificationsFeed> {
+  if (!hasSupabase) {
+    const items = memoryStore.memberNotifications
+      .filter((item) => item.memberId === memberId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .map((item) => ({
+        ...item,
+        metadata: item.metadata ?? null
+      }));
+
+    return {
+      items,
+      unreadCount: items.filter((item) => !item.readAt).length
+    };
+  }
+
+  const supported = await ensureMemberNotificationsSupport();
+  if (!supported) {
+    return {
+      items: [],
+      unreadCount: 0
+    };
+  }
+
+  const supabase = assertSupabase();
+  const { data, error } = await supabase
+    .from("member_notifications")
+    .select("id, member_id, type, title, body, metadata, read_at, created_at")
+    .eq("member_id", memberId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    if (isMissingMemberNotificationsTableError(error)) {
+      memberNotificationsSupported = false;
+      return {
+        items: [],
+        unreadCount: 0
+      };
+    }
+
+    throw error;
+  }
+
+  const items = (data ?? []).map((row) => toMemberNotification(row as MemberNotificationRow));
+
+  return {
+    items,
+    unreadCount: items.filter((item) => !item.readAt).length
+  };
+}
+
+export async function markMemberNotificationRead(notificationId: string, memberId: string) {
+  if (!hasSupabase) {
+    const notification = memoryStore.memberNotifications.find(
+      (item) => item.id === notificationId && item.memberId === memberId
+    );
+
+    if (!notification) {
+      return null;
+    }
+
+    if (!notification.readAt) {
+      notification.readAt = new Date().toISOString();
+    }
+
+    return {
+      ...notification,
+      metadata: notification.metadata ?? null
+    };
+  }
+
+  const supported = await ensureMemberNotificationsSupport();
+  if (!supported) {
+    return null;
+  }
+
+  const supabase = assertSupabase();
+  const { data: existing, error: lookupError } = await supabase
+    .from("member_notifications")
+    .select("id, member_id, type, title, body, metadata, read_at, created_at")
+    .eq("id", notificationId)
+    .eq("member_id", memberId)
+    .maybeSingle();
+
+  if (lookupError) {
+    if (isMissingMemberNotificationsTableError(lookupError)) {
+      memberNotificationsSupported = false;
+      return null;
+    }
+
+    throw lookupError;
+  }
+
+  if (!existing) {
+    return null;
+  }
+
+  if (existing.read_at) {
+    return toMemberNotification(existing as MemberNotificationRow);
+  }
+
+  const readAt = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("member_notifications")
+    .update({ read_at: readAt })
+    .eq("id", notificationId)
+    .eq("member_id", memberId)
+    .select("id, member_id, type, title, body, metadata, read_at, created_at")
+    .single();
+
+  if (error) {
+    if (isMissingMemberNotificationsTableError(error)) {
+      memberNotificationsSupported = false;
+      return null;
+    }
+
+    throw error;
+  }
+
+  return toMemberNotification(data as MemberNotificationRow);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

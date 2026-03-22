@@ -1,4 +1,8 @@
-import { projectIdeaSchema, type ProjectStatus } from "@elo/core";
+import {
+  projectIdeaSchema,
+  type ProjectApplicationStatus,
+  type ProjectStatus
+} from "@elo/core";
 import type { z } from "zod";
 
 const PROJECT_META_MARKER = "\n[[elo-project-v2]]";
@@ -67,6 +71,7 @@ export type NormalizedProjectIdea = {
   inactivatedAt: string | null;
   updatedAt: string | null;
   acceptingApplications: boolean;
+  myApplicationStatus?: ProjectApplicationStatus | null;
 };
 
 export const PROJECT_LIST_SELECT_BASE =
