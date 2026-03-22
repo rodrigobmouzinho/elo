@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, AtSign } from "lucide-react";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
-import { useSearchParams } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { requestPasswordReset } from "../../lib/auth-client";
 import styles from "./page.module.css";
@@ -45,17 +44,17 @@ const feedbackToneClassMap: Record<FeedbackTone, string> = {
 };
 
 export default function RecuperarSenhaPage() {
-  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
 
   useEffect(() => {
-    const initialEmail = searchParams.get("email")?.trim() ?? "";
+    const params = new URLSearchParams(window.location.search);
+    const initialEmail = params.get("email")?.trim() ?? "";
     if (!initialEmail) return;
 
     setEmail((current) => current || initialEmail);
-  }, [searchParams]);
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
