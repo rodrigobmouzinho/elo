@@ -60,6 +60,9 @@ type MockProjectApplication = {
   applicantMemberId: string;
   message: string | null;
   status: "applied" | "accepted" | "rejected";
+  reviewedAt?: string | null;
+  reviewedByMemberId?: string | null;
+  rejectionReason?: string | null;
   createdAt: string;
 };
 

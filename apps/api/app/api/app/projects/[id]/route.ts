@@ -1,11 +1,35 @@
 import { projectIdeaSchema } from "@elo/core";
 import { requireAuth, resolveMemberIdByAuthUser } from "../../../../../lib/auth";
 import { fail, ok, parseJson } from "../../../../../lib/http";
-import { updateProject } from "../../../../../lib/repositories";
+import { getProjectDetail, updateProject } from "../../../../../lib/repositories";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
+
+export async function GET(request: Request, context: RouteContext) {
+  const auth = await requireAuth(request, ["member"]);
+  if (!auth.ok) return auth.response;
+
+  try {
+    const memberId = await resolveMemberIdByAuthUser(auth.auth.userId);
+
+    if (!memberId) {
+      return fail("Usuario autenticado sem vinculo de membro", 403);
+    }
+
+    const { id: projectId } = await context.params;
+    const project = await getProjectDetail(projectId, memberId);
+
+    if (!project) {
+      return fail("Projeto nao encontrado", 404);
+    }
+
+    return ok(project);
+  } catch (error) {
+    return fail(`Falha ao buscar projeto: ${(error as Error).message}`, 500);
+  }
+}
 
 export async function PATCH(request: Request, context: RouteContext) {
   const auth = await requireAuth(request, ["member"]);

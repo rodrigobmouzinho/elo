@@ -1,4 +1,11 @@
-import type { EventSummary, Member, PaymentStatus, ProjectStatus, SeasonRankingEntry } from "@elo/core";
+import type {
+  EventSummary,
+  Member,
+  PaymentStatus,
+  ProjectApplicationStatus,
+  ProjectStatus,
+  SeasonRankingEntry
+} from "@elo/core";
 import type { z } from "zod";
 import {
   eventSchema,
@@ -77,8 +84,11 @@ type ProjectApplicationRow = {
   id: string;
   project_id: string;
   applicant_member_id: string;
-  status: "applied" | "accepted" | "rejected";
+  status: ProjectApplicationStatus;
   message: string | null;
+  reviewed_at?: string | null;
+  reviewed_by_member_id?: string | null;
+  rejection_reason?: string | null;
   created_at: string;
 };
 type MembershipPaymentRow = {
@@ -240,6 +250,42 @@ export type BadgeGrantResult = {
     badgeName: string;
     rank: number;
   }>;
+};
+
+export type ProjectViewerAccess = {
+  isOwner: boolean;
+  isApprovedMember: boolean;
+  canApply: boolean;
+  canModerateApplications: boolean;
+  canViewApplicants: boolean;
+};
+
+export type ProjectDetail = Awaited<ReturnType<typeof listProjects>>[number] & {
+  viewerAccess: ProjectViewerAccess;
+};
+
+export type ProjectApplicantView = {
+  id: string;
+  memberId: string;
+  memberName: string;
+  memberAvatarUrl: string | null;
+  city: string | null;
+  state: string | null;
+  area: string | null;
+  specialty: string | null;
+  status: ProjectApplicationStatus;
+  createdAt: string;
+  reviewedAt: string | null;
+  message: string | null;
+  rejectionReason: string | null;
+};
+
+export type ProjectApplicationsView = {
+  projectId: string;
+  viewerAccess: ProjectViewerAccess;
+  pending: ProjectApplicantView[];
+  approved: ProjectApplicantView[];
+  rejected: ProjectApplicantView[];
 };
 
 const EVENT_IMAGE_FALLBACK = "/event-placeholder.svg";
@@ -480,6 +526,197 @@ async function recordAuditLog(payload: {
   if (error) {
     throw error;
   }
+}
+
+async function loadViewerApplicationStatusMap(
+  projectIds: string[],
+  viewerMemberId?: string | null
+): Promise<Map<string, ProjectApplicationStatus>> {
+  const statusByProjectId = new Map<string, ProjectApplicationStatus>();
+
+  if (!viewerMemberId || projectIds.length === 0) {
+    return statusByProjectId;
+  }
+
+  if (!hasSupabase) {
+    for (const application of memoryStore.projectApplications) {
+      if (
+        projectIds.includes(application.projectId) &&
+        application.applicantMemberId === viewerMemberId
+      ) {
+        statusByProjectId.set(application.projectId, application.status);
+      }
+    }
+
+    return statusByProjectId;
+  }
+
+  const supabase = assertSupabase();
+  const { data, error } = await supabase
+    .from("project_applications")
+    .select("project_id, status")
+    .eq("applicant_member_id", viewerMemberId)
+    .in("project_id", projectIds);
+
+  if (error) {
+    throw error;
+  }
+
+  for (const row of data ?? []) {
+    if (row.project_id && row.status) {
+      statusByProjectId.set(row.project_id, row.status as ProjectApplicationStatus);
+    }
+  }
+
+  return statusByProjectId;
+}
+
+function buildProjectViewerAccess(
+  project: Awaited<ReturnType<typeof listProjects>>[number],
+  viewerMemberId?: string | null
+): ProjectViewerAccess {
+  const myApplicationStatus = project.myApplicationStatus ?? null;
+  const isOwner = Boolean(viewerMemberId && project.ownerMemberId === viewerMemberId);
+  const isApprovedMember = myApplicationStatus === "accepted";
+
+  return {
+    isOwner,
+    isApprovedMember,
+    canApply: !isOwner && project.acceptingApplications && myApplicationStatus === null,
+    canModerateApplications: isOwner,
+    canViewApplicants: isOwner || isApprovedMember
+  };
+}
+
+async function listProjectApplicationRows(projectId: string): Promise<ProjectApplicationRow[]> {
+  if (!hasSupabase) {
+    return memoryStore.projectApplications
+      .filter((application) => application.projectId === projectId)
+      .map((application) => ({
+        id: application.id,
+        project_id: application.projectId,
+        applicant_member_id: application.applicantMemberId,
+        status: application.status,
+        message: application.message,
+        reviewed_at: (application as { reviewedAt?: string | null }).reviewedAt ?? null,
+        reviewed_by_member_id:
+          (application as { reviewedByMemberId?: string | null }).reviewedByMemberId ?? null,
+        rejection_reason:
+          (application as { rejectionReason?: string | null }).rejectionReason ?? null,
+        created_at: application.createdAt
+      }));
+  }
+
+  const supabase = assertSupabase();
+  const { data, error } = await supabase
+    .from("project_applications")
+    .select(
+      "id, project_id, applicant_member_id, status, message, reviewed_at, reviewed_by_member_id, rejection_reason, created_at"
+    )
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []) as ProjectApplicationRow[];
+}
+
+async function loadProjectApplicantProfileMap(applicantIds: string[]) {
+  const profileMap = new Map<
+    string,
+    {
+      id: string;
+      fullName: string;
+      avatarUrl: string | null;
+      city: string | null;
+      state: string | null;
+      area: string | null;
+      specialty: string | null;
+    }
+  >();
+
+  if (applicantIds.length === 0) {
+    return profileMap;
+  }
+
+  if (!hasSupabase) {
+    for (const member of memoryStore.members) {
+      if (applicantIds.includes(member.id)) {
+        profileMap.set(member.id, {
+          id: member.id,
+          fullName: member.fullName,
+          avatarUrl: member.avatarUrl ?? null,
+          city: member.city ?? null,
+          state: member.state ?? null,
+          area: member.area ?? null,
+          specialty: member.specialty ?? null
+        });
+      }
+    }
+
+    return profileMap;
+  }
+
+  const supabase = assertSupabase();
+  const { data, error } = await supabase
+    .from("member_profiles")
+    .select("id, full_name, avatar_url, city, state, area, specialty")
+    .in("id", applicantIds);
+
+  if (error) {
+    throw error;
+  }
+
+  for (const row of data ?? []) {
+    profileMap.set(row.id, {
+      id: row.id,
+      fullName: row.full_name ?? "Membro Elo",
+      avatarUrl: row.avatar_url ?? null,
+      city: row.city ?? null,
+      state: row.state ?? null,
+      area: row.area ?? null,
+      specialty: row.specialty ?? null
+    });
+  }
+
+  return profileMap;
+}
+
+function toProjectApplicantView(
+  application: ProjectApplicationRow,
+  profileMap: Map<
+    string,
+    {
+      id: string;
+      fullName: string;
+      avatarUrl: string | null;
+      city: string | null;
+      state: string | null;
+      area: string | null;
+      specialty: string | null;
+    }
+  >,
+  includePrivateFields: boolean
+): ProjectApplicantView {
+  const profile = profileMap.get(application.applicant_member_id);
+
+  return {
+    id: application.id,
+    memberId: application.applicant_member_id,
+    memberName: profile?.fullName ?? "Membro Elo",
+    memberAvatarUrl: profile?.avatarUrl ?? null,
+    city: profile?.city ?? null,
+    state: profile?.state ?? null,
+    area: profile?.area ?? null,
+    specialty: profile?.specialty ?? null,
+    status: application.status,
+    createdAt: application.created_at,
+    reviewedAt: application.reviewed_at ?? null,
+    message: includePrivateFields ? application.message : null,
+    rejectionReason: includePrivateFields ? application.rejection_reason ?? null : null
+  };
 }
 
 function withGalleryFallback<T extends EventRowMaybeGallery>(
@@ -1858,7 +2095,7 @@ export async function processAutomaticBadgesJob(): Promise<BadgeGrantResult> {
 
 export async function listProjects(viewerMemberId?: string | null) {
   if (!hasSupabase) {
-    return memoryStore.projectIdeas
+    const projects = memoryStore.projectIdeas
       .map((project) =>
         normalizeProjectRow({
           id: project.id,
@@ -1883,6 +2120,15 @@ export async function listProjects(viewerMemberId?: string | null) {
         })
       )
       .filter((project) => project.status !== "inactive" || project.ownerMemberId === viewerMemberId);
+    const statusByProjectId = await loadViewerApplicationStatusMap(
+      projects.map((project) => project.id),
+      viewerMemberId
+    );
+
+    return projects.map((project) => ({
+      ...project,
+      myApplicationStatus: statusByProjectId.get(project.id) ?? null
+    }));
   }
 
   const supabase = assertSupabase();
@@ -1921,10 +2167,18 @@ export async function listProjects(viewerMemberId?: string | null) {
   }
 
   const rows = (data ?? []) as ProjectRow[];
-
-  return rows
+  const projects = rows
     .map((project) => normalizeProjectRow(project))
     .filter((project) => project.status !== "inactive" || project.ownerMemberId === viewerMemberId);
+  const statusByProjectId = await loadViewerApplicationStatusMap(
+    projects.map((project) => project.id),
+    viewerMemberId
+  );
+
+  return projects.map((project) => ({
+    ...project,
+    myApplicationStatus: statusByProjectId.get(project.id) ?? null
+  }));
 }
 
 export async function createProject(payload: ProjectInput, ownerMemberId: string) {
@@ -2529,6 +2783,320 @@ export async function applyToProject(projectId: string, applicantMemberId: strin
     createdAt: application.created_at,
     created: true
   };
+}
+
+export async function getProjectDetail(
+  projectId: string,
+  viewerMemberId?: string | null
+): Promise<ProjectDetail | null> {
+  const projects = await listProjects(viewerMemberId);
+  const project = projects.find((item) => item.id === projectId);
+
+  if (!project) {
+    return null;
+  }
+
+  return {
+    ...project,
+    viewerAccess: buildProjectViewerAccess(project, viewerMemberId)
+  };
+}
+
+export async function getProjectApplications(
+  projectId: string,
+  viewerMemberId?: string | null
+): Promise<ProjectApplicationsView | null> {
+  const project = await getProjectDetail(projectId, viewerMemberId);
+
+  if (!project) {
+    return null;
+  }
+
+  if (!project.viewerAccess.canViewApplicants) {
+    throw new Error("Visualizacao de candidaturas nao permitida");
+  }
+
+  const rows = await listProjectApplicationRows(projectId);
+  const profileMap = await loadProjectApplicantProfileMap(
+    rows.map((row) => row.applicant_member_id)
+  );
+
+  const pending = rows
+    .filter((row) => row.status === "applied")
+    .map((row) => toProjectApplicantView(row, profileMap, project.viewerAccess.isOwner));
+  const approved = rows
+    .filter((row) => row.status === "accepted")
+    .map((row) => toProjectApplicantView(row, profileMap, project.viewerAccess.isOwner));
+  const rejected = project.viewerAccess.isOwner
+    ? rows
+        .filter((row) => row.status === "rejected")
+        .map((row) => toProjectApplicantView(row, profileMap, true))
+    : [];
+
+  return {
+    projectId,
+    viewerAccess: project.viewerAccess,
+    pending,
+    approved,
+    rejected
+  };
+}
+
+export async function approveProjectApplication(
+  projectId: string,
+  applicationId: string,
+  actorMemberId: string
+): Promise<ProjectApplicantView> {
+  const project = await getProjectDetail(projectId, actorMemberId);
+
+  if (!project) {
+    throw new Error("Projeto nao encontrado");
+  }
+
+  if (!project.viewerAccess.isOwner) {
+    throw new Error("Somente o dono pode moderar candidaturas");
+  }
+
+  if (!hasSupabase) {
+    const application = memoryStore.projectApplications.find(
+      (item) => item.id === applicationId && item.projectId === projectId
+    );
+
+    if (!application) {
+      throw new Error("Candidatura nao encontrada");
+    }
+
+    if (application.status !== "applied") {
+      throw new Error("Somente candidaturas pendentes podem ser moderadas");
+    }
+
+    const reviewedAt = new Date().toISOString();
+    Object.assign(application as object, {
+      status: "accepted" as ProjectApplicationStatus,
+      reviewedAt,
+      reviewedByMemberId: actorMemberId,
+      rejectionReason: null
+    });
+
+    await recordAuditLog({
+      actorId: actorMemberId,
+      actorRole: "member",
+      action: "project.application_approved",
+      entityType: "project_application",
+      entityId: applicationId,
+      details: {
+        projectId
+      }
+    });
+
+    const profileMap = await loadProjectApplicantProfileMap([application.applicantMemberId]);
+    return toProjectApplicantView(
+      {
+        id: application.id,
+        project_id: application.projectId,
+        applicant_member_id: application.applicantMemberId,
+        status: "accepted",
+        message: application.message,
+        reviewed_at: reviewedAt,
+        reviewed_by_member_id: actorMemberId,
+        rejection_reason: null,
+        created_at: application.createdAt
+      },
+      profileMap,
+      true
+    );
+  }
+
+  const supabase = assertSupabase();
+  const { data: existing, error: lookupError } = await supabase
+    .from("project_applications")
+    .select(
+      "id, project_id, applicant_member_id, status, message, reviewed_at, reviewed_by_member_id, rejection_reason, created_at"
+    )
+    .eq("id", applicationId)
+    .eq("project_id", projectId)
+    .maybeSingle();
+
+  if (lookupError) throw lookupError;
+  if (!existing) {
+    throw new Error("Candidatura nao encontrada");
+  }
+
+  const application = existing as ProjectApplicationRow;
+
+  if (application.status !== "applied") {
+    throw new Error("Somente candidaturas pendentes podem ser moderadas");
+  }
+
+  const reviewedAt = new Date().toISOString();
+  const { error: updateError } = await supabase
+    .from("project_applications")
+    .update({
+      status: "accepted",
+      reviewed_at: reviewedAt,
+      reviewed_by_member_id: actorMemberId,
+      rejection_reason: null
+    })
+    .eq("id", applicationId)
+    .eq("project_id", projectId);
+
+  if (updateError) throw updateError;
+
+  await recordAuditLog({
+    actorId: actorMemberId,
+    actorRole: "member",
+    action: "project.application_approved",
+    entityType: "project_application",
+    entityId: applicationId,
+    details: {
+      projectId
+    }
+  });
+
+  const profileMap = await loadProjectApplicantProfileMap([application.applicant_member_id]);
+  return toProjectApplicantView(
+    {
+      ...application,
+      status: "accepted",
+      reviewed_at: reviewedAt,
+      reviewed_by_member_id: actorMemberId,
+      rejection_reason: null
+    },
+    profileMap,
+    true
+  );
+}
+
+export async function rejectProjectApplication(
+  projectId: string,
+  applicationId: string,
+  actorMemberId: string,
+  reason: string
+): Promise<ProjectApplicantView> {
+  const trimmedReason = reason.trim();
+
+  if (!trimmedReason) {
+    throw new Error("Justificativa obrigatoria para recusar candidatura");
+  }
+
+  const project = await getProjectDetail(projectId, actorMemberId);
+
+  if (!project) {
+    throw new Error("Projeto nao encontrado");
+  }
+
+  if (!project.viewerAccess.isOwner) {
+    throw new Error("Somente o dono pode moderar candidaturas");
+  }
+
+  if (!hasSupabase) {
+    const application = memoryStore.projectApplications.find(
+      (item) => item.id === applicationId && item.projectId === projectId
+    );
+
+    if (!application) {
+      throw new Error("Candidatura nao encontrada");
+    }
+
+    if (application.status !== "applied") {
+      throw new Error("Somente candidaturas pendentes podem ser moderadas");
+    }
+
+    const reviewedAt = new Date().toISOString();
+    Object.assign(application as object, {
+      status: "rejected" as ProjectApplicationStatus,
+      reviewedAt,
+      reviewedByMemberId: actorMemberId,
+      rejectionReason: trimmedReason
+    });
+
+    await recordAuditLog({
+      actorId: actorMemberId,
+      actorRole: "member",
+      action: "project.application_rejected",
+      entityType: "project_application",
+      entityId: applicationId,
+      details: {
+        projectId
+      }
+    });
+
+    const profileMap = await loadProjectApplicantProfileMap([application.applicantMemberId]);
+    return toProjectApplicantView(
+      {
+        id: application.id,
+        project_id: application.projectId,
+        applicant_member_id: application.applicantMemberId,
+        status: "rejected",
+        message: application.message,
+        reviewed_at: reviewedAt,
+        reviewed_by_member_id: actorMemberId,
+        rejection_reason: trimmedReason,
+        created_at: application.createdAt
+      },
+      profileMap,
+      true
+    );
+  }
+
+  const supabase = assertSupabase();
+  const { data: existing, error: lookupError } = await supabase
+    .from("project_applications")
+    .select(
+      "id, project_id, applicant_member_id, status, message, reviewed_at, reviewed_by_member_id, rejection_reason, created_at"
+    )
+    .eq("id", applicationId)
+    .eq("project_id", projectId)
+    .maybeSingle();
+
+  if (lookupError) throw lookupError;
+  if (!existing) {
+    throw new Error("Candidatura nao encontrada");
+  }
+
+  const application = existing as ProjectApplicationRow;
+
+  if (application.status !== "applied") {
+    throw new Error("Somente candidaturas pendentes podem ser moderadas");
+  }
+
+  const reviewedAt = new Date().toISOString();
+  const { error: updateError } = await supabase
+    .from("project_applications")
+    .update({
+      status: "rejected",
+      reviewed_at: reviewedAt,
+      reviewed_by_member_id: actorMemberId,
+      rejection_reason: trimmedReason
+    })
+    .eq("id", applicationId)
+    .eq("project_id", projectId);
+
+  if (updateError) throw updateError;
+
+  await recordAuditLog({
+    actorId: actorMemberId,
+    actorRole: "member",
+    action: "project.application_rejected",
+    entityType: "project_application",
+    entityId: applicationId,
+    details: {
+      projectId
+    }
+  });
+
+  const profileMap = await loadProjectApplicantProfileMap([application.applicant_member_id]);
+  return toProjectApplicantView(
+    {
+      ...application,
+      status: "rejected",
+      reviewed_at: reviewedAt,
+      reviewed_by_member_id: actorMemberId,
+      rejection_reason: trimmedReason
+    },
+    profileMap,
+    true
+  );
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

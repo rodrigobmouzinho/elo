@@ -37,8 +37,12 @@ Base URL local: `http://localhost:3002`
 - `GET /api/app/gamification/ranking`
 - `GET /api/app/projects`
 - `POST /api/app/projects`
+- `GET /api/app/projects/:id`
 - `PATCH /api/app/projects/:id`
 - `PATCH /api/app/projects/:id/status`
+- `GET /api/app/projects/:id/applications`
+- `POST /api/app/projects/:id/applications/:applicationId/approve`
+- `POST /api/app/projects/:id/applications/:applicationId/reject`
 - `POST /api/app/projects/:id/apply`
 
 ## Health
@@ -57,6 +61,11 @@ Base URL local: `http://localhost:3002`
 - `PATCH /api/app/projects/:id` permite atualizacao somente pelo dono do projeto.
 - `PATCH /api/app/projects/:id/status` controla ciclo de vida do projeto com `active|completed|inactive`; `inactive` e exclusao logica e nao reabre pelo PWA nesta fase.
 - `GET /api/app/projects` expoe `status` e `acceptingApplications`; projetos `inactive` so aparecem para o proprio dono.
+- `GET /api/app/projects` tambem expoe `ownerMemberId` e `myApplicationStatus` quando o viewer ja possui candidatura.
+- `GET /api/app/projects/:id` retorna flags viewer-scoped (`isOwner`, `isApprovedMember`, `canApply`, `canModerateApplications`, `canViewApplicants`) para o PWA montar a experiencia com seguranca.
+- `GET /api/app/projects/:id/applications` expande a privacidade por perfil: dono ve pendentes, aprovados e recusados; membro aprovado ve apenas pendentes e aprovados; recusados nunca aparecem publicamente.
+- `POST /api/app/projects/:id/applications/:applicationId/approve` e `.../reject` sao exclusivos do dono e so moderam candidaturas pendentes.
+- `POST /api/app/projects/:id/applications/:applicationId/reject` exige justificativa e preserva a recusa como dado privado.
 - `POST /api/app/projects/:id/apply` registra candidatura idempotente e vincula a inscricao ao dono do projeto.
 - `POST /api/app/projects/:id/apply` bloqueia novas candidaturas quando o projeto esta `completed` ou `inactive`.
 - Projetos agora expoem `summary`, `businessAreas`, `vision`, `needs[]`, `galleryImageUrls[]`, `status` e `acceptingApplications`, preservando `category`, `description` e `lookingFor` como compatibilidade legada.
