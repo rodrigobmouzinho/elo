@@ -85,6 +85,34 @@
   color: rgba(147, 142, 160, 0.88);
 }
 
+.filterBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.filterChip {
+  min-height: 2.3rem;
+  padding: 0 0.9rem;
+  border: none;
+  border-radius: 999px;
+  background: #2a2a2a;
+  color: rgba(202, 195, 215, 0.84);
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.filterChipActive {
+  background: #5932d1;
+  color: #ffffff;
+}
+
 .ctaCard {
   position: relative;
   overflow: hidden;
@@ -218,10 +246,13 @@
 .cardFooter {
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.55rem;
   padding-top: 0.15rem;
 }
 
-.viewButton {
+.viewButton,
+.editButton {
   min-height: 2.65rem;
   padding: 0 0.95rem;
   border-radius: 0.85rem;
@@ -234,6 +265,12 @@
   font-family: var(--member-font-body), "Inter", sans-serif;
   font-size: 0.74rem;
   font-weight: 700;
+}
+
+.editButton {
+  gap: 0.42rem;
+  background: rgba(89, 50, 209, 0.14);
+  color: #cbbeff;
 }
 
 .emptyState {
@@ -262,12 +299,16 @@
 }
 
 .primaryButton:hover,
-.viewButton:hover {
+.viewButton:hover,
+.editButton:hover,
+.filterChip:hover {
   transform: translateY(-0.0625rem);
 }
 
 .primaryButton:focus-visible,
-.viewButton:focus-visible {
+.viewButton:focus-visible,
+.editButton:focus-visible,
+.filterChip:focus-visible {
   outline: 2px solid rgba(203, 190, 255, 0.75);
   outline-offset: 2px;
 }

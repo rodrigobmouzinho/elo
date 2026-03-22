@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, ArrowUpRight, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, PencilLine, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { MemberShell } from "../../../components/member-shell";
-import { apiRequest } from "../../../lib/auth-client";
+import { apiRequest, getStoredAuth } from "../../../lib/auth-client";
 import styles from "./page.module.css";
 
 type Idea = {
@@ -13,6 +13,7 @@ type Idea = {
   category: string;
   description: string;
   lookingFor: string;
+  ownerMemberId?: string | null;
   ownerName?: string;
 };
 
@@ -64,6 +65,11 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
   const [applying, setApplying] = useState(false);
   const [applicationState, setApplicationState] = useState<ApplicationState | null>(null);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
+  const [currentMemberId, setCurrentMemberId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setCurrentMemberId(getStoredAuth()?.user.memberId ?? null);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -103,6 +109,20 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
     };
   }, [projectId]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const flash = window.sessionStorage.getItem("elo-project-updated");
+    if (flash !== projectId) return;
+
+    window.sessionStorage.removeItem("elo-project-updated");
+    setFeedback({
+      title: "Projeto atualizado",
+      description: "As alteracoes deste projeto foram salvas com sucesso.",
+      tone: "success"
+    });
+  }, [projectId]);
+
   async function applyToIdea() {
     if (!idea) return;
 
@@ -138,6 +158,7 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
   const pitch = useMemo(() => (idea ? extractPitch(idea.description) : ""), [idea]);
   const detailParagraphs = useMemo(() => (idea ? extractDescriptionBody(idea.description) : []), [idea]);
   const disableApply = applying || applicationState === "created" || applicationState === "existing";
+  const isOwner = currentMemberId !== null && idea?.ownerMemberId === currentMemberId;
 
   return (
     <MemberShell>
@@ -204,10 +225,17 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
                 Voltar
               </Link>
 
-              <button className={styles.primaryButton} type="button" onClick={() => void applyToIdea()} disabled={disableApply}>
-                {applying ? "Enviando..." : applicationLabel(applicationState ?? undefined)}
-                <ArrowUpRight size={16} strokeWidth={2.1} />
-              </button>
+              {isOwner ? (
+                <Link href={`/projetos/${idea.id}/editar`} className={styles.editButton}>
+                  <PencilLine size={16} strokeWidth={2.1} />
+                  Editar projeto
+                </Link>
+              ) : (
+                <button className={styles.primaryButton} type="button" onClick={() => void applyToIdea()} disabled={disableApply}>
+                  {applying ? "Enviando..." : applicationLabel(applicationState ?? undefined)}
+                  <ArrowUpRight size={16} strokeWidth={2.1} />
+                </button>
+              )}
             </section>
           </>
         ) : null}

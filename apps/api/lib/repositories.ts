@@ -1681,7 +1681,7 @@ export async function listProjects() {
   const supabase = assertSupabase();
   const { data, error } = await supabase
     .from("projects")
-    .select("id, title, category, description, looking_for")
+    .select("id, title, category, description, looking_for, owner_member_id")
     .order("created_at", { ascending: false });
 
   if (error) throw error;
@@ -1694,7 +1694,8 @@ export async function listProjects() {
     category: project.category,
     description: project.description,
     lookingFor: project.looking_for,
-    ownerName: "Membro Elo"
+    ownerName: "Membro Elo",
+    ownerMemberId: project.owner_member_id ?? null
   }));
 }
 
@@ -1722,7 +1723,7 @@ export async function createProject(payload: ProjectInput, ownerMemberId: string
       category: payload.category,
       looking_for: payload.lookingFor
     })
-    .select("id, title, category, description, looking_for")
+    .select("id, title, category, description, looking_for, owner_member_id")
     .single();
 
   if (error) throw error;
@@ -1733,7 +1734,73 @@ export async function createProject(payload: ProjectInput, ownerMemberId: string
     category: data.category,
     description: data.description,
     lookingFor: data.looking_for,
-    ownerName: "Membro Elo"
+    ownerName: "Membro Elo",
+    ownerMemberId: data.owner_member_id ?? null
+  };
+}
+
+export async function updateProject(projectId: string, payload: ProjectInput, editorMemberId: string) {
+  if (!hasSupabase) {
+    const project = memoryStore.projectIdeas.find((item) => item.id === projectId);
+
+    if (!project) {
+      throw new Error("Projeto nao encontrado");
+    }
+
+    if (!project.ownerMemberId || project.ownerMemberId !== editorMemberId) {
+      throw new Error("Somente o dono pode editar o projeto");
+    }
+
+    Object.assign(project, {
+      title: payload.title,
+      description: payload.description,
+      category: payload.category,
+      lookingFor: payload.lookingFor
+    });
+
+    return project;
+  }
+
+  const supabase = assertSupabase();
+  const { data: existing, error: lookupError } = await supabase
+    .from("projects")
+    .select("id, owner_member_id")
+    .eq("id", projectId)
+    .maybeSingle();
+
+  if (lookupError) throw lookupError;
+  if (!existing) {
+    throw new Error("Projeto nao encontrado");
+  }
+
+  const projectOwner = existing as ProjectOwnerRow;
+
+  if (!projectOwner.owner_member_id || projectOwner.owner_member_id !== editorMemberId) {
+    throw new Error("Somente o dono pode editar o projeto");
+  }
+
+  const { data, error } = await supabase
+    .from("projects")
+    .update({
+      title: payload.title,
+      description: payload.description,
+      category: payload.category,
+      looking_for: payload.lookingFor
+    })
+    .eq("id", projectId)
+    .select("id, title, category, description, looking_for, owner_member_id")
+    .single();
+
+  if (error) throw error;
+
+  return {
+    id: data.id,
+    title: data.title,
+    category: data.category,
+    description: data.description,
+    lookingFor: data.looking_for,
+    ownerName: "Membro Elo",
+    ownerMemberId: data.owner_member_id ?? null
   };
 }
 

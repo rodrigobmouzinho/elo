@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { CirclePlus, Search } from "lucide-react";
+import { CirclePlus, PencilLine, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { MemberShell } from "../../components/member-shell";
-import { apiRequest } from "../../lib/auth-client";
+import { apiRequest, getStoredAuth } from "../../lib/auth-client";
 import styles from "./page.module.css";
 
 type Idea = {
@@ -13,8 +13,11 @@ type Idea = {
   category: string;
   description: string;
   lookingFor: string;
+  ownerMemberId?: string | null;
   ownerName?: string;
 };
+
+type ProjectFilter = "all" | "mine";
 
 type FeedbackTone = "danger" | "success";
 
@@ -62,6 +65,8 @@ function ideaIndex(idea: Idea) {
 export default function ProjetosPage() {
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [search, setSearch] = useState("");
+  const [activeFilter, setActiveFilter] = useState<ProjectFilter>("all");
+  const [currentMemberId, setCurrentMemberId] = useState<string | null>(null);
   const [loadingIdeas, setLoadingIdeas] = useState(true);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
 
@@ -87,24 +92,46 @@ export default function ProjetosPage() {
   }, []);
 
   useEffect(() => {
+    setCurrentMemberId(getStoredAuth()?.user.memberId ?? null);
+  }, []);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
 
     const flash = window.sessionStorage.getItem("elo-project-created");
-    if (flash !== "1") return;
+    const updatedFlash = window.sessionStorage.getItem("elo-project-updated");
 
-    window.sessionStorage.removeItem("elo-project-created");
-    setFeedback({
-      title: "Ideia publicada",
-      description: "Seu projeto ja esta disponivel para novas visualizacoes e candidaturas.",
-      tone: "success"
-    });
+    if (flash === "1") {
+      window.sessionStorage.removeItem("elo-project-created");
+      setFeedback({
+        title: "Ideia publicada",
+        description: "Seu projeto ja esta disponivel para novas visualizacoes e candidaturas.",
+        tone: "success"
+      });
+      return;
+    }
+
+    if (updatedFlash === "1") {
+      window.sessionStorage.removeItem("elo-project-updated");
+      setFeedback({
+        title: "Projeto atualizado",
+        description: "As alteracoes do seu projeto ja foram publicadas.",
+        tone: "success"
+      });
+    }
   }, []);
 
   const filteredIdeas = useMemo(() => {
     const normalizedSearch = normalizeSearchValue(search.trim());
 
-    return ideas.filter((idea) => normalizedSearch === "" || ideaIndex(idea).includes(normalizedSearch));
-  }, [ideas, search]);
+    return ideas.filter((idea) => {
+      const matchesFilter =
+        activeFilter === "all" || (currentMemberId !== null && idea.ownerMemberId === currentMemberId);
+      const matchesSearch = normalizedSearch === "" || ideaIndex(idea).includes(normalizedSearch);
+
+      return matchesFilter && matchesSearch;
+    });
+  }, [activeFilter, currentMemberId, ideas, search]);
 
   return (
     <MemberShell>
@@ -138,6 +165,25 @@ export default function ProjetosPage() {
           />
         </label>
 
+        {currentMemberId ? (
+          <section className={styles.filterBar} aria-label="Filtros de projetos">
+            <button
+              className={`${styles.filterChip} ${activeFilter === "all" ? styles.filterChipActive : ""}`}
+              type="button"
+              onClick={() => setActiveFilter("all")}
+            >
+              Todos
+            </button>
+            <button
+              className={`${styles.filterChip} ${activeFilter === "mine" ? styles.filterChipActive : ""}`}
+              type="button"
+              onClick={() => setActiveFilter("mine")}
+            >
+              Meus projetos
+            </button>
+          </section>
+        ) : null}
+
         <section className={styles.ctaCard}>
           <div className={styles.ctaAura} aria-hidden="true" />
           <div className={styles.ctaContent}>
@@ -160,27 +206,42 @@ export default function ProjetosPage() {
         {!loadingIdeas && filteredIdeas.length === 0 ? (
           <section className={styles.emptyState}>
             <h3 className={styles.emptyTitle}>Nenhuma oportunidade encontrada</h3>
-            <p className={styles.emptyText}>Ajuste a busca ou publique uma nova ideia para abrir espaco para colaboracao.</p>
+            <p className={styles.emptyText}>
+              {activeFilter === "mine"
+                ? "Voce ainda nao publicou projetos com esse criterio. Publique uma nova ideia para aparecer aqui."
+                : "Ajuste a busca ou publique uma nova ideia para abrir espaco para colaboracao."}
+            </p>
           </section>
         ) : null}
 
         <section className={styles.feedGrid}>
-          {filteredIdeas.map((idea) => (
-            <article key={idea.id} className={styles.projectCard}>
-              <div className={styles.cardHeader}>
-                <span className={styles.categoryBadge}>{idea.category}</span>
-              </div>
+          {filteredIdeas.map((idea) => {
+            const isOwner = currentMemberId !== null && idea.ownerMemberId === currentMemberId;
 
-              <h3 className={styles.cardTitle}>{idea.title}</h3>
-              <p className={styles.cardPitch}>{extractPitch(idea.description)}</p>
+            return (
+              <article key={idea.id} className={styles.projectCard}>
+                <div className={styles.cardHeader}>
+                  <span className={styles.categoryBadge}>{idea.category}</span>
+                </div>
 
-              <div className={styles.cardFooter}>
-                <Link href={`/projetos/${idea.id}`} className={styles.viewButton}>
-                  Visualizar
-                </Link>
-              </div>
-            </article>
-          ))}
+                <h3 className={styles.cardTitle}>{idea.title}</h3>
+                <p className={styles.cardPitch}>{extractPitch(idea.description)}</p>
+
+                <div className={styles.cardFooter}>
+                  {isOwner ? (
+                    <Link href={`/projetos/${idea.id}/editar`} className={styles.editButton}>
+                      <PencilLine size={14} strokeWidth={2.1} />
+                      Editar
+                    </Link>
+                  ) : null}
+
+                  <Link href={`/projetos/${idea.id}`} className={styles.viewButton}>
+                    Visualizar
+                  </Link>
+                </div>
+              </article>
+            );
+          })}
         </section>
       </div>
     </MemberShell>

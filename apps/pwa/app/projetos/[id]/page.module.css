@@ -115,7 +115,8 @@
 }
 
 .primaryButton,
-.backButton {
+.backButton,
+.editButton {
   min-height: 3rem;
   border-radius: 0.95rem;
   display: inline-flex;
@@ -146,8 +147,14 @@
   color: #ffffff;
 }
 
+.editButton {
+  background: rgba(89, 50, 209, 0.14);
+  color: #cbbeff;
+}
+
 .primaryButton:hover,
-.backButton:hover {
+.backButton:hover,
+.editButton:hover {
   transform: translateY(-0.0625rem);
 }
 
@@ -158,7 +165,8 @@
 }
 
 .primaryButton:focus-visible,
-.backButton:focus-visible {
+.backButton:focus-visible,
+.editButton:focus-visible {
   outline: 2px solid rgba(203, 190, 255, 0.75);
   outline-offset: 2px;
 }
