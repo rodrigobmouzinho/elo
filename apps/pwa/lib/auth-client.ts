@@ -6,6 +6,7 @@ export type AuthUser = {
   role: "admin" | "member";
   memberId: string | null;
   displayName: string;
+  mustChangePassword?: boolean;
 };
 
 export type AuthSession = {
@@ -17,6 +18,19 @@ export type AuthSession = {
 export type StoredAuth = {
   session: AuthSession;
   user: AuthUser;
+};
+
+export type MemberApplicationPayload = {
+  fullName: string;
+  email: string;
+  phone?: string;
+  whatsapp: string;
+  city: string;
+  state: string;
+  area: string;
+  bio?: string;
+  specialty?: string;
+  avatarUrl?: string;
 };
 
 type ApiEnvelope<T> = {
@@ -169,6 +183,7 @@ export async function fetchMe() {
     email: string;
     role: "member";
     memberId: string | null;
+    mustChangePassword: boolean;
   }>(response, "Sessao invalida");
 
   if (!parsed.ok) {
@@ -180,6 +195,62 @@ export async function fetchMe() {
     clearStoredAuth();
     throw new Error("Usuario sem permissao de membro");
   }
+
+  return parsed.data;
+}
+
+export async function submitMemberApplication(payload: MemberApplicationPayload) {
+  const response = await fetch("/backend/public/member-applications", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const parsed = await parseApiResponse<{ id: string }>(
+    response,
+    "Falha ao enviar solicitacao"
+  );
+
+  if (!parsed.ok) {
+    throw new Error(parsed.error);
+  }
+
+  return parsed.data;
+}
+
+export async function submitFirstAccessPassword(password: string) {
+  const auth = getStoredAuth();
+
+  if (!auth?.session?.accessToken) {
+    throw new Error("Voce precisa entrar com a senha temporaria antes de concluir o primeiro acesso.");
+  }
+
+  const response = await fetch("/backend/auth/first-access/password", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${auth.session.accessToken}`
+    },
+    body: JSON.stringify({ password })
+  });
+
+  const parsed = await parseApiResponse<{
+    mustChangePassword: false;
+  }>(response, "Falha ao concluir primeiro acesso");
+
+  if (!parsed.ok) {
+    throw new Error(parsed.error);
+  }
+
+  setStoredAuth({
+    ...auth,
+    user: {
+      ...auth.user,
+      mustChangePassword: false
+    }
+  });
 
   return parsed.data;
 }

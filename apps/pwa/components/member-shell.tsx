@@ -70,7 +70,12 @@ export function MemberShell({ children, detailHeader, hideBottomNav = Boolean(de
     }
 
     fetchMe()
-      .then(() => {
+      .then((profile) => {
+        if (profile.mustChangePassword) {
+          router.replace("/primeiro-acesso");
+          return;
+        }
+
         setDisplayName(stored.user.displayName || "Membro Elo");
         setReady(true);
       })

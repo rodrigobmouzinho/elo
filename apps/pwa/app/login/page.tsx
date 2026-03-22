@@ -56,8 +56,8 @@ export default function LoginPage() {
     setFeedback(null);
 
     try {
-      await login(email, password);
-      router.replace("/");
+      const auth = await login(email, password);
+      router.replace(auth.user.mustChangePassword ? "/primeiro-acesso" : "/");
     } catch (submitError) {
       setFeedback({
         title: "Falha ao entrar",
@@ -158,12 +158,13 @@ export default function LoginPage() {
 
               <p className={styles.signup}>
                 <span>Novo no nexo?</span>
-                <a
+                <button
                   className={styles.signupLink}
-                  href="mailto:suporte@elonetworking.com?subject=Solicitar%20Adesao%20Elo"
+                  type="button"
+                  onClick={() => router.push("/solicitar-adesao")}
                 >
                   {"Solicitar Ades\u00e3o"}
-                </a>
+                </button>
               </p>
             </div>
           </div>

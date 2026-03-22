@@ -1,0 +1,203 @@
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  background:
+    radial-gradient(circle at top left, rgba(91, 52, 216, 0.24), transparent 32%),
+    radial-gradient(circle at bottom right, rgba(176, 3, 124, 0.18), transparent 28%),
+    #111111;
+  color: #f8fafc;
+  font-family: var(--first-access-font-body), sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+.glowPrimary,
+.glowSecondary {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(56px);
+  pointer-events: none;
+}
+
+.glowPrimary {
+  inset: 0 auto auto -10%;
+  width: 16rem;
+  height: 16rem;
+  background: rgba(91, 52, 216, 0.22);
+}
+
+.glowSecondary {
+  inset: auto -14% 6% auto;
+  width: 15rem;
+  height: 15rem;
+  background: rgba(176, 3, 124, 0.16);
+}
+
+.panel {
+  position: relative;
+  width: min(100%, 31rem);
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.45rem;
+  border-radius: 1.8rem;
+  background: rgba(19, 19, 19, 0.92);
+  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(72, 69, 85, 0.15);
+}
+
+.centeredStatus {
+  font-size: 0.98rem;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: fit-content;
+  padding: 0.55rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(124, 58, 237, 0.14);
+  color: #d8b4fe;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.copyBlock {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.headline {
+  margin: 0;
+  font-family: var(--first-access-font-display), sans-serif;
+  font-size: clamp(2rem, 7vw, 3.2rem);
+  line-height: 0.94;
+  letter-spacing: -0.05em;
+  max-width: 10ch;
+}
+
+.copy {
+  margin: 0;
+  color: rgba(226, 232, 240, 0.82);
+  line-height: 1.7;
+}
+
+.feedback {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.95rem 1rem;
+  border-radius: 1rem;
+  font-size: 0.95rem;
+}
+
+.feedbackDanger {
+  background: rgba(127, 29, 29, 0.42);
+  color: #fecaca;
+}
+
+.feedbackSuccess {
+  background: rgba(20, 83, 45, 0.36);
+  color: #bbf7d0;
+}
+
+.feedbackInfo {
+  background: rgba(30, 64, 175, 0.3);
+  color: #bfdbfe;
+}
+
+.form {
+  display: grid;
+  gap: 1rem;
+}
+
+.fieldGroup {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.fieldLabel {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.inputWrap {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 0.95rem;
+  border-radius: 0.9rem;
+  background: rgba(44, 44, 44, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.66);
+}
+
+.inputWrap:focus-within {
+  background: rgba(53, 53, 53, 0.98);
+  border-color: rgba(139, 92, 246, 0.78);
+  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.4);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  padding: 0.95rem 0;
+  background: transparent;
+  color: #f8fafc;
+  font: inherit;
+}
+
+.input::placeholder {
+  color: rgba(255, 255, 255, 0.38);
+}
+
+.rules {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 1rem;
+  background: rgba(28, 27, 27, 0.96);
+}
+
+.rule {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: rgba(226, 232, 240, 0.7);
+  font-size: 0.92rem;
+}
+
+.ruleOk {
+  color: #bbf7d0;
+}
+
+.ruleBullet {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.75;
+}
+
+.submit {
+  border: none;
+  border-radius: 0.95rem;
+  padding: 1rem 1.2rem;
+  font: inherit;
+  font-weight: 700;
+  color: #ffffff;
+  background: linear-gradient(90deg, #5b34d8 0%, #b0037c 100%);
+}
+
+.submit:disabled {
+  opacity: 0.65;
+}
