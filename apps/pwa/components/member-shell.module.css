@@ -202,9 +202,30 @@
 .iconButton {
   width: 2.5rem;
   height: 2.5rem;
+  position: relative;
   display: grid;
   place-items: center;
   cursor: pointer;
+}
+
+.notificationBadge {
+  position: absolute;
+  top: -0.22rem;
+  right: -0.18rem;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 0.24rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #5932d1 0%, #9b027c 100%);
+  color: #ffffff;
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  box-shadow: 0 12px 24px -14px rgba(155, 2, 124, 0.86);
 }
 
 .detailIconLink,

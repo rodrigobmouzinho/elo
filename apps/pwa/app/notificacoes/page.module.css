@@ -1,0 +1,185 @@
+.page {
+  display: grid;
+  gap: 1rem;
+  padding-bottom: 2rem;
+}
+
+.statusCard,
+.heroCard,
+.emptyState,
+.notificationCard {
+  display: grid;
+  gap: 0.7rem;
+  padding: 1.05rem;
+  border-radius: 1.45rem;
+  background: #1c1b1b;
+  box-shadow: inset 0 0 0 1px rgba(72, 69, 85, 0.14);
+}
+
+.statusDanger {
+  background: rgba(147, 0, 10, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(255, 180, 171, 0.14);
+}
+
+.heroCard {
+  position: relative;
+  overflow: hidden;
+  gap: 0.8rem;
+  background:
+    radial-gradient(72% 88% at 92% 0%, rgba(155, 2, 124, 0.2), rgba(28, 27, 27, 0) 72%),
+    rgba(28, 27, 27, 0.92);
+}
+
+.heroIcon {
+  width: 2.7rem;
+  height: 2.7rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: rgba(89, 50, 209, 0.16);
+  color: #cbbeff;
+}
+
+.heroCopy {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.heroTitle,
+.statusTitle,
+.emptyTitle,
+.notificationTitle {
+  margin: 0;
+  color: #ffffff;
+  font-family: var(--member-font-display), "Plus Jakarta Sans", sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.heroTitle,
+.notificationTitle {
+  font-size: 1.02rem;
+}
+
+.statusTitle,
+.emptyTitle {
+  font-size: 1rem;
+}
+
+.heroText,
+.statusText,
+.emptyText,
+.notificationBody {
+  margin: 0;
+  color: rgba(202, 195, 215, 0.82);
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.9rem;
+  line-height: 1.62;
+}
+
+.unreadBadge,
+.notificationType,
+.readBadge {
+  width: fit-content;
+  min-height: 1.65rem;
+  padding: 0.3rem 0.78rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.unreadBadge,
+.notificationType {
+  background: rgba(89, 50, 209, 0.16);
+  color: #cbbeff;
+}
+
+.readBadge {
+  background: #353534;
+  color: rgba(202, 195, 215, 0.82);
+}
+
+.feedStack {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.notificationUnread {
+  box-shadow:
+    inset 0 0 0 1px rgba(203, 190, 255, 0.18),
+    0 20px 36px -28px rgba(155, 2, 124, 0.54);
+}
+
+.notificationHeader,
+.notificationActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.notificationDate {
+  color: rgba(202, 195, 215, 0.64);
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.primaryButton,
+.secondaryButton {
+  min-height: 3rem;
+  padding: 0 1rem;
+  border: none;
+  border-radius: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--member-font-display), "Plus Jakarta Sans", sans-serif;
+  font-size: 0.84rem;
+  font-weight: 700;
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease;
+}
+
+.primaryButton {
+  background: linear-gradient(135deg, #5932d1 0%, #9b027c 100%);
+  color: #ffffff;
+  box-shadow: 0 18px 34px -20px rgba(155, 2, 124, 0.86);
+}
+
+.secondaryButton {
+  background: #353534;
+  color: #ffffff;
+}
+
+.primaryButton:hover,
+.secondaryButton:hover,
+.primaryButton:focus-visible,
+.secondaryButton:focus-visible {
+  transform: translateY(-0.0625rem);
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled {
+  opacity: 0.72;
+  transform: none;
+  cursor: wait;
+}
+
+@media (min-width: 768px) {
+  .page {
+    max-width: 36rem;
+    margin: 0 auto;
+  }
+}

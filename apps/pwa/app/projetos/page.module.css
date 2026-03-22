@@ -202,7 +202,7 @@
   box-shadow: inset 0 0 0 1px rgba(72, 69, 85, 0.12);
 }
 
-.cardHeader {
+.cardMeta {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -243,6 +243,38 @@
   line-height: 1.58;
 }
 
+.stateBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.45rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.stateBadgeCompleted {
+  background: rgba(89, 50, 209, 0.14);
+  color: #cbbeff;
+}
+
+.stateBadgeInactive {
+  background: rgba(255, 180, 171, 0.14);
+  color: #ffb4ab;
+}
+
+.cardStateText {
+  margin: -0.2rem 0 0;
+  color: rgba(202, 195, 215, 0.68);
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
 .cardFooter {
   display: flex;
   justify-content: flex-end;
@@ -279,6 +311,10 @@
   padding: 1.1rem 1.05rem;
   border-radius: 1.35rem;
   background: rgba(28, 27, 27, 0.9);
+}
+
+.projectCardMuted {
+  background: rgba(28, 27, 27, 0.72);
 }
 
 .emptyTitle {

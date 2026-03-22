@@ -1,6 +1,60 @@
+export type ProjectStatus = "active" | "completed" | "inactive";
+export type ProjectApplicationStatus = "applied" | "accepted" | "rejected";
+export type ProjectNotificationType =
+  | "project_application_accepted"
+  | "project_application_rejected";
+
 export type ProjectNeed = {
   title: string;
   description: string;
+};
+
+export type ProjectViewerAccess = {
+  isOwner: boolean;
+  isApprovedMember: boolean;
+  canApply: boolean;
+  canModerateApplications: boolean;
+  canViewApplicants: boolean;
+};
+
+export type ProjectApplicant = {
+  id: string;
+  memberId: string;
+  memberName: string;
+  memberAvatarUrl: string | null;
+  city: string | null;
+  state: string | null;
+  area: string | null;
+  specialty: string | null;
+  status: ProjectApplicationStatus;
+  createdAt: string;
+  reviewedAt: string | null;
+  message: string | null;
+  rejectionReason: string | null;
+};
+
+export type ProjectApplicationsView = {
+  projectId: string;
+  viewerAccess: ProjectViewerAccess;
+  pending: ProjectApplicant[];
+  approved: ProjectApplicant[];
+  rejected: ProjectApplicant[];
+};
+
+export type ProjectNotification = {
+  id: string;
+  memberId: string;
+  type: ProjectNotificationType;
+  title: string;
+  body: string;
+  metadata: Record<string, unknown> | null;
+  readAt: string | null;
+  createdAt: string;
+};
+
+export type ProjectNotificationsFeed = {
+  items: ProjectNotification[];
+  unreadCount: number;
 };
 
 export type ProjectIdea = {
@@ -17,6 +71,16 @@ export type ProjectIdea = {
   ownerName?: string;
   ownerAvatarUrl?: string | null;
   ownerMemberId?: string | null;
+  status: ProjectStatus;
+  completedAt: string | null;
+  inactivatedAt: string | null;
+  updatedAt: string | null;
+  acceptingApplications: boolean;
+  myApplicationStatus?: ProjectApplicationStatus | null;
+};
+
+export type ProjectDetail = ProjectIdea & {
+  viewerAccess: ProjectViewerAccess;
 };
 
 export type ProjectDraft = {
@@ -66,6 +130,31 @@ export function normalizeSearchValue(value: string) {
 export function excerpt(value: string, max = 120) {
   if (value.length <= max) return value;
   return `${value.slice(0, max).trimEnd()}...`;
+}
+
+export function projectStatusLabel(status: ProjectStatus) {
+  if (status === "completed") return "Concluido";
+  if (status === "inactive") return "Inativo";
+  return "Ativo";
+}
+
+export function projectStatusDescription(status: ProjectStatus) {
+  if (status === "completed") {
+    return "Equipe formada. Novas candidaturas estao encerradas.";
+  }
+
+  if (status === "inactive") {
+    return "Projeto arquivado pelo dono e oculto da vitrine publica.";
+  }
+
+  return "Aceitando novas candidaturas.";
+}
+
+export function projectApplicationLabel(status: ProjectApplicationStatus | null | undefined) {
+  if (status === "accepted") return "Voce ja faz parte da equipe";
+  if (status === "rejected") return "Sua candidatura nao foi aprovada";
+  if (status === "applied") return "Interesse ja enviado";
+  return "Tenho Interesse / Participar";
 }
 
 function cleanStringList(value: string[], max: number) {

@@ -9,6 +9,8 @@ import {
   buildProjectSearchIndex,
   normalizeApiError,
   normalizeSearchValue,
+  projectStatusDescription,
+  projectStatusLabel,
   type ProjectIdea
 } from "../../lib/project-ideas";
 import styles from "./page.module.css";
@@ -59,8 +61,21 @@ export default function ProjetosPage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
+    const managementFlash = window.sessionStorage.getItem("elo-project-flash");
     const flash = window.sessionStorage.getItem("elo-project-created");
     const updatedFlash = window.sessionStorage.getItem("elo-project-updated");
+
+    if (managementFlash) {
+      window.sessionStorage.removeItem("elo-project-flash");
+
+      try {
+        const parsed = JSON.parse(managementFlash) as FeedbackState;
+        setFeedback(parsed);
+        return;
+      } catch {
+        // Ignore malformed flash payload.
+      }
+    }
 
     if (flash === "1") {
       window.sessionStorage.removeItem("elo-project-created");
@@ -87,7 +102,9 @@ export default function ProjetosPage() {
 
     return ideas.filter((idea) => {
       const matchesFilter =
-        activeFilter === "all" || (currentMemberId !== null && idea.ownerMemberId === currentMemberId);
+        activeFilter === "mine"
+          ? currentMemberId !== null && idea.ownerMemberId === currentMemberId
+          : idea.status !== "inactive";
       const matchesSearch =
         normalizedSearch === "" || buildProjectSearchIndex(idea).includes(normalizedSearch);
 
@@ -179,15 +196,29 @@ export default function ProjetosPage() {
         <section className={styles.feedGrid}>
           {filteredIdeas.map((idea) => {
             const isOwner = currentMemberId !== null && idea.ownerMemberId === currentMemberId;
+            const isClosed = idea.status !== "active";
 
             return (
-              <article key={idea.id} className={styles.projectCard}>
-                <div className={styles.cardHeader}>
+              <article
+                key={idea.id}
+                className={`${styles.projectCard} ${idea.status === "inactive" ? styles.projectCardMuted : ""}`}
+              >
+                <div className={styles.cardMeta}>
                   <span className={styles.categoryBadge}>{idea.businessAreas[0] ?? idea.category}</span>
+                  {isClosed ? (
+                    <span
+                      className={`${styles.stateBadge} ${
+                        idea.status === "completed" ? styles.stateBadgeCompleted : styles.stateBadgeInactive
+                      }`}
+                    >
+                      {projectStatusLabel(idea.status)}
+                    </span>
+                  ) : null}
                 </div>
 
                 <h3 className={styles.cardTitle}>{idea.title}</h3>
                 <p className={styles.cardPitch}>{idea.summary}</p>
+                {isClosed ? <p className={styles.cardStateText}>{projectStatusDescription(idea.status)}</p> : null}
 
                 <div className={styles.cardFooter}>
                   {isOwner ? (

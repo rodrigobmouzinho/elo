@@ -7,7 +7,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { MouseEvent, ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
-import { clearStoredAuth, fetchMe, getStoredAuth } from "../lib/auth-client";
+import { apiRequest, clearStoredAuth, fetchMe, getStoredAuth } from "../lib/auth-client";
+import type { ProjectNotificationsFeed } from "../lib/project-ideas";
 import styles from "./member-shell.module.css";
 
 const displayFont = Plus_Jakarta_Sans({
@@ -58,6 +59,7 @@ export function MemberShell({ children, detailHeader, hideBottomNav = Boolean(de
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [displayName, setDisplayName] = useState("Membro Elo");
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   useEffect(() => {
     const stored = getStoredAuth();
@@ -76,6 +78,36 @@ export function MemberShell({ children, detailHeader, hideBottomNav = Boolean(de
         router.replace("/login");
       });
   }, [router]);
+
+  useEffect(() => {
+    if (!ready) return;
+
+    let active = true;
+
+    async function loadNotifications() {
+      try {
+        const feed = await apiRequest<ProjectNotificationsFeed>("/app/notifications");
+        if (!active) return;
+        setUnreadNotifications(feed.unreadCount);
+      } catch {
+        if (!active) return;
+        setUnreadNotifications(0);
+      }
+    }
+
+    void loadNotifications();
+
+    function handleNotificationsUpdated() {
+      void loadNotifications();
+    }
+
+    window.addEventListener("elo-notifications-updated", handleNotificationsUpdated);
+
+    return () => {
+      active = false;
+      window.removeEventListener("elo-notifications-updated", handleNotificationsUpdated);
+    };
+  }, [pathname, ready]);
 
   const activeHref = resolveActiveHref(pathname);
   const activeItem = navItems.find((item) => item.href === activeHref);
@@ -155,8 +187,18 @@ export function MemberShell({ children, detailHeader, hideBottomNav = Boolean(de
               </div>
 
               <div className={styles.topActions}>
-                <button className={styles.iconButton} type="button" aria-label={"Notifica\u00e7\u00f5es"}>
+                <button
+                  className={styles.iconButton}
+                  type="button"
+                  aria-label={"Notifica\u00e7\u00f5es"}
+                  onClick={() => router.push("/notificacoes")}
+                >
                   <Bell size={18} strokeWidth={2.1} />
+                  {unreadNotifications > 0 ? (
+                    <span className={styles.notificationBadge}>
+                      {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                    </span>
+                  ) : null}
                 </button>
                 <button
                   className={styles.iconButton}

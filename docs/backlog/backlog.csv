@@ -68,4 +68,4 @@ ELO-087,UX Quality/Release,"QA de refatoracao total com regressao visual, a11y, 
 ELO-088,Projects,"Ciclo de vida de projetos com status ativo/concluido/inativo e exclusao logica",Must,High,5,M7 Total UX Refactor,Done
 ELO-089,Projects,"Moderacao de candidaturas em projetos com aprovacao, recusa justificada e privacidade",Must,High,8,M7 Total UX Refactor,Done
 ELO-090,Projects,"Inbox de notificacoes de projetos no app para aprovacoes e recusas",Must,MediumHigh,5,M7 Total UX Refactor,Done
-ELO-091,PWA UX,"Operacao completa de projetos no PWA com status, equipe e moderacao",Must,High,8,M7 Total UX Refactor,In Progress
+ELO-091,PWA UX,"Operacao completa de projetos no PWA com status, equipe e moderacao",Must,High,8,M7 Total UX Refactor,Done

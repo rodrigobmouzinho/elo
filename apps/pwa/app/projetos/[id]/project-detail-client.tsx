@@ -2,15 +2,35 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, Eye, PencilLine, Sparkles } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  ArrowUpRight,
+  BadgeCheck,
+  Ban,
+  Check,
+  Clock3,
+  Eye,
+  PencilLine,
+  Sparkles,
+  Trash2,
+  UsersRound
+} from "lucide-react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { MemberShell } from "../../../components/member-shell";
-import { apiRequest, getStoredAuth } from "../../../lib/auth-client";
-import { normalizeApiError, type ProjectIdea } from "../../../lib/project-ideas";
+import { apiRequest } from "../../../lib/auth-client";
+import {
+  normalizeApiError,
+  projectApplicationLabel,
+  projectStatusDescription,
+  projectStatusLabel,
+  type ProjectApplicant,
+  type ProjectApplicationsView,
+  type ProjectDetail,
+  type ProjectStatus
+} from "../../../lib/project-ideas";
 import styles from "./page.module.css";
 
 type FeedbackTone = "danger" | "info" | "success";
-type ApplicationState = "created" | "existing";
 
 type FeedbackState = {
   title: string;
@@ -18,52 +38,125 @@ type FeedbackState = {
   tone: FeedbackTone;
 };
 
-function applicationLabel(state?: ApplicationState) {
-  if (state === "created") return "Interesse enviado";
-  if (state === "existing") return "Interesse ja registrado";
-  return "Tenho Interesse / Participar";
+function initialsOf(value: string) {
+  return (
+    value
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? "")
+      .join("") || "ME"
+  );
 }
 
-function initialsOf(value: string) {
-  return value
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("") || "ME";
+function statusFlashFor(status: ProjectStatus): FeedbackState {
+  if (status === "completed") {
+    return {
+      title: "Projeto concluido",
+      description: "A vitrine continua disponivel, mas novas candidaturas foram encerradas.",
+      tone: "success"
+    };
+  }
+
+  if (status === "inactive") {
+    return {
+      title: "Projeto arquivado",
+      description: "O projeto foi movido para inativo e saiu da vitrine publica.",
+      tone: "success"
+    };
+  }
+
+  return {
+    title: "Projeto reaberto",
+    description: "As candidaturas foram reativadas e o projeto voltou a aceitar novos interessados.",
+    tone: "success"
+  };
+}
+
+function buildApplicationBanner(project: ProjectDetail | null) {
+  if (!project) return null;
+
+  if (project.status === "completed") {
+    return {
+      title: "Equipe formada",
+      description: "Este projeto foi concluido e nao esta aceitando novas candidaturas.",
+      tone: "info" as const
+    };
+  }
+
+  if (project.status === "inactive" && project.viewerAccess.isOwner) {
+    return {
+      title: "Projeto inativo",
+      description: "Somente voce ainda consegue visualizar esta publicacao no app.",
+      tone: "info" as const
+    };
+  }
+
+  if (project.myApplicationStatus === "accepted") {
+    return {
+      title: "Voce esta na equipe",
+      description: "Sua candidatura foi aprovada e esta oportunidade agora faz parte do seu circulo de colaboracao.",
+      tone: "success" as const
+    };
+  }
+
+  if (project.myApplicationStatus === "applied") {
+    return {
+      title: "Interesse enviado",
+      description: "Seu interesse ja foi registrado. Agora o dono do projeto decide os proximos passos.",
+      tone: "info" as const
+    };
+  }
+
+  if (project.myApplicationStatus === "rejected") {
+    return {
+      title: "Atualizacao disponivel",
+      description: "Confira o sino de notificacoes para ver a resposta privada desta candidatura.",
+      tone: "info" as const
+    };
+  }
+
+  return null;
 }
 
 export function ProjectDetailClient({ projectId }: { projectId: string }) {
-  const [idea, setIdea] = useState<ProjectIdea | null>(null);
+  const router = useRouter();
+  const [idea, setIdea] = useState<ProjectDetail | null>(null);
+  const [applications, setApplications] = useState<ProjectApplicationsView | null>(null);
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
-  const [applicationState, setApplicationState] = useState<ApplicationState | null>(null);
+  const [statusAction, setStatusAction] = useState<ProjectStatus | null>(null);
+  const [moderatingId, setModeratingId] = useState<string | null>(null);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [rejectReasons, setRejectReasons] = useState<Record<string, string>>({});
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
-  const [currentMemberId, setCurrentMemberId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setCurrentMemberId(getStoredAuth()?.user.memberId ?? null);
-  }, []);
 
   useEffect(() => {
     let active = true;
 
-    async function loadIdea() {
+    async function loadProject() {
       setLoading(true);
 
       try {
-        const projects = await apiRequest<ProjectIdea[]>("/app/projects");
-        const targetIdea = projects.find((project) => project.id === projectId);
-
-        if (!targetIdea) {
-          throw new Error("Projeto nao encontrado.");
-        }
-
+        const project = await apiRequest<ProjectDetail>(`/app/projects/${projectId}`);
         if (!active) return;
-        setIdea(targetIdea);
+
+        setIdea(project);
+
+        if (project.viewerAccess.canViewApplicants) {
+          const nextApplications = await apiRequest<ProjectApplicationsView>(
+            `/app/projects/${projectId}/applications`
+          );
+          if (!active) return;
+          setApplications(nextApplications);
+        } else if (active) {
+          setApplications(null);
+        }
       } catch (requestError) {
         if (!active) return;
 
+        setIdea(null);
+        setApplications(null);
         setFeedback({
           title: "Falha ao carregar projeto",
           description: normalizeApiError((requestError as Error).message),
@@ -76,7 +169,7 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
       }
     }
 
-    void loadIdea();
+    void loadProject();
 
     return () => {
       active = false;
@@ -97,29 +190,37 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
     });
   }, [projectId]);
 
+  async function refreshProject() {
+    const project = await apiRequest<ProjectDetail>(`/app/projects/${projectId}`);
+    setIdea(project);
+
+    if (project.viewerAccess.canViewApplicants) {
+      const nextApplications = await apiRequest<ProjectApplicationsView>(
+        `/app/projects/${projectId}/applications`
+      );
+      setApplications(nextApplications);
+    } else {
+      setApplications(null);
+    }
+  }
+
   async function applyToIdea() {
-    if (!idea) return;
+    if (!idea || !idea.viewerAccess.canApply) return;
 
     setApplying(true);
     setFeedback(null);
 
     try {
-      const response = await apiRequest<{ message: string; application: { created: boolean } }>(
-        `/app/projects/${idea.id}/apply`,
-        {
-          method: "POST",
-          body: JSON.stringify({})
-        }
-      );
+      await apiRequest(`/app/projects/${idea.id}/apply`, {
+        method: "POST",
+        body: JSON.stringify({})
+      });
 
-      const nextState: ApplicationState = response.application.created ? "created" : "existing";
-      setApplicationState(nextState);
+      await refreshProject();
       setFeedback({
-        title: response.application.created ? "Interesse registrado" : "Interesse ja existente",
-        description: response.application.created
-          ? `Seu interesse em "${idea.title}" foi enviado ao fundador.`
-          : `Seu interesse em "${idea.title}" ja constava para o time responsavel.`,
-        tone: response.application.created ? "success" : "info"
+        title: "Interesse registrado",
+        description: `Seu interesse em "${idea.title}" foi enviado ao dono do projeto.`,
+        tone: "success"
       });
     } catch (applyError) {
       setFeedback({
@@ -132,12 +233,250 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
     }
   }
 
-  const isOwner = currentMemberId !== null && idea?.ownerMemberId === currentMemberId;
-  const disableApply = applying || applicationState === "created" || applicationState === "existing";
+  async function handleStatusChange(nextStatus: ProjectStatus) {
+    if (!idea) return;
+
+    const confirmed =
+      nextStatus === "inactive"
+        ? window.confirm(
+            "Arquivar este projeto o remove da vitrine publica. Deseja continuar?"
+          )
+        : nextStatus === "completed"
+          ? window.confirm(
+              "Concluir este projeto encerra novas candidaturas. Deseja continuar?"
+            )
+          : true;
+
+    if (!confirmed) {
+      return;
+    }
+
+    setStatusAction(nextStatus);
+    setFeedback(null);
+
+    try {
+      await apiRequest(`/app/projects/${idea.id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: nextStatus })
+      });
+
+      if (nextStatus === "inactive") {
+        window.sessionStorage.setItem(
+          "elo-project-flash",
+          JSON.stringify(statusFlashFor(nextStatus))
+        );
+        router.replace("/projetos");
+        return;
+      }
+
+      await refreshProject();
+      setFeedback(statusFlashFor(nextStatus));
+    } catch (statusError) {
+      setFeedback({
+        title: "Falha ao atualizar projeto",
+        description: normalizeApiError((statusError as Error).message),
+        tone: "danger"
+      });
+    } finally {
+      setStatusAction(null);
+    }
+  }
+
+  async function handleApprove(applicationId: string) {
+    if (!idea) return;
+
+    setModeratingId(applicationId);
+    setFeedback(null);
+
+    try {
+      await apiRequest(`/app/projects/${idea.id}/applications/${applicationId}/approve`, {
+        method: "POST"
+      });
+
+      await refreshProject();
+      setRejectingId(null);
+      setFeedback({
+        title: "Membro aprovado",
+        description: "A candidatura foi aprovada e o membro agora faz parte da equipe deste projeto.",
+        tone: "success"
+      });
+    } catch (approveError) {
+      setFeedback({
+        title: "Falha ao aprovar candidatura",
+        description: normalizeApiError((approveError as Error).message),
+        tone: "danger"
+      });
+    } finally {
+      setModeratingId(null);
+    }
+  }
+
+  async function handleReject(event: FormEvent<HTMLFormElement>, applicationId: string) {
+    event.preventDefault();
+    if (!idea) return;
+
+    const reason = rejectReasons[applicationId]?.trim() ?? "";
+    if (!reason) {
+      setFeedback({
+        title: "Justificativa obrigatoria",
+        description: "Escreva um motivo objetivo antes de recusar a candidatura.",
+        tone: "danger"
+      });
+      return;
+    }
+
+    setModeratingId(applicationId);
+    setFeedback(null);
+
+    try {
+      await apiRequest(`/app/projects/${idea.id}/applications/${applicationId}/reject`, {
+        method: "POST",
+        body: JSON.stringify({ reason })
+      });
+
+      await refreshProject();
+      setRejectingId(null);
+      setRejectReasons((current) => ({
+        ...current,
+        [applicationId]: ""
+      }));
+      setFeedback({
+        title: "Candidatura recusada",
+        description: "A resposta privada foi enviada ao membro e ficou registrada no projeto.",
+        tone: "success"
+      });
+    } catch (rejectError) {
+      setFeedback({
+        title: "Falha ao recusar candidatura",
+        description: normalizeApiError((rejectError as Error).message),
+        tone: "danger"
+      });
+    } finally {
+      setModeratingId(null);
+    }
+  }
+
+  const applicationBanner = buildApplicationBanner(idea);
   const businessAreas = useMemo(() => idea?.businessAreas.slice(0, 4) ?? [], [idea]);
+  const isOwner = idea?.viewerAccess.isOwner ?? false;
+  const canApply = idea?.viewerAccess.canApply ?? false;
+  const hasApplicantRoster = Boolean(idea?.viewerAccess.canViewApplicants && applications);
+  const detailHeaderTitle = idea?.title ?? "Detalhes do Projeto";
+
+  function renderApplicantCard(applicant: ProjectApplicant, group: "pending" | "approved" | "rejected") {
+    const isRejecting = rejectingId === applicant.id;
+    const isBusy = moderatingId === applicant.id;
+
+    return (
+      <article key={applicant.id} className={styles.applicantCard}>
+        <div className={styles.applicantHeader}>
+          <div className={styles.applicantIdentity}>
+            {applicant.memberAvatarUrl ? (
+              <img
+                src={applicant.memberAvatarUrl}
+                alt={applicant.memberName}
+                className={styles.applicantAvatar}
+              />
+            ) : (
+              <div className={styles.applicantAvatarFallback}>
+                {initialsOf(applicant.memberName)}
+              </div>
+            )}
+
+            <div className={styles.applicantCopy}>
+              <h5 className={styles.applicantName}>{applicant.memberName}</h5>
+              <p className={styles.applicantMeta}>
+                {[applicant.area, applicant.specialty, applicant.city, applicant.state]
+                  .filter(Boolean)
+                  .join(" • ") || "Membro Elo"}
+              </p>
+            </div>
+          </div>
+
+          <span
+            className={`${styles.applicantState} ${
+              group === "approved"
+                ? styles.applicantStateApproved
+                : group === "rejected"
+                  ? styles.applicantStateRejected
+                  : styles.applicantStatePending
+            }`}
+          >
+            {group === "approved" ? "Aprovado" : group === "rejected" ? "Recusado" : "Pendente"}
+          </span>
+        </div>
+
+        {applicant.message ? (
+          <p className={styles.applicantMessage}>Mensagem privada: {applicant.message}</p>
+        ) : null}
+
+        {applicant.rejectionReason ? (
+          <p className={styles.applicantReason}>Justificativa privada: {applicant.rejectionReason}</p>
+        ) : null}
+
+        {group === "pending" && isOwner ? (
+          <div className={styles.applicantActions}>
+            <button
+              className={styles.approveButton}
+              type="button"
+              onClick={() => void handleApprove(applicant.id)}
+              disabled={isBusy}
+            >
+              {isBusy ? "Aprovando..." : "Aprovar"}
+              <Check size={15} strokeWidth={2.1} />
+            </button>
+
+            <button
+              className={styles.rejectButton}
+              type="button"
+              onClick={() => setRejectingId((current) => (current === applicant.id ? null : applicant.id))}
+              disabled={isBusy}
+            >
+              Negar
+              <Ban size={15} strokeWidth={2.1} />
+            </button>
+          </div>
+        ) : null}
+
+        {group === "pending" && isOwner && isRejecting ? (
+          <form className={styles.rejectForm} onSubmit={(event) => void handleReject(event, applicant.id)}>
+            <label className={styles.rejectField}>
+              <span className={styles.rejectLabel}>Justificativa da recusa</span>
+              <textarea
+                className={styles.rejectTextarea}
+                value={rejectReasons[applicant.id] ?? ""}
+                onChange={(event) =>
+                  setRejectReasons((current) => ({
+                    ...current,
+                    [applicant.id]: event.target.value
+                  }))
+                }
+                maxLength={500}
+                placeholder="Explique de forma objetiva por que este perfil nao foi aprovado nesta fase."
+              />
+            </label>
+
+            <div className={styles.rejectActions}>
+              <button className={styles.confirmRejectButton} type="submit" disabled={isBusy}>
+                {isBusy ? "Salvando..." : "Confirmar recusa"}
+              </button>
+              <button
+                className={styles.cancelRejectButton}
+                type="button"
+                onClick={() => setRejectingId(null)}
+                disabled={isBusy}
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+        ) : null}
+      </article>
+    );
+  }
 
   return (
-    <MemberShell detailHeader={{ title: "Detalhes do Projeto", backHref: "/projetos" }}>
+    <MemberShell detailHeader={{ title: detailHeaderTitle, backHref: "/projetos" }}>
       <div className={styles.page}>
         {feedback ? (
           <section
@@ -147,6 +486,13 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
           >
             <h2 className={styles.statusTitle}>{feedback.title}</h2>
             <p className={styles.statusText}>{feedback.description}</p>
+          </section>
+        ) : null}
+
+        {applicationBanner ? (
+          <section className={styles.infoCard} aria-live="polite">
+            <h2 className={styles.infoTitle}>{applicationBanner.title}</h2>
+            <p className={styles.infoText}>{applicationBanner.description}</p>
           </section>
         ) : null}
 
@@ -160,7 +506,9 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
         {!loading && !idea ? (
           <section className={styles.emptyState}>
             <h2 className={styles.emptyTitle}>Projeto nao encontrado</h2>
-            <p className={styles.emptyText}>Esta oportunidade nao esta mais disponivel ou precisa ser recarregada.</p>
+            <p className={styles.emptyText}>
+              Esta oportunidade nao esta mais disponivel ou precisa ser recarregada.
+            </p>
             <Link href="/projetos" className={styles.backButton}>
               Voltar para projetos
             </Link>
@@ -173,9 +521,15 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
               <div className={styles.avatarOrbit}>
                 <div className={styles.avatarGlow} aria-hidden="true" />
                 {idea.ownerAvatarUrl ? (
-                  <img src={idea.ownerAvatarUrl} alt={idea.ownerName ?? "Membro Elo"} className={styles.avatarImage} />
+                  <img
+                    src={idea.ownerAvatarUrl}
+                    alt={idea.ownerName ?? "Membro Elo"}
+                    className={styles.avatarImage}
+                  />
                 ) : (
-                  <div className={styles.avatarFallback}>{initialsOf(idea.ownerName ?? "Membro Elo")}</div>
+                  <div className={styles.avatarFallback}>
+                    {initialsOf(idea.ownerName ?? "Membro Elo")}
+                  </div>
                 )}
               </div>
 
@@ -186,13 +540,28 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
             </section>
 
             <section className={styles.heroSection}>
-              <h3 className={styles.heroTitle}>{idea.title}</h3>
+              <div className={styles.heroHeader}>
+                <h3 className={styles.heroTitle}>{idea.title}</h3>
+                <span
+                  className={`${styles.lifecycleBadge} ${
+                    idea.status === "active"
+                      ? styles.lifecycleBadgeActive
+                      : idea.status === "completed"
+                        ? styles.lifecycleBadgeCompleted
+                        : styles.lifecycleBadgeInactive
+                  }`}
+                >
+                  {projectStatusLabel(idea.status)}
+                </span>
+              </div>
 
               <div className={styles.badgeRow}>
                 {businessAreas.map((businessArea, index) => (
                   <span
                     key={`${businessArea}-${index}`}
-                    className={`${styles.categoryBadge} ${index === 1 ? styles.categoryBadgeSecondary : ""}`}
+                    className={`${styles.categoryBadge} ${
+                      index === 1 ? styles.categoryBadgeSecondary : ""
+                    }`}
                   >
                     {businessArea}
                   </span>
@@ -200,6 +569,7 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
               </div>
 
               <p className={styles.leadText}>{idea.summary}</p>
+              <p className={styles.statusHint}>{projectStatusDescription(idea.status)}</p>
             </section>
 
             <div className={styles.contentGrid}>
@@ -220,7 +590,12 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
                 <ul className={styles.needsList}>
                   {idea.needs.map((need, index) => (
                     <li key={`${need.title}-${index}`} className={styles.needItem}>
-                      <span className={`${styles.needDot} ${index === 1 ? styles.needDotSecondary : ""}`} aria-hidden="true" />
+                      <span
+                        className={`${styles.needDot} ${
+                          index === 1 ? styles.needDotSecondary : ""
+                        }`}
+                        aria-hidden="true"
+                      />
                       <div className={styles.needCopy}>
                         <p className={styles.needTitle}>{need.title}</p>
                         <p className={styles.needText}>{need.description}</p>
@@ -238,33 +613,162 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
                 {idea.galleryImageUrls.length > 0 ? (
                   idea.galleryImageUrls.map((imageUrl) => (
                     <article key={imageUrl} className={styles.galleryCard}>
-                      <img src={imageUrl} alt="Imagem de apoio do projeto" className={styles.galleryImage} />
+                      <img
+                        src={imageUrl}
+                        alt="Imagem de apoio do projeto"
+                        className={styles.galleryImage}
+                      />
                     </article>
                   ))
                 ) : (
                   <article className={styles.galleryCardPlaceholder}>
                     <span className={styles.placeholderBadge}>Sem mockups ainda</span>
                     <p className={styles.placeholderText}>
-                      Este projeto ainda nao publicou materiais visuais. A leitura principal segue concentrada na tese e nas necessidades.
+                      Este projeto ainda nao publicou materiais visuais. A leitura principal
+                      segue concentrada na tese e nas necessidades.
                     </p>
                   </article>
                 )}
               </div>
             </section>
 
-            <footer className={styles.actionFooter}>
-              {isOwner ? (
-                <Link href={`/projetos/${idea.id}/editar`} className={styles.primaryButton}>
-                  Editar projeto
-                  <PencilLine size={16} strokeWidth={2.1} />
-                </Link>
-              ) : (
-                <button className={styles.primaryButton} type="button" onClick={() => void applyToIdea()} disabled={disableApply}>
-                  {applying ? "Enviando..." : applicationLabel(applicationState ?? undefined)}
-                  <ArrowUpRight size={16} strokeWidth={2.1} />
-                </button>
-              )}
-            </footer>
+            {isOwner ? (
+              <section className={styles.managementCard}>
+                <div className={styles.managementHeader}>
+                  <div>
+                    <p className={styles.eyebrow}>Painel do dono</p>
+                    <h4 className={styles.managementTitle}>Gerencie o ciclo deste projeto</h4>
+                  </div>
+                </div>
+
+                <div className={styles.managementActions}>
+                  <Link href={`/projetos/${idea.id}/editar`} className={styles.primaryActionLink}>
+                    Editar projeto
+                    <PencilLine size={16} strokeWidth={2.1} />
+                  </Link>
+
+                  {idea.status === "completed" ? (
+                    <button
+                      className={styles.secondaryActionButton}
+                      type="button"
+                      onClick={() => void handleStatusChange("active")}
+                      disabled={statusAction === "active"}
+                    >
+                      {statusAction === "active" ? "Reabrindo..." : "Reabrir projeto"}
+                    </button>
+                  ) : (
+                    <button
+                      className={styles.secondaryActionButton}
+                      type="button"
+                      onClick={() => void handleStatusChange("completed")}
+                      disabled={statusAction === "completed" || idea.status !== "active"}
+                    >
+                      {statusAction === "completed" ? "Concluindo..." : "Concluir projeto"}
+                    </button>
+                  )}
+
+                  <button
+                    className={styles.dangerActionButton}
+                    type="button"
+                    onClick={() => void handleStatusChange("inactive")}
+                    disabled={statusAction === "inactive" || idea.status === "inactive"}
+                  >
+                    {statusAction === "inactive" ? "Arquivando..." : "Excluir projeto"}
+                    <Trash2 size={16} strokeWidth={2.1} />
+                  </button>
+                </div>
+              </section>
+            ) : null}
+
+            {hasApplicantRoster && applications ? (
+              <section className={styles.teamSection}>
+                <div className={styles.teamHeader}>
+                  <h4 className={styles.teamTitle}>
+                    <UsersRound size={16} strokeWidth={2.1} />
+                    {isOwner ? "Equipe e interessados" : "Equipe do projeto"}
+                  </h4>
+                  <p className={styles.teamText}>
+                    {isOwner
+                      ? "Acompanhe pendencias, membros aprovados e o historico privado de recusas."
+                      : "Como membro aprovado, voce consegue ver a equipe atual e os interessados que ainda estao em avaliacao."}
+                  </p>
+                </div>
+
+                {applications.pending.length > 0 ? (
+                  <div className={styles.applicantGroup}>
+                    <div className={styles.groupHeader}>
+                      <Clock3 size={16} strokeWidth={2.1} />
+                      <h5 className={styles.groupTitle}>Pendentes</h5>
+                    </div>
+                    <div className={styles.applicantList}>
+                      {applications.pending.map((applicant) =>
+                        renderApplicantCard(applicant, "pending")
+                      )}
+                    </div>
+                  </div>
+                ) : null}
+
+                {applications.approved.length > 0 ? (
+                  <div className={styles.applicantGroup}>
+                    <div className={styles.groupHeader}>
+                      <BadgeCheck size={16} strokeWidth={2.1} />
+                      <h5 className={styles.groupTitle}>Aprovados</h5>
+                    </div>
+                    <div className={styles.applicantList}>
+                      {applications.approved.map((applicant) =>
+                        renderApplicantCard(applicant, "approved")
+                      )}
+                    </div>
+                  </div>
+                ) : null}
+
+                {isOwner && applications.rejected.length > 0 ? (
+                  <div className={styles.applicantGroup}>
+                    <div className={styles.groupHeader}>
+                      <Ban size={16} strokeWidth={2.1} />
+                      <h5 className={styles.groupTitle}>Recusados</h5>
+                    </div>
+                    <div className={styles.applicantList}>
+                      {applications.rejected.map((applicant) =>
+                        renderApplicantCard(applicant, "rejected")
+                      )}
+                    </div>
+                  </div>
+                ) : null}
+
+                {applications.pending.length === 0 &&
+                applications.approved.length === 0 &&
+                applications.rejected.length === 0 ? (
+                  <div className={styles.emptyApplicants}>
+                    Ainda nao existem candidaturas registradas para este projeto.
+                  </div>
+                ) : null}
+              </section>
+            ) : null}
+
+            {!isOwner ? (
+              <footer className={styles.actionFooter}>
+                {canApply ? (
+                  <button
+                    className={styles.primaryButton}
+                    type="button"
+                    onClick={() => void applyToIdea()}
+                    disabled={applying}
+                  >
+                    {applying
+                      ? "Enviando..."
+                      : projectApplicationLabel(idea.myApplicationStatus ?? null)}
+                    <ArrowUpRight size={16} strokeWidth={2.1} />
+                  </button>
+                ) : (
+                  <button className={styles.secondaryFooterButton} type="button" disabled>
+                    {idea.status === "active"
+                      ? projectApplicationLabel(idea.myApplicationStatus ?? null)
+                      : "Candidaturas encerradas"}
+                  </button>
+                )}
+              </footer>
+            ) : null}
           </>
         ) : null}
       </div>

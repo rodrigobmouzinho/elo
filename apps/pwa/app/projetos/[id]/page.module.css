@@ -5,9 +5,13 @@
 }
 
 .statusCard,
+.infoCard,
 .detailCard,
 .emptyState,
-.galleryCardPlaceholder {
+.galleryCardPlaceholder,
+.managementCard,
+.teamSection,
+.applicantCard {
   display: grid;
   gap: 0.7rem;
   padding: 1.05rem;
@@ -21,7 +25,13 @@
   box-shadow: inset 0 0 0 1px rgba(255, 180, 171, 0.14);
 }
 
+.infoCard {
+  background: rgba(89, 50, 209, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(203, 190, 255, 0.16);
+}
+
 .statusTitle,
+.infoTitle,
 .emptyTitle {
   margin: 0;
   color: #ffffff;
@@ -32,11 +42,18 @@
 }
 
 .statusText,
+.infoText,
 .emptyText,
 .bodyText,
 .leadText,
 .needText,
-.placeholderText {
+.placeholderText,
+.statusHint,
+.teamText,
+.applicantMeta,
+.applicantMessage,
+.applicantReason,
+.emptyApplicants {
   margin: 0;
   color: rgba(202, 195, 215, 0.82);
   font-family: var(--member-font-body), "Inter", sans-serif;
@@ -67,30 +84,47 @@
 }
 
 .avatarImage,
+.avatarFallback,
+.applicantAvatar,
+.applicantAvatarFallback {
+  border-radius: 999px;
+}
+
+.avatarImage,
+.applicantAvatar {
+  display: block;
+  object-fit: cover;
+}
+
+.avatarImage,
 .avatarFallback {
   position: relative;
   width: 100%;
   height: 100%;
-  border-radius: 999px;
 }
 
 .avatarImage {
-  object-fit: cover;
-  display: block;
   box-shadow: inset 0 0 0 2px rgba(203, 190, 255, 0.12);
 }
 
-.avatarFallback {
+.avatarFallback,
+.applicantAvatarFallback {
   display: grid;
   place-items: center;
   background: linear-gradient(135deg, rgba(89, 50, 209, 0.88), rgba(155, 2, 124, 0.82));
   color: #ffffff;
   font-family: var(--member-font-display), "Plus Jakarta Sans", sans-serif;
-  font-size: 0.95rem;
   font-weight: 800;
 }
 
-.founderCopy {
+.avatarFallback {
+  font-size: 0.95rem;
+}
+
+.founderCopy,
+.applicantCopy,
+.teamHeader,
+.managementHeader {
   display: grid;
   gap: 0.18rem;
   min-width: 0;
@@ -106,17 +140,47 @@
   text-transform: uppercase;
 }
 
-.founderName {
+.founderName,
+.managementTitle,
+.teamTitle,
+.applicantName {
   margin: 0;
   color: #ffffff;
   font-family: var(--member-font-display), "Plus Jakarta Sans", sans-serif;
-  font-size: 1rem;
   font-weight: 700;
   letter-spacing: -0.02em;
 }
 
+.founderName,
+.managementTitle {
+  font-size: 1rem;
+}
+
+.teamTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.94rem;
+}
+
+.teamTitle svg,
+.groupHeader svg {
+  color: #cbbeff;
+}
+
+.applicantName {
+  font-size: 0.92rem;
+}
+
 .heroSection {
   display: grid;
+  gap: 0.9rem;
+}
+
+.heroHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 0.9rem;
 }
 
@@ -130,20 +194,16 @@
   letter-spacing: -0.06em;
 }
 
-.badgeRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-}
-
-.categoryBadge {
+.lifecycleBadge,
+.categoryBadge,
+.placeholderBadge,
+.applicantState {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   min-height: 1.65rem;
   padding: 0.3rem 0.78rem;
   border-radius: 999px;
-  background: #353534;
-  color: #cbbeff;
   font-family: var(--member-font-body), "Inter", sans-serif;
   font-size: 0.62rem;
   font-weight: 800;
@@ -151,20 +211,52 @@
   text-transform: uppercase;
 }
 
+.lifecycleBadgeActive {
+  background: rgba(87, 214, 141, 0.14);
+  color: #82f0af;
+}
+
+.lifecycleBadgeCompleted,
+.categoryBadge {
+  background: #353534;
+  color: #cbbeff;
+}
+
+.lifecycleBadgeInactive,
+.applicantStateRejected {
+  background: rgba(255, 180, 171, 0.14);
+  color: #ffb4ab;
+}
+
 .categoryBadgeSecondary {
   color: #ffaedf;
+}
+
+.badgeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
 }
 
 .leadText {
   font-size: 0.96rem;
 }
 
-.contentGrid {
+.statusHint {
+  color: rgba(202, 195, 215, 0.7);
+  font-size: 0.82rem;
+}
+
+.contentGrid,
+.managementActions,
+.applicantList,
+.rejectForm {
   display: grid;
   gap: 0.9rem;
 }
 
-.sectionTitle {
+.sectionTitle,
+.groupTitle {
   margin: 0;
   display: inline-flex;
   align-items: center;
@@ -274,16 +366,161 @@
 
 .placeholderBadge {
   width: fit-content;
-  min-height: 1.65rem;
-  padding: 0.3rem 0.78rem;
-  border-radius: 999px;
   background: rgba(89, 50, 209, 0.16);
   color: #cbbeff;
+}
+
+.primaryActionLink,
+.secondaryActionButton,
+.dangerActionButton,
+.approveButton,
+.rejectButton,
+.confirmRejectButton,
+.cancelRejectButton,
+.primaryButton,
+.secondaryFooterButton,
+.backButton {
+  min-height: 3rem;
+  padding: 0 1rem;
+  border: none;
+  border-radius: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  font-family: var(--member-font-display), "Plus Jakarta Sans", sans-serif;
+  font-size: 0.86rem;
+  font-weight: 700;
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease;
+}
+
+.primaryActionLink,
+.approveButton,
+.confirmRejectButton,
+.primaryButton {
+  background: linear-gradient(135deg, #5932d1 0%, #9b027c 100%);
+  color: #ffffff;
+  box-shadow: 0 18px 34px -20px rgba(155, 2, 124, 0.86);
+}
+
+.secondaryActionButton,
+.rejectButton,
+.secondaryFooterButton,
+.backButton,
+.cancelRejectButton {
+  background: #353534;
+  color: #ffffff;
+}
+
+.dangerActionButton {
+  background: rgba(255, 180, 171, 0.12);
+  color: #ffb4ab;
+}
+
+.groupHeader,
+.applicantHeader,
+.applicantIdentity,
+.applicantActions,
+.rejectActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.applicantHeader,
+.applicantIdentity {
+  align-items: flex-start;
+}
+
+.applicantAvatar,
+.applicantAvatarFallback {
+  width: 2.7rem;
+  height: 2.7rem;
+  flex-shrink: 0;
+}
+
+.applicantAvatar {
+  box-shadow: inset 0 0 0 1px rgba(203, 190, 255, 0.12);
+}
+
+.applicantAvatarFallback {
+  font-size: 0.8rem;
+}
+
+.applicantMeta {
+  font-size: 0.78rem;
+  color: rgba(202, 195, 215, 0.68);
+}
+
+.applicantStatePending {
+  background: rgba(203, 190, 255, 0.14);
+  color: #cbbeff;
+}
+
+.applicantStateApproved {
+  background: rgba(87, 214, 141, 0.14);
+  color: #82f0af;
+}
+
+.applicantMessage,
+.applicantReason {
+  font-size: 0.8rem;
+}
+
+.applicantReason {
+  color: rgba(255, 180, 171, 0.84);
+}
+
+.rejectField {
+  display: grid;
+  gap: 0.42rem;
+}
+
+.rejectLabel {
+  color: rgba(202, 195, 215, 0.72);
   font-family: var(--member-font-body), "Inter", sans-serif;
-  font-size: 0.62rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.rejectTextarea {
+  min-height: 6.2rem;
+  width: 100%;
+  padding: 0.92rem 0.95rem;
+  border: none;
+  outline: none;
+  border-radius: 1rem;
+  resize: vertical;
+  background: #2b2b2b;
+  color: #ffffff;
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.rejectTextarea:focus {
+  background: #393939;
+  box-shadow: inset 0 0 0 1px rgba(203, 190, 255, 0.28);
+}
+
+.rejectTextarea::placeholder {
+  color: rgba(147, 142, 160, 0.82);
+}
+
+.emptyApplicants {
+  padding: 0.2rem 0;
+  font-size: 0.82rem;
 }
 
 .actionFooter {
@@ -303,51 +540,44 @@
 }
 
 .primaryButton,
-.backButton {
-  min-height: 3.3rem;
-  border: none;
-  border-radius: 1rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  text-decoration: none;
-  font-family: var(--member-font-display), "Plus Jakarta Sans", sans-serif;
-  font-size: 0.9rem;
-  font-weight: 700;
-  transition:
-    transform 160ms ease,
-    background-color 160ms ease,
-    color 160ms ease,
-    opacity 160ms ease;
-}
-
-.primaryButton {
+.secondaryFooterButton {
   width: min(100%, 30rem);
   margin: 0 auto;
-  background: linear-gradient(135deg, #5932d1 0%, #9b027c 100%);
-  color: #ffffff;
-  box-shadow: 0 18px 34px -20px rgba(155, 2, 124, 0.86);
-  cursor: pointer;
 }
 
-.backButton {
-  width: fit-content;
-  padding: 0 1rem;
-  background: #353534;
-  color: #ffffff;
-}
-
+.primaryActionLink:hover,
+.secondaryActionButton:hover,
+.dangerActionButton:hover,
+.approveButton:hover,
+.rejectButton:hover,
+.confirmRejectButton:hover,
+.cancelRejectButton:hover,
 .primaryButton:hover,
+.secondaryFooterButton:hover,
 .backButton:hover,
+.primaryActionLink:focus-visible,
+.secondaryActionButton:focus-visible,
+.dangerActionButton:focus-visible,
+.approveButton:focus-visible,
+.rejectButton:focus-visible,
+.confirmRejectButton:focus-visible,
+.cancelRejectButton:focus-visible,
 .primaryButton:focus-visible,
+.secondaryFooterButton:focus-visible,
 .backButton:focus-visible {
   transform: translateY(-0.0625rem);
 }
 
-.primaryButton:disabled {
-  opacity: 0.72;
-  cursor: wait;
+.secondaryActionButton:disabled,
+.dangerActionButton:disabled,
+.approveButton:disabled,
+.rejectButton:disabled,
+.confirmRejectButton:disabled,
+.cancelRejectButton:disabled,
+.primaryButton:disabled,
+.secondaryFooterButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
   transform: none;
 }
 
@@ -356,6 +586,14 @@
     max-width: 38rem;
     margin: 0 auto;
     padding-bottom: 8.2rem;
+  }
+
+  .contentGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .managementActions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .actionFooter {
