@@ -89,6 +89,26 @@
   gap: 0.45rem;
 }
 
+.sectionBlock {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.9rem;
+}
+
+.sectionText {
+  margin: 0.35rem 0 0;
+  color: rgba(202, 195, 215, 0.62);
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
 .gridFields {
   display: grid;
   gap: 1rem;
@@ -105,7 +125,8 @@
 }
 
 .fieldControl,
-.storyInput {
+.storyInput,
+.compactTextarea {
   width: 100%;
   border: none;
   outline: none;
@@ -136,17 +157,26 @@
   resize: vertical;
 }
 
+.compactTextarea {
+  min-height: 5.5rem;
+  padding: 0.95rem 1rem;
+  resize: vertical;
+}
+
 .fieldControl:focus,
 .fieldControl:focus-visible,
 .storyInput:focus,
-.storyInput:focus-visible {
+.storyInput:focus-visible,
+.compactTextarea:focus,
+.compactTextarea:focus-visible {
   background: #393939 !important;
   color: #ffffff !important;
   box-shadow: inset 0 0 0 1px rgba(203, 190, 255, 0.3);
 }
 
 .fieldControl::placeholder,
-.storyInput::placeholder {
+.storyInput::placeholder,
+.compactTextarea::placeholder {
   color: rgba(147, 142, 160, 0.5);
 }
 
@@ -157,10 +187,118 @@
 .storyInput:-webkit-autofill,
 .storyInput:-webkit-autofill:hover,
 .storyInput:-webkit-autofill:focus,
-.storyInput:-webkit-autofill:focus-visible {
+.storyInput:-webkit-autofill:focus-visible,
+.compactTextarea:-webkit-autofill,
+.compactTextarea:-webkit-autofill:hover,
+.compactTextarea:-webkit-autofill:focus,
+.compactTextarea:-webkit-autofill:focus-visible {
   -webkit-text-fill-color: #ffffff;
   -webkit-box-shadow: 0 0 0 1000px #393939 inset;
   transition: background-color 9999s ease-in-out 0s;
+}
+
+.dynamicStack {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.inlineFieldRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.65rem;
+}
+
+.dynamicCard {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem;
+  border-radius: 1.35rem;
+  background: rgba(42, 42, 42, 0.42);
+  box-shadow: inset 0 0 0 1px rgba(72, 69, 85, 0.14);
+}
+
+.dynamicCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.dynamicCardTitle {
+  color: #ffffff;
+  font-family: var(--member-font-display), "Plus Jakarta Sans", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.inlineAddButton,
+.inlineRemoveButton {
+  border: none;
+  border-radius: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.42rem;
+  font-family: var(--member-font-display), "Plus Jakarta Sans", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease;
+}
+
+.inlineAddButton {
+  min-height: 2.6rem;
+  padding: 0 0.9rem;
+  background: rgba(89, 50, 209, 0.14);
+  color: #cbbeff;
+}
+
+.inlineRemoveButton {
+  width: 3rem;
+  min-height: 3rem;
+  background: rgba(53, 53, 52, 0.88);
+  color: rgba(202, 195, 215, 0.72);
+  flex-shrink: 0;
+}
+
+.inlineAddButton:hover,
+.inlineRemoveButton:hover,
+.inlineAddButton:focus-visible,
+.inlineRemoveButton:focus-visible {
+  transform: translateY(-0.0625rem);
+}
+
+.inlineAddButton:disabled {
+  opacity: 0.46;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.previewGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.previewTile {
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-radius: 1.1rem;
+  background: rgba(42, 42, 42, 0.5);
+  box-shadow:
+    0 24px 48px -24px rgba(0, 0, 0, 0.6),
+    inset 0 0 0 1px rgba(72, 69, 85, 0.14);
+}
+
+.previewImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .actions {
@@ -259,5 +397,9 @@
 
   .gridFields {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .previewGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }

@@ -21,8 +21,19 @@ describe("projects idea application", () => {
       {
         id: PROJECT_ID,
         title: "Plataforma de eventos corporativos",
+        summary: "Marketplace curado para operacao de eventos corporativos.",
         category: "SaaS",
-        description: "Conectar empresas e prestadores para eventos com curadoria.",
+        businessAreas: ["SaaS", "Eventos"],
+        vision: "Conectar empresas e prestadores para eventos com curadoria, reduzindo friccao operacional e ampliando previsibilidade comercial.",
+        needs: [
+          {
+            title: "Pessoa de produto",
+            description: "Experiencia com roadmap, discovery e estrutura de MVP."
+          }
+        ],
+        galleryImageUrls: [],
+        description:
+          "Marketplace curado para operacao de eventos corporativos.\n\nConectar empresas e prestadores para eventos com curadoria, reduzindo friccao operacional e ampliando previsibilidade comercial.",
         lookingFor: "Pessoa de produto",
         ownerName: "Pedro Nunes",
         ownerMemberId: OWNER_MEMBER_ID

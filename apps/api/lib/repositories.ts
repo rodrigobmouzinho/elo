@@ -4,9 +4,16 @@ import {
   eventSchema,
   memberSchema,
   pointsLaunchSchema,
-  seasonSchema,
-  projectIdeaSchema
+  seasonSchema
 } from "@elo/core";
+import {
+  buildProjectDbPayload,
+  isMissingProjectEnhancedColumnsError,
+  normalizeProjectRow,
+  PROJECT_LIST_SELECT_BASE,
+  PROJECT_LIST_SELECT_WITH_ENHANCED
+} from "./project-ideas";
+import type { ProjectInput, ProjectRow } from "./project-ideas";
 import { memoryStore } from "./store";
 import { hasSupabase, supabaseAdmin } from "./supabase";
 
@@ -16,7 +23,6 @@ type MemberPatchInput = Partial<Omit<MemberInput, "membershipExpiresAt">> & {
 };
 type EventInput = z.infer<typeof eventSchema>;
 type EventPatchInput = Partial<EventInput>;
-type ProjectInput = z.infer<typeof projectIdeaSchema>;
 type PointsInput = z.infer<typeof pointsLaunchSchema>;
 type SeasonInput = z.infer<typeof seasonSchema>;
 type EventRow = {
@@ -48,14 +54,6 @@ type MemberRow = {
   specialty: string | null;
   avatar_url: string | null;
   active: boolean;
-};
-type ProjectRow = {
-  id: string;
-  title: string;
-  category: string;
-  description: string;
-  looking_for: string;
-  owner_member_id?: string;
 };
 type ProjectOwnerRow = {
   id: string;
@@ -245,6 +243,8 @@ const MEMBERSHIP_RENEWAL_DAYS = (() => {
 })();
 let eventGalleryColumnSupported: boolean | null = null;
 let eventGalleryColumnSupportProbe: Promise<boolean> | null = null;
+let projectEnhancedColumnsSupported: boolean | null = null;
+let projectEnhancedColumnsSupportProbe: Promise<boolean> | null = null;
 
 const EVENT_LIST_SELECT_BASE =
   "id, title, description, starts_at, location, online_url, access_type, price_cents, hero_image_url";
@@ -297,6 +297,42 @@ async function ensureEventGalleryColumnSupport() {
   }
 
   return eventGalleryColumnSupportProbe;
+}
+
+async function ensureProjectEnhancedColumnsSupport() {
+  if (!hasSupabase) {
+    return true;
+  }
+
+  if (projectEnhancedColumnsSupported !== null) {
+    return projectEnhancedColumnsSupported;
+  }
+
+  if (!projectEnhancedColumnsSupportProbe) {
+    projectEnhancedColumnsSupportProbe = (async () => {
+      const supabase = assertSupabase();
+      const { error } = await supabase
+        .from("projects")
+        .select("summary, business_areas, vision, needs, gallery_image_urls")
+        .limit(1);
+
+      if (error) {
+        if (isMissingProjectEnhancedColumnsError(error)) {
+          projectEnhancedColumnsSupported = false;
+          return false;
+        }
+
+        throw error;
+      }
+
+      projectEnhancedColumnsSupported = true;
+      return true;
+    })().finally(() => {
+      projectEnhancedColumnsSupportProbe = null;
+    });
+  }
+
+  return projectEnhancedColumnsSupportProbe;
 }
 
 function withGalleryFallback<T extends EventRowMaybeGallery>(
@@ -1679,24 +1715,32 @@ export async function listProjects() {
   }
 
   const supabase = assertSupabase();
-  const { data, error } = await supabase
+  const enhancedColumnsSupported = await ensureProjectEnhancedColumnsSupport();
+  const selectClause = enhancedColumnsSupported ? PROJECT_LIST_SELECT_WITH_ENHANCED : PROJECT_LIST_SELECT_BASE;
+
+  const response = await supabase
     .from("projects")
-    .select("id, title, category, description, looking_for, owner_member_id")
+    .select(selectClause)
     .order("created_at", { ascending: false });
+  let data = response.data as unknown[] | null;
+  let error = response.error;
+
+  if (error && enhancedColumnsSupported && isMissingProjectEnhancedColumnsError(error)) {
+    projectEnhancedColumnsSupported = false;
+    const fallbackResponse = await supabase
+      .from("projects")
+      .select(PROJECT_LIST_SELECT_BASE)
+      .order("created_at", { ascending: false });
+
+    data = fallbackResponse.data as unknown[] | null;
+    error = fallbackResponse.error;
+  }
 
   if (error) throw error;
 
   const rows = (data ?? []) as ProjectRow[];
 
-  return rows.map((project) => ({
-    id: project.id,
-    title: project.title,
-    category: project.category,
-    description: project.description,
-    lookingFor: project.looking_for,
-    ownerName: "Membro Elo",
-    ownerMemberId: project.owner_member_id ?? null
-  }));
+  return rows.map((project) => normalizeProjectRow(project));
 }
 
 export async function createProject(payload: ProjectInput, ownerMemberId: string) {
@@ -1704,8 +1748,20 @@ export async function createProject(payload: ProjectInput, ownerMemberId: string
     const record = {
       id: crypto.randomUUID(),
       ownerName: "Membro Elo",
+      ownerAvatarUrl: null,
       ownerMemberId,
-      ...payload
+      title: payload.title.trim(),
+      summary: payload.summary.trim(),
+      category: payload.businessAreas[0]?.trim() || "Negocios",
+      businessAreas: payload.businessAreas.map((entry) => entry.trim()).filter(Boolean),
+      vision: payload.vision.trim(),
+      needs: payload.needs.map((need) => ({
+        title: need.title.trim(),
+        description: need.description.trim()
+      })),
+      galleryImageUrls: payload.galleryImageUrls.map((entry) => entry.trim()).filter(Boolean),
+      description: `${payload.summary.trim()}\n\n${payload.vision.trim()}`.trim(),
+      lookingFor: payload.needs.map((need) => need.title.trim()).filter(Boolean).join(" • ")
     };
 
     memoryStore.projectIdeas.unshift(record);
@@ -1713,30 +1769,46 @@ export async function createProject(payload: ProjectInput, ownerMemberId: string
   }
 
   const supabase = assertSupabase();
+  let enhancedColumnsSupported = await ensureProjectEnhancedColumnsSupport();
+  let dbPayload = buildProjectDbPayload(payload, enhancedColumnsSupported);
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("projects")
     .insert({
       owner_member_id: ownerMemberId,
-      title: payload.title,
-      description: payload.description,
-      category: payload.category,
-      looking_for: payload.lookingFor
+      ...dbPayload
     })
-    .select("id, title, category, description, looking_for, owner_member_id")
+    .select("id")
     .single();
+
+  if (error && enhancedColumnsSupported && isMissingProjectEnhancedColumnsError(error)) {
+    projectEnhancedColumnsSupported = false;
+    enhancedColumnsSupported = false;
+    dbPayload = buildProjectDbPayload(payload, false);
+    const fallbackResponse = await supabase
+      .from("projects")
+      .insert({
+        owner_member_id: ownerMemberId,
+        ...dbPayload
+      })
+      .select("id")
+      .single();
+
+    data = fallbackResponse.data;
+    error = fallbackResponse.error;
+  }
 
   if (error) throw error;
 
-  return {
-    id: data.id,
-    title: data.title,
-    category: data.category,
-    description: data.description,
-    lookingFor: data.looking_for,
-    ownerName: "Membro Elo",
-    ownerMemberId: data.owner_member_id ?? null
-  };
+  const projectId = (data as { id: string }).id;
+  const projects = await listProjects();
+  const createdProject = projects.find((project) => project.id === projectId);
+
+  if (!createdProject) {
+    throw new Error("Projeto nao encontrado");
+  }
+
+  return createdProject;
 }
 
 export async function updateProject(projectId: string, payload: ProjectInput, editorMemberId: string) {
@@ -1752,10 +1824,18 @@ export async function updateProject(projectId: string, payload: ProjectInput, ed
     }
 
     Object.assign(project, {
-      title: payload.title,
-      description: payload.description,
-      category: payload.category,
-      lookingFor: payload.lookingFor
+      title: payload.title.trim(),
+      summary: payload.summary.trim(),
+      category: payload.businessAreas[0]?.trim() || "Negocios",
+      businessAreas: payload.businessAreas.map((entry) => entry.trim()).filter(Boolean),
+      vision: payload.vision.trim(),
+      needs: payload.needs.map((need) => ({
+        title: need.title.trim(),
+        description: need.description.trim()
+      })),
+      galleryImageUrls: payload.galleryImageUrls.map((entry) => entry.trim()).filter(Boolean),
+      description: `${payload.summary.trim()}\n\n${payload.vision.trim()}`.trim(),
+      lookingFor: payload.needs.map((need) => need.title.trim()).filter(Boolean).join(" • ")
     });
 
     return project;
@@ -1779,29 +1859,42 @@ export async function updateProject(projectId: string, payload: ProjectInput, ed
     throw new Error("Somente o dono pode editar o projeto");
   }
 
-  const { data, error } = await supabase
+  let enhancedColumnsSupported = await ensureProjectEnhancedColumnsSupport();
+  let dbPayload = buildProjectDbPayload(payload, enhancedColumnsSupported);
+
+  let { data, error } = await supabase
     .from("projects")
-    .update({
-      title: payload.title,
-      description: payload.description,
-      category: payload.category,
-      looking_for: payload.lookingFor
-    })
+    .update(dbPayload)
     .eq("id", projectId)
-    .select("id, title, category, description, looking_for, owner_member_id")
+    .select("id")
     .single();
+
+  if (error && enhancedColumnsSupported && isMissingProjectEnhancedColumnsError(error)) {
+    projectEnhancedColumnsSupported = false;
+    enhancedColumnsSupported = false;
+    dbPayload = buildProjectDbPayload(payload, false);
+    const fallbackResponse = await supabase
+      .from("projects")
+      .update(dbPayload)
+      .eq("id", projectId)
+      .select("id")
+      .single();
+
+    data = fallbackResponse.data;
+    error = fallbackResponse.error;
+  }
 
   if (error) throw error;
 
-  return {
-    id: data.id,
-    title: data.title,
-    category: data.category,
-    description: data.description,
-    lookingFor: data.looking_for,
-    ownerName: "Membro Elo",
-    ownerMemberId: data.owner_member_id ?? null
-  };
+  const updatedProjectId = (data as { id: string }).id;
+  const projects = await listProjects();
+  const updatedProject = projects.find((project) => project.id === updatedProjectId);
+
+  if (!updatedProject) {
+    throw new Error("Projeto nao encontrado");
+  }
+
+  return updatedProject;
 }
 
 export async function applyToProject(projectId: string, applicantMemberId: string, message?: string) {

@@ -37,6 +37,7 @@ Base URL local: `http://localhost:3002`
 - `GET /api/app/gamification/ranking`
 - `GET /api/app/projects`
 - `POST /api/app/projects`
+- `PATCH /api/app/projects/:id`
 - `POST /api/app/projects/:id/apply`
 
 ## Health
@@ -52,7 +53,9 @@ Base URL local: `http://localhost:3002`
 - `GET /api/app/profile` e `GET /api/app/members` retornam `whatsapp` para abrir conversa com um toque no PWA.
 - `PATCH /api/app/profile` atualiza somente dados permitidos do perfil; `email` e `phone` permanecem inalterados.
 - `POST /api/app/projects` publica projeto/ideia valida e o item fica disponivel na listagem `GET /api/app/projects`.
+- `PATCH /api/app/projects/:id` permite atualizacao somente pelo dono do projeto.
 - `POST /api/app/projects/:id/apply` registra candidatura idempotente e vincula a inscricao ao dono do projeto.
+- Projetos agora expõem `summary`, `businessAreas`, `vision`, `needs[]` e `galleryImageUrls[]`, preservando `category`, `description` e `lookingFor` como compatibilidade legada.
 - Fluxo de pagamentos opera exclusivamente em `PAYMENTS_MODE=manual_pix`.
 - Checkout pago retorna `manualPayment` com `pixQrCodeImage` e `pixCopyPaste` para UX de pagamento.
 - CRUD de eventos suporta `onlineUrl`, `heroImageUrl` e `galleryImageUrls` (array de ate 8 imagens).

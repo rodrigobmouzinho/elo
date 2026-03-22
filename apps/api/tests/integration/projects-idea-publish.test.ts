@@ -29,10 +29,17 @@ describe("projects idea publish", () => {
         headers: memberHeaders,
         body: JSON.stringify({
           title: "Plataforma de conexoes B2B",
-          description:
-            "Produto para aproximar founders e investidores com trilhas de networking validadas.",
-          category: "Marketplace",
-          lookingFor: "Cofounder de tecnologia"
+          summary: "Produto para aproximar founders e investidores com networking validado.",
+          businessAreas: ["Marketplace", "B2B"],
+          vision:
+            "Criar um ambiente de conexoes de negocio que ajude founders e investidores a se encontrarem com mais contexto, afinidade estrategica e velocidade.",
+          needs: [
+            {
+              title: "Cofounder de tecnologia",
+              description: "Experiencia com produto digital e arquitetura de marketplace B2B."
+            }
+          ],
+          galleryImageUrls: ["https://example.com/mockup-1.png"]
         })
       })
     );
@@ -42,6 +49,9 @@ describe("projects idea publish", () => {
     expect(createResponse.status).toBe(201);
     expect(createPayload.success).toBe(true);
     expect(createPayload.data.title).toBe("Plataforma de conexoes B2B");
+    expect(createPayload.data.summary).toBe(
+      "Produto para aproximar founders e investidores com networking validado."
+    );
 
     const listResponse = await listProjectsGet(
       new Request("http://localhost/api/app/projects", {

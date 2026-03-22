@@ -98,9 +98,16 @@ export const seasonSchema = z
     }
   });
 
+export const projectNeedSchema = z.object({
+  title: z.string().trim().min(2).max(60),
+  description: z.string().trim().min(3).max(180)
+});
+
 export const projectIdeaSchema = z.object({
-  title: z.string().min(3).max(80),
-  description: z.string().min(20).max(2000),
-  category: z.string().min(3).max(60),
-  lookingFor: z.string().min(3).max(120)
+  title: z.string().trim().min(3).max(80),
+  summary: z.string().trim().min(3).max(140),
+  businessAreas: z.array(z.string().trim().min(2).max(40)).min(1).max(5),
+  vision: z.string().trim().min(20).max(2000),
+  needs: z.array(projectNeedSchema).min(1).max(6),
+  galleryImageUrls: z.array(eventImageSchema).max(8).default([])
 });

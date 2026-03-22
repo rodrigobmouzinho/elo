@@ -5,17 +5,13 @@ import { CirclePlus, PencilLine, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { MemberShell } from "../../components/member-shell";
 import { apiRequest, getStoredAuth } from "../../lib/auth-client";
+import {
+  buildProjectSearchIndex,
+  normalizeApiError,
+  normalizeSearchValue,
+  type ProjectIdea
+} from "../../lib/project-ideas";
 import styles from "./page.module.css";
-
-type Idea = {
-  id: string;
-  title: string;
-  category: string;
-  description: string;
-  lookingFor: string;
-  ownerMemberId?: string | null;
-  ownerName?: string;
-};
 
 type ProjectFilter = "all" | "mine";
 
@@ -27,43 +23,8 @@ type FeedbackState = {
   tone: FeedbackTone;
 };
 
-function normalizeApiError(raw: string) {
-  const normalized = raw.trim().toLowerCase();
-
-  if (normalized.includes("network") || normalized.includes("conexao")) {
-    return "Nao foi possivel conectar ao servidor. Tente novamente em instantes.";
-  }
-
-  return raw;
-}
-
-function normalizeSearchValue(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-}
-
-function excerpt(text: string, max = 110) {
-  if (text.length <= max) return text;
-  return `${text.slice(0, max).trimEnd()}...`;
-}
-
-function extractPitch(description: string) {
-  const firstLine = description
-    .split(/\n+/)
-    .map((part) => part.trim())
-    .find(Boolean);
-
-  return excerpt(firstLine ?? description, 118);
-}
-
-function ideaIndex(idea: Idea) {
-  return normalizeSearchValue([idea.title, idea.category, extractPitch(idea.description), idea.description, idea.lookingFor].join(" "));
-}
-
 export default function ProjetosPage() {
-  const [ideas, setIdeas] = useState<Idea[]>([]);
+  const [ideas, setIdeas] = useState<ProjectIdea[]>([]);
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<ProjectFilter>("all");
   const [currentMemberId, setCurrentMemberId] = useState<string | null>(null);
@@ -75,7 +36,7 @@ export default function ProjetosPage() {
 
     try {
       setFeedback((previous) => (previous?.tone === "danger" ? null : previous));
-      setIdeas(await apiRequest<Idea[]>("/app/projects"));
+      setIdeas(await apiRequest<ProjectIdea[]>("/app/projects"));
     } catch (requestError) {
       setFeedback({
         title: "Falha ao carregar ideias",
@@ -104,14 +65,14 @@ export default function ProjetosPage() {
     if (flash === "1") {
       window.sessionStorage.removeItem("elo-project-created");
       setFeedback({
-        title: "Ideia publicada",
+        title: "Projeto publicado",
         description: "Seu projeto ja esta disponivel para novas visualizacoes e candidaturas.",
         tone: "success"
       });
       return;
     }
 
-    if (updatedFlash === "1") {
+    if (updatedFlash) {
       window.sessionStorage.removeItem("elo-project-updated");
       setFeedback({
         title: "Projeto atualizado",
@@ -127,7 +88,8 @@ export default function ProjetosPage() {
     return ideas.filter((idea) => {
       const matchesFilter =
         activeFilter === "all" || (currentMemberId !== null && idea.ownerMemberId === currentMemberId);
-      const matchesSearch = normalizedSearch === "" || ideaIndex(idea).includes(normalizedSearch);
+      const matchesSearch =
+        normalizedSearch === "" || buildProjectSearchIndex(idea).includes(normalizedSearch);
 
       return matchesFilter && matchesSearch;
     });
@@ -190,7 +152,7 @@ export default function ProjetosPage() {
             <h3 className={styles.ctaTitle}>Construa o futuro</h3>
             <p className={styles.ctaText}>Tem uma nova tese de negocio? Publique sua ideia e abra espaco para conexoes qualificadas.</p>
             <Link href="/projetos/cadastrar" className={styles.primaryButton}>
-              Cadastrar Ideia
+              Cadastrar Projeto
               <CirclePlus size={16} strokeWidth={2.1} />
             </Link>
           </div>
@@ -221,11 +183,11 @@ export default function ProjetosPage() {
             return (
               <article key={idea.id} className={styles.projectCard}>
                 <div className={styles.cardHeader}>
-                  <span className={styles.categoryBadge}>{idea.category}</span>
+                  <span className={styles.categoryBadge}>{idea.businessAreas[0] ?? idea.category}</span>
                 </div>
 
                 <h3 className={styles.cardTitle}>{idea.title}</h3>
-                <p className={styles.cardPitch}>{extractPitch(idea.description)}</p>
+                <p className={styles.cardPitch}>{idea.summary}</p>
 
                 <div className={styles.cardFooter}>
                   {isOwner ? (

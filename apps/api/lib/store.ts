@@ -3,10 +3,19 @@ import { mockEvents, mockMembers, mockRanking } from "@elo/core";
 type MockProjectIdea = {
   id: string;
   title: string;
+  summary: string;
   category: string;
+  businessAreas: string[];
+  vision: string;
+  needs: Array<{
+    title: string;
+    description: string;
+  }>;
+  galleryImageUrls: string[];
   description: string;
   lookingFor: string;
   ownerName: string;
+  ownerAvatarUrl?: string | null;
   ownerMemberId?: string;
 };
 
@@ -14,9 +23,21 @@ const projectIdeas: MockProjectIdea[] = [
   {
     id: "project-1",
     title: "SaaS para RH",
+    summary: "Operacao de RH com automacao e analytics para PMEs.",
     category: "B2B SaaS",
-    description: "Buscando cofounder com perfil tecnico.",
-    lookingFor: "cto",
+    businessAreas: ["B2B SaaS", "People Ops"],
+    vision:
+      "Construir uma plataforma de RH para PMEs que combine automacao operacional, acompanhamento de performance e inteligencia de dados para liderancas.",
+    needs: [
+      {
+        title: "Cofounder tecnico",
+        description: "Experiencia em produto SaaS para liderar arquitetura e entregas do MVP."
+      }
+    ],
+    galleryImageUrls: [],
+    description:
+      "Operacao de RH com automacao e analytics para PMEs.\n\nConstruir uma plataforma de RH para PMEs que combine automacao operacional, acompanhamento de performance e inteligencia de dados para liderancas.",
+    lookingFor: "Cofounder tecnico",
     ownerName: "Ana Costa",
     ownerMemberId: "60948757-e688-41ec-b0fc-cf30cf8cc3d8"
   }
