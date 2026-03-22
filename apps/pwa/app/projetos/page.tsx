@@ -1,17 +1,8 @@
 "use client";
 
-import {
-  BrainCircuit,
-  CirclePlus,
-  HeartPulse,
-  Layers3,
-  Leaf,
-  Rocket,
-  Search,
-  Sparkles,
-  X
-} from "lucide-react";
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { BrainCircuit, CirclePlus, HeartPulse, Layers3, Leaf, Rocket, Search, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { MemberShell } from "../../components/member-shell";
 import { apiRequest } from "../../lib/auth-client";
 import styles from "./page.module.css";
@@ -34,13 +25,6 @@ type FeedbackState = {
 };
 
 type ApplicationState = "created" | "existing";
-
-const initialForm = {
-  title: "",
-  description: "",
-  category: "",
-  lookingFor: ""
-};
 
 function normalizeApiError(raw: string) {
   const normalized = raw.trim().toLowerCase();
@@ -107,16 +91,11 @@ function iconForIdea(idea: Idea, index: number) {
 
 export default function ProjetosPage() {
   const [ideas, setIdeas] = useState<Idea[]>([]);
-  const [form, setForm] = useState(initialForm);
   const [search, setSearch] = useState("");
   const [loadingIdeas, setLoadingIdeas] = useState(true);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
-  const [saving, setSaving] = useState(false);
   const [applyingId, setApplyingId] = useState<string | null>(null);
-  const [composerOpen, setComposerOpen] = useState(false);
   const [applicationStateById, setApplicationStateById] = useState<Record<string, ApplicationState>>({});
-  const composerRef = useRef<HTMLElement | null>(null);
-  const titleInputRef = useRef<HTMLInputElement | null>(null);
 
   async function loadIdeas() {
     setLoadingIdeas(true);
@@ -140,48 +119,18 @@ export default function ProjetosPage() {
   }, []);
 
   useEffect(() => {
-    if (!composerOpen) return;
+    if (typeof window === "undefined") return;
 
-    composerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    const flash = window.sessionStorage.getItem("elo-project-created");
+    if (flash !== "1") return;
 
-    const timer = window.setTimeout(() => {
-      titleInputRef.current?.focus();
-    }, 180);
-
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [composerOpen]);
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSaving(true);
-    setFeedback(null);
-
-    try {
-      await apiRequest("/app/projects", {
-        method: "POST",
-        body: JSON.stringify(form)
-      });
-
-      setForm(initialForm);
-      setComposerOpen(false);
-      await loadIdeas();
-      setFeedback({
-        title: "Ideia publicada",
-        description: "Seu projeto ja esta disponivel para novas candidaturas.",
-        tone: "success"
-      });
-    } catch (submitError) {
-      setFeedback({
-        title: "Falha ao publicar ideia",
-        description: normalizeApiError((submitError as Error).message),
-        tone: "danger"
-      });
-    } finally {
-      setSaving(false);
-    }
-  }
+    window.sessionStorage.removeItem("elo-project-created");
+    setFeedback({
+      title: "Ideia publicada",
+      description: "Seu projeto ja esta disponivel para novas candidaturas.",
+      tone: "success"
+    });
+  }, []);
 
   async function applyToIdea(projectId: string) {
     const targetIdea = ideas.find((idea) => idea.id === projectId);
@@ -264,90 +213,12 @@ export default function ProjetosPage() {
           <div className={styles.ctaContent}>
             <h3 className={styles.ctaTitle}>Construa o futuro</h3>
             <p className={styles.ctaText}>Tem um conceito que precisa de asas? Submeta sua ideia para a comunidade Elo.</p>
-            <button className={styles.primaryButton} type="button" onClick={() => setComposerOpen(true)}>
+            <Link href="/projetos/cadastrar" className={styles.primaryButton}>
               Cadastrar Ideia
               <CirclePlus size={16} strokeWidth={2.1} />
-            </button>
+            </Link>
           </div>
         </section>
-
-        {composerOpen ? (
-          <section ref={composerRef} className={styles.composerCard}>
-            <div className={styles.composerHeader}>
-              <div>
-                <p className={styles.composerEyebrow}>Publish Desk</p>
-                <h3 className={styles.composerTitle}>Cadastre uma nova ideia</h3>
-              </div>
-              <button className={styles.iconButton} type="button" onClick={() => setComposerOpen(false)} aria-label="Fechar cadastro">
-                <X size={17} strokeWidth={2.1} />
-              </button>
-            </div>
-
-            <form className={styles.formStack} onSubmit={handleSubmit}>
-              <label className={styles.fieldGroup}>
-                <span className={styles.fieldLabel}>Titulo</span>
-                <input
-                  ref={titleInputRef}
-                  className={styles.fieldControl}
-                  placeholder="Ex.: Plataforma de conexoes B2B"
-                  value={form.title}
-                  onChange={(event) => setForm((previous) => ({ ...previous, title: event.target.value }))}
-                  minLength={3}
-                  maxLength={80}
-                  required
-                />
-              </label>
-
-              <label className={styles.fieldGroup}>
-                <span className={styles.fieldLabel}>Categoria</span>
-                <input
-                  className={styles.fieldControl}
-                  placeholder="Ex.: SaaS, Marketplace, Educacao"
-                  value={form.category}
-                  onChange={(event) => setForm((previous) => ({ ...previous, category: event.target.value }))}
-                  minLength={3}
-                  maxLength={60}
-                  required
-                />
-              </label>
-
-              <label className={styles.fieldGroup}>
-                <span className={styles.fieldLabel}>Descricao</span>
-                <textarea
-                  className={styles.storyInput}
-                  placeholder="Explique problema, proposta e estagio da ideia."
-                  value={form.description}
-                  onChange={(event) => setForm((previous) => ({ ...previous, description: event.target.value }))}
-                  minLength={20}
-                  maxLength={2000}
-                  required
-                />
-              </label>
-
-              <label className={styles.fieldGroup}>
-                <span className={styles.fieldLabel}>Busco parceria em</span>
-                <input
-                  className={styles.fieldControl}
-                  placeholder="Ex.: cofundador tech, vendas, produto"
-                  value={form.lookingFor}
-                  onChange={(event) => setForm((previous) => ({ ...previous, lookingFor: event.target.value }))}
-                  minLength={3}
-                  maxLength={120}
-                  required
-                />
-              </label>
-
-              <div className={styles.formActions}>
-                <button className={styles.primaryButton} type="submit" disabled={saving}>
-                  {saving ? "Publicando..." : "Publicar ideia"}
-                </button>
-                <button className={styles.secondaryButton} type="button" onClick={() => setComposerOpen(false)} disabled={saving}>
-                  Cancelar
-                </button>
-              </div>
-            </form>
-          </section>
-        ) : null}
 
         {loadingIdeas ? (
           <section className={styles.statusCard} aria-live="polite">
@@ -423,7 +294,6 @@ export default function ProjetosPage() {
             );
           })}
         </section>
-
       </div>
     </MemberShell>
   );

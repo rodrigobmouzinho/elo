@@ -1,0 +1,263 @@
+.page {
+  display: grid;
+  gap: 1rem;
+  padding-bottom: 2rem;
+}
+
+.statusCard {
+  display: grid;
+  gap: 0.42rem;
+  padding: 1rem 1.05rem;
+  border-radius: 1.35rem;
+  background: rgba(28, 27, 27, 0.9);
+  box-shadow: inset 0 0 0 1px rgba(72, 69, 85, 0.16);
+}
+
+.statusDanger {
+  background: rgba(147, 0, 10, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(255, 180, 171, 0.14);
+}
+
+.statusTitle {
+  margin: 0;
+  color: #ffffff;
+  font-family: var(--member-font-display), "Plus Jakarta Sans", sans-serif;
+  font-size: 0.98rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.statusText {
+  margin: 0;
+  color: rgba(202, 195, 215, 0.82);
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.88rem;
+  line-height: 1.58;
+}
+
+.formCard {
+  display: grid;
+  gap: 1.2rem;
+  padding: 1.5rem;
+  border-radius: 2rem;
+  background: #1c1b1b;
+  box-shadow:
+    0 24px 48px -12px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px rgba(72, 69, 85, 0.15);
+}
+
+.header {
+  display: grid;
+  gap: 0.55rem;
+  text-align: center;
+}
+
+.headerAccent {
+  width: 3rem;
+  height: 0.2rem;
+  margin: 0 auto;
+  border-radius: 999px;
+  background: #5932d1;
+  opacity: 0.7;
+}
+
+.title {
+  margin: 0;
+  color: #ffffff;
+  font-family: var(--member-font-display), "Plus Jakarta Sans", sans-serif;
+  font-size: 1.85rem;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+}
+
+.subtitle {
+  margin: 0;
+  color: rgba(202, 195, 215, 0.78);
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.84rem;
+  font-weight: 500;
+  line-height: 1.55;
+}
+
+.formStack {
+  display: grid;
+  gap: 1rem;
+}
+
+.fieldGroup {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.gridFields {
+  display: grid;
+  gap: 1rem;
+}
+
+.fieldLabel {
+  margin-left: 0.1rem;
+  color: rgba(202, 195, 215, 0.78);
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.fieldControl,
+.storyInput {
+  width: 100%;
+  border: none;
+  outline: none;
+  border-radius: 1rem;
+  background: #2a2a2a !important;
+  color: #ffffff !important;
+  caret-color: #ffffff;
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.94rem;
+  line-height: 1.55;
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease;
+  appearance: none;
+  -webkit-appearance: none;
+  color-scheme: dark;
+}
+
+.fieldControl {
+  min-height: 3.25rem;
+  padding: 0 1rem;
+}
+
+.storyInput {
+  min-height: 8.4rem;
+  padding: 0.95rem 1rem;
+  resize: vertical;
+}
+
+.fieldControl:focus,
+.fieldControl:focus-visible,
+.storyInput:focus,
+.storyInput:focus-visible {
+  background: #393939 !important;
+  color: #ffffff !important;
+  box-shadow: inset 0 0 0 1px rgba(203, 190, 255, 0.3);
+}
+
+.fieldControl::placeholder,
+.storyInput::placeholder {
+  color: rgba(147, 142, 160, 0.5);
+}
+
+.fieldControl:-webkit-autofill,
+.fieldControl:-webkit-autofill:hover,
+.fieldControl:-webkit-autofill:focus,
+.fieldControl:-webkit-autofill:focus-visible,
+.storyInput:-webkit-autofill,
+.storyInput:-webkit-autofill:hover,
+.storyInput:-webkit-autofill:focus,
+.storyInput:-webkit-autofill:focus-visible {
+  -webkit-text-fill-color: #ffffff;
+  -webkit-box-shadow: 0 0 0 1000px #393939 inset;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+.actions {
+  padding-top: 0.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.primaryButton,
+.secondaryButton {
+  min-height: 3.2rem;
+  border-radius: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  font-family: var(--member-font-display), "Plus Jakarta Sans", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease;
+}
+
+.primaryButton {
+  border: none;
+  background: linear-gradient(135deg, #5932d1 0%, #9b027c 100%);
+  color: #ffffff;
+  box-shadow: 0 18px 34px -22px rgba(155, 2, 124, 0.86);
+  cursor: pointer;
+}
+
+.secondaryButton {
+  border: 1px solid rgba(72, 69, 85, 0.3);
+  background: transparent;
+  color: rgba(229, 226, 225, 0.82);
+}
+
+.tipGrid {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.tipCard {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 1.2rem;
+  background: rgba(42, 42, 42, 0.3);
+  box-shadow: inset 0 0 0 1px rgba(72, 69, 85, 0.08);
+}
+
+.tipIconPrimary {
+  color: #cbbeff;
+}
+
+.tipIconSecondary {
+  color: #ffaedf;
+}
+
+.tipText {
+  margin: 0;
+  color: rgba(202, 195, 215, 0.78);
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.78rem;
+  line-height: 1.6;
+}
+
+.primaryButton:hover,
+.secondaryButton:hover {
+  transform: translateY(-0.0625rem);
+}
+
+.primaryButton:disabled {
+  opacity: 0.72;
+  cursor: wait;
+  transform: none;
+}
+
+@media (min-width: 768px) {
+  .page {
+    gap: 1.1rem;
+  }
+
+  .formCard {
+    max-width: 40rem;
+    margin: 0 auto;
+  }
+
+  .tipGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .gridFields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
