@@ -1,14 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { Alert, Badge, Button, Card, passthroughImageLoader } from "@elo/ui";
-import type { AlertVariant, BadgeVariant } from "@elo/ui";
 import { CircleCheckBig, Clock3, Copy, ExternalLink, MapPin, Video } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { passthroughImageLoader } from "@elo/ui";
 import { MemberShell } from "../../../components/member-shell";
 import { apiRequest } from "../../../lib/auth-client";
+import styles from "./page.module.css";
 
 type EventItem = {
   id: string;
@@ -48,10 +48,12 @@ type CheckoutStatusResponse = {
   presenceConfirmed: boolean;
 };
 
+type FeedbackTone = "danger" | "info" | "success" | "warning";
+
 type FeedbackState = {
   title: string;
   description: string;
-  variant: AlertVariant;
+  tone: FeedbackTone;
 };
 
 const POLL_INTERVAL_MS = 3000;
@@ -61,7 +63,7 @@ function normalizeApiError(raw: string) {
   const normalized = raw.trim().toLowerCase();
 
   if (normalized.includes("network") || normalized.includes("conexao")) {
-    return "Não foi possível conectar ao servidor. Tente novamente em instantes.";
+    return "Nao foi possivel conectar ao servidor. Tente novamente em instantes.";
   }
 
   return raw;
@@ -75,77 +77,36 @@ function formatCurrency(cents: number) {
   }).format(cents / 100);
 }
 
-function getAccessLabel(accessType: EventItem["accessType"]) {
-  if (accessType === "free_members") return "Gratuito para membros";
-  if (accessType === "paid_members") return "Pago para membros";
-  return "Público com desconto para membros";
-}
-
-function getAccessVariant(accessType: EventItem["accessType"]): BadgeVariant {
-  if (accessType === "free_members") return "info";
-  if (accessType === "paid_members") return "brand";
-  return "warning";
-}
-
-function getEventTimingState(startsAt: string): { label: string; variant: BadgeVariant } {
+function getEventTimingState(startsAt: string) {
   const startsAtMs = new Date(startsAt).getTime();
   const now = Date.now();
 
   if (startsAtMs > now) {
-    return { label: "Programado", variant: "info" };
+    return { label: "Summit 2026", detail: "Ao vivo em breve" };
   }
 
   const sixHoursMs = 6 * 60 * 60 * 1000;
   if (now - startsAtMs <= sixHoursMs) {
-    return { label: "Acontecendo", variant: "success" };
+    return { label: "Ao vivo agora", detail: "Evento em andamento" };
   }
 
-  return { label: "Encerrado", variant: "neutral" };
+  return { label: "Edicao concluida", detail: "Evento encerrado" };
 }
 
-function checkoutStatusBadge(
-  status: CheckoutStatusResponse | null,
-  isPaid: boolean,
-  statusUnavailable: boolean
-): { label: string; variant: BadgeVariant } {
-  if (statusUnavailable) {
-    return { label: "Status indisponível", variant: "neutral" };
-  }
-
-  if (!status) {
-    return isPaid
-      ? { label: "Sem checkout", variant: "neutral" }
-      : { label: "Confirmação pendente", variant: "neutral" };
-  }
-
-  if (status.presenceConfirmed) {
-    return { label: "Presença confirmada", variant: "success" };
-  }
-
-  if (status.paymentStatus === "pending") {
-    return { label: "Pagamento pendente", variant: "warning" };
-  }
-
-  if (status.paymentStatus === "paid") {
-    return { label: "Pagamento aprovado", variant: "success" };
-  }
-
-  if (status.paymentStatus === "expired") {
-    return { label: "Pagamento expirado", variant: "danger" };
-  }
-
-  if (status.paymentStatus === "refunded") {
-    return { label: "Pagamento estornado", variant: "danger" };
-  }
-
-  return isPaid
-    ? { label: "Sem checkout", variant: "neutral" }
-    : { label: "Confirmação pendente", variant: "neutral" };
+function statusLabel(status: CheckoutStatusResponse | null, isPaid: boolean, statusUnavailable: boolean) {
+  if (statusUnavailable) return "Status temporariamente indisponivel";
+  if (!status) return isPaid ? "Pagamento ainda nao iniciado" : "Aguardando sua confirmacao";
+  if (status.presenceConfirmed) return "Presenca confirmada";
+  if (status.paymentStatus === "pending") return "Pagamento pendente";
+  if (status.paymentStatus === "paid") return "Pagamento aprovado";
+  if (status.paymentStatus === "expired") return "Pagamento expirado";
+  if (status.paymentStatus === "refunded") return "Pagamento estornado";
+  return isPaid ? "Pagamento ainda nao iniciado" : "Aguardando sua confirmacao";
 }
 
 function formatManualPaymentMessage(eventTitle: string, checkout: CheckoutResponse) {
   if (!checkout.manualPayment) {
-    return `Pagamento manual iniciado para ${eventTitle}. Envie o comprovante para aprovação.`;
+    return `Pagamento manual iniciado para ${eventTitle}. Envie o comprovante para aprovacao.`;
   }
 
   const keyType = checkout.manualPayment.keyType ? ` (${checkout.manualPayment.keyType})` : "";
@@ -168,6 +129,22 @@ function formatManualPaymentMessage(eventTitle: string, checkout: CheckoutRespon
     .join(" ");
 }
 
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
+  }).format(new Date(value));
+}
+
+function formatTimeWindow(value: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true
+  }).format(new Date(value));
+}
+
 export default function EventDetailPage() {
   const params = useParams<{ id: string }>();
   const eventId = Array.isArray(params.id) ? params.id[0] : params.id;
@@ -182,6 +159,16 @@ export default function EventDetailPage() {
   const [checkoutStatus, setCheckoutStatus] = useState<CheckoutStatusResponse | null>(null);
   const [checkoutStatusUnavailable, setCheckoutStatusUnavailable] = useState(false);
   const pollTokenRef = useRef(0);
+  const attendeeTokens = useMemo(() => {
+    if (!eventItem) return [];
+
+    const gallery = eventItem.galleryImageUrls ?? [];
+    return gallery.slice(0, 4).map((imageUrl, index) => ({
+      id: `${eventItem.id}-attendee-${index}`,
+      imageUrl,
+      initials: `${index + 1}`
+    }));
+  }, [eventItem]);
 
   const loadCheckoutStatus = useCallback(async () => {
     if (!eventId) return null;
@@ -200,9 +187,9 @@ export default function EventDetailPage() {
   const loadEventDetails = useCallback(async () => {
     if (!eventId) {
       setFeedback({
-        title: "Evento inválido",
-        description: "Não foi possível identificar o evento solicitado.",
-        variant: "danger"
+        title: "Evento invalido",
+        description: "Nao foi possivel identificar o evento solicitado.",
+        tone: "danger"
       });
       setLoadingEvent(false);
       return;
@@ -217,9 +204,9 @@ export default function EventDetailPage() {
       if (!targetEvent) {
         setEventItem(null);
         setFeedback({
-          title: "Evento não encontrado",
-          description: "Este evento não está mais disponível na agenda.",
-          variant: "danger"
+          title: "Evento nao encontrado",
+          description: "Este evento nao esta mais disponivel na agenda.",
+          tone: "danger"
         });
         return;
       }
@@ -230,7 +217,7 @@ export default function EventDetailPage() {
       setFeedback({
         title: "Falha ao carregar detalhe do evento",
         description: normalizeApiError((requestError as Error).message),
-        variant: "danger"
+        tone: "danger"
       });
     } finally {
       setLoadingEvent(false);
@@ -256,8 +243,8 @@ export default function EventDetailPage() {
     setPolling(true);
     setFeedback({
       title: "Checkout iniciado",
-      description: `Aguardando confirmação de pagamento para ${eventItem.title}.`,
-      variant: "info"
+      description: `Aguardando confirmacao de pagamento para ${eventItem.title}.`,
+      tone: "info"
     });
 
     try {
@@ -272,8 +259,8 @@ export default function EventDetailPage() {
           setPolling(false);
           setFeedback({
             title: "Pagamento confirmado",
-            description: `Presença validada automaticamente para ${eventItem.title}.`,
-            variant: "success"
+            description: `Presenca validada automaticamente para ${eventItem.title}.`,
+            tone: "success"
           });
           return;
         }
@@ -282,8 +269,8 @@ export default function EventDetailPage() {
           setPolling(false);
           setFeedback({
             title: "Pagamento expirado",
-            description: "Seu checkout expirou. Gere um novo pagamento para confirmar presença.",
-            variant: "danger"
+            description: "Seu checkout expirou. Gere um novo pagamento para confirmar presenca.",
+            tone: "danger"
           });
           return;
         }
@@ -292,8 +279,8 @@ export default function EventDetailPage() {
           setPolling(false);
           setFeedback({
             title: "Pagamento estornado",
-            description: "Este pagamento foi estornado. Gere um novo checkout se necessário.",
-            variant: "warning"
+            description: "Este pagamento foi estornado. Gere um novo checkout se necessario.",
+            tone: "warning"
           });
           return;
         }
@@ -306,8 +293,8 @@ export default function EventDetailPage() {
       setPolling(false);
       setFeedback({
         title: "Pagamento em processamento",
-        description: "O checkout ainda está pendente. Você pode consultar novamente em instantes.",
-        variant: "info"
+        description: "O checkout ainda esta pendente. Voce pode consultar novamente em instantes.",
+        tone: "info"
       });
     } catch (pollError) {
       if (pollTokenRef.current !== token) return;
@@ -316,7 +303,7 @@ export default function EventDetailPage() {
       setFeedback({
         title: "Falha ao consultar checkout",
         description: normalizeApiError((pollError as Error).message),
-        variant: "danger"
+        tone: "danger"
       });
       setCheckoutStatusUnavailable(true);
     }
@@ -340,15 +327,15 @@ export default function EventDetailPage() {
       }));
 
       setFeedback({
-        title: "Presença confirmada",
-        description: `Sua presença no evento ${eventItem.title} foi confirmada.`,
-        variant: "success"
+        title: "Presenca confirmada",
+        description: `Sua presenca no evento ${eventItem.title} foi confirmada.`,
+        tone: "success"
       });
     } catch (confirmError) {
       setFeedback({
-        title: "Falha ao confirmar presença",
+        title: "Falha ao confirmar presenca",
         description: normalizeApiError((confirmError as Error).message),
-        variant: "danger"
+        tone: "danger"
       });
     } finally {
       setLoadingAction(false);
@@ -371,9 +358,9 @@ export default function EventDetailPage() {
       if (checkout.paymentStatus === "paid") {
         await loadCheckoutStatus();
         setFeedback({
-          title: "Pagamento já confirmado",
-          description: `Este evento já está pago para ${eventItem.title}.`,
-          variant: "success"
+          title: "Pagamento ja confirmado",
+          description: `Este evento ja esta pago para ${eventItem.title}.`,
+          tone: "success"
         });
         return;
       }
@@ -382,7 +369,7 @@ export default function EventDetailPage() {
         setFeedback({
           title: "Checkout PIX manual",
           description: formatManualPaymentMessage(eventItem.title, checkout),
-          variant: "warning"
+          tone: "warning"
         });
         setManualPaymentData(checkout.manualPayment);
       }
@@ -398,7 +385,7 @@ export default function EventDetailPage() {
       setFeedback({
         title: "Falha ao iniciar checkout",
         description: normalizeApiError((checkoutError as Error).message),
-        variant: "danger"
+        tone: "danger"
       });
       setPolling(false);
     } finally {
@@ -413,16 +400,16 @@ export default function EventDetailPage() {
       await navigator.clipboard.writeText(manualPaymentData.pixCopyPaste);
       setCopiedPixCode(true);
       setFeedback({
-        title: "Código PIX copiado",
-        description: "Cole o código no app do banco para concluir o pagamento.",
-        variant: "success"
+        title: "Codigo PIX copiado",
+        description: "Cole o codigo no app do banco para concluir o pagamento.",
+        tone: "success"
       });
     } catch (clipboardError) {
       setCopiedPixCode(false);
       setFeedback({
-        title: "Falha ao copiar código PIX",
+        title: "Falha ao copiar codigo PIX",
         description: normalizeApiError((clipboardError as Error).message),
-        variant: "danger"
+        tone: "danger"
       });
     }
   }
@@ -430,9 +417,10 @@ export default function EventDetailPage() {
   if (loadingEvent) {
     return (
       <MemberShell>
-        <Alert variant="info" title="Carregando evento">
-          Preparando detalhe e jornada de confirmação.
-        </Alert>
+        <section className={styles.statusCard}>
+          <h2 className={styles.statusTitle}>Carregando evento</h2>
+          <p className={styles.statusText}>Preparando detalhe e jornada de confirmacao.</p>
+        </section>
       </MemberShell>
     );
   }
@@ -440,12 +428,13 @@ export default function EventDetailPage() {
   if (!eventItem) {
     return (
       <MemberShell>
-        <Alert variant="danger" title="Evento indisponível">
-          Não foi possível carregar este evento. Retorne para a agenda e tente novamente.
-        </Alert>
-        <div style={{ marginTop: "12px" }}>
-          <Link href="/">
-            <Button>Voltar para agenda</Button>
+        <section className={`${styles.statusCard} ${styles.statusDanger}`}>
+          <h2 className={styles.statusTitle}>Evento indisponivel</h2>
+          <p className={styles.statusText}>Nao foi possivel carregar este evento. Retorne para a agenda e tente novamente.</p>
+        </section>
+        <div className={styles.backAction}>
+          <Link href="/" className={styles.backLink}>
+            Voltar para agenda
           </Link>
         </div>
       </MemberShell>
@@ -454,343 +443,193 @@ export default function EventDetailPage() {
 
   const isPaid = eventItem.accessType !== "free_members" && Number(eventItem.priceCents ?? 0) > 0;
   const timingState = getEventTimingState(eventItem.startsAt);
-  const statusBadge = checkoutStatusBadge(checkoutStatus, isPaid, checkoutStatusUnavailable);
+  const currentStatusLabel = statusLabel(checkoutStatus, isPaid, checkoutStatusUnavailable);
   const presenceConfirmed = checkoutStatus?.presenceConfirmed ?? false;
 
   return (
     <MemberShell>
-      <div style={{ display: "grid", gap: "18px" }}>
-        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-          <Link href="/">
-            <Button variant="secondary" size="sm">Voltar para agenda</Button>
-          </Link>
-          <Badge variant="brand">Detalhe do evento</Badge>
-        </div>
-
+      <div className={styles.page}>
         {feedback ? (
-          <Alert variant={feedback.variant} title={feedback.title}>
-            {feedback.description}
-          </Alert>
+          <section
+            className={`${styles.statusCard} ${feedback.tone === "danger" ? styles.statusDanger : ""}`}
+            role={feedback.tone === "danger" ? "alert" : "status"}
+            aria-live="polite"
+          >
+            <h2 className={styles.statusTitle}>{feedback.title}</h2>
+            <p className={styles.statusText}>{feedback.description}</p>
+          </section>
         ) : null}
 
-        <section style={{ display: "grid", gap: "18px", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
-          <div style={{ display: "grid", gap: "14px" }}>
-            <article
-              style={{
-                display: "grid",
-                gap: "16px",
-                padding: "20px",
-                borderRadius: "30px",
-                border: "1px solid rgba(134, 90, 255, 0.12)",
-                background:
-                  "linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.8)), radial-gradient(80% 80% at 0% 0%, rgba(134, 90, 255, 0.16), transparent 52%)",
-                boxShadow: "0 18px 44px rgba(76, 59, 120, 0.12)"
-              }}
-            >
-              <div
-                style={{
-                  width: "100%",
-                  height: "300px",
-                  borderRadius: "24px",
-                  overflow: "hidden",
-                  position: "relative"
-                }}
-              >
-                <Image
-                  loader={passthroughImageLoader}
-                  unoptimized
-                  fill
-                  priority
-                  sizes="(max-width: 900px) 100vw, 52vw"
-                  src={eventItem.heroImageUrl ?? "/event-placeholder.svg"}
-                  alt={`Imagem do evento ${eventItem.title}`}
-                  style={{ objectFit: "cover" }}
-                />
-              </div>
-
-              <div style={{ display: "grid", gap: "10px" }}>
-                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                  <Badge variant={timingState.variant}>{timingState.label}</Badge>
-                  <Badge variant={getAccessVariant(eventItem.accessType)}>{getAccessLabel(eventItem.accessType)}</Badge>
-                  <Badge variant={statusBadge.variant}>{statusBadge.label}</Badge>
-                </div>
-                <h1 style={{ margin: 0, fontSize: "clamp(1.8rem, 5vw, 3rem)", lineHeight: 0.96 }}>{eventItem.title}</h1>
-                <p style={{ margin: 0, color: "var(--elo-text-secondary, #374151)" }}>{eventItem.summary}</p>
-              </div>
-
-              <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
-                <div
-                  style={{
-                    display: "grid",
-                    gap: "4px",
-                    padding: "14px 16px",
-                    borderRadius: "18px",
-                    border: "1px solid var(--elo-border-soft, rgba(17, 17, 17, 0.06))",
-                    background: "rgba(255,255,255,0.72)"
-                  }}
-                >
-                  <span style={{ color: "var(--elo-text-tertiary, #6B7280)", fontSize: ".76rem", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                    Quando
-                  </span>
-                  <strong>{new Date(eventItem.startsAt).toLocaleString("pt-BR")}</strong>
-                </div>
-                <div
-                  style={{
-                    display: "grid",
-                    gap: "4px",
-                    padding: "14px 16px",
-                    borderRadius: "18px",
-                    border: "1px solid var(--elo-border-soft, rgba(17, 17, 17, 0.06))",
-                    background: "rgba(255,255,255,0.72)"
-                  }}
-                >
-                  <span style={{ color: "var(--elo-text-tertiary, #6B7280)", fontSize: ".76rem", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                    Onde
-                  </span>
-                  <strong>{eventItem.location}</strong>
-                </div>
-                <div
-                  style={{
-                    display: "grid",
-                    gap: "4px",
-                    padding: "14px 16px",
-                    borderRadius: "18px",
-                    border: "1px solid var(--elo-border-soft, rgba(17, 17, 17, 0.06))",
-                    background: "rgba(255,255,255,0.72)"
-                  }}
-                >
-                  <span style={{ color: "var(--elo-text-tertiary, #6B7280)", fontSize: ".76rem", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                    Formato
-                  </span>
-                  <strong>{eventItem.onlineUrl ? "Presencial + online" : "Presencial"}</strong>
-                </div>
-              </div>
-            </article>
-
-            {eventItem.galleryImageUrls && eventItem.galleryImageUrls.length > 0 ? (
-              <div style={{ display: "grid", gap: "10px", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))" }}>
-                {eventItem.galleryImageUrls.slice(0, 6).map((imageUrl, index) => (
-                  <div
-                    key={`${eventItem.id}-gallery-${index}`}
-                    style={{ width: "100%", height: "90px", borderRadius: "16px", overflow: "hidden", position: "relative" }}
-                  >
-                    <Image
-                      loader={passthroughImageLoader}
-                      unoptimized
-                      fill
-                      sizes="120px"
-                      src={imageUrl}
-                      alt={`Galeria ${index + 1} - ${eventItem.title}`}
-                      style={{ objectFit: "cover" }}
-                    />
-                  </div>
-                ))}
-              </div>
-            ) : null}
-
-            <Card title="Sobre o encontro" subtitle="Tudo que você precisa para decidir e agir sem sair da página.">
-              <div style={{ display: "grid", gap: "10px" }}>
-                <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
-                  <Clock3 size={16} />
-                  <span>{new Date(eventItem.startsAt).toLocaleString("pt-BR")}</span>
-                </div>
-                <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
-                  <MapPin size={16} />
-                  <span>{eventItem.location}</span>
-                </div>
-                {eventItem.onlineUrl ? (
-                  <a href={eventItem.onlineUrl} target="_blank" rel="noreferrer" style={{ display: "inline-flex", gap: "8px", alignItems: "center", color: "var(--elo-orbit, #865AFF)", fontWeight: 700 }}>
-                    <Video size={16} />
-                    Abrir link do evento
-                    <ExternalLink size={14} />
-                  </a>
-                ) : null}
-              </div>
-            </Card>
+        <section className={styles.heroCard}>
+          <div className={styles.heroMedia}>
+            <Image
+              loader={passthroughImageLoader}
+              unoptimized
+              fill
+              priority
+              sizes="100vw"
+              src={eventItem.heroImageUrl ?? "/event-placeholder.svg"}
+              alt={`Imagem do evento ${eventItem.title}`}
+              className={styles.heroImage}
+            />
+            <div className={styles.heroOverlay} aria-hidden="true" />
           </div>
 
-          <div style={{ display: "grid", gap: "14px", alignContent: "start" }}>
-            <Card
-              title={isPaid ? "Reserve seu lugar" : "Confirmar presença"}
-              subtitle={isPaid ? "Fluxo PIX manual com leitura de status na mesma tela." : "Evento gratuito para membros ativos."}
-              tone="panel"
-            >
-              <div style={{ display: "grid", gap: "12px" }}>
-                <div
-                  style={{
-                    display: "grid",
-                    gap: "6px",
-                    padding: "16px",
-                    borderRadius: "18px",
-                    border: "1px solid var(--elo-border-soft, rgba(17, 17, 17, 0.06))",
-                    background: "rgba(255,255,255,0.78)"
-                  }}
-                >
-                  <span style={{ color: "var(--elo-text-tertiary, #6B7280)", fontSize: ".76rem", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                    Investimento
-                  </span>
-                  <strong style={{ fontFamily: "var(--elo-font-mono)", fontSize: "1.4rem" }}>
-                    {isPaid ? formatCurrency(eventItem.priceCents ?? 0) : "Gratuito"}
-                  </strong>
-                  <span style={{ color: "var(--elo-text-secondary, #374151)", fontSize: ".92rem" }}>
-                    {isPaid
-                      ? "Você gera o PIX, envia o comprovante e acompanha a validação sem sair desta tela."
-                      : "Sua vaga é confirmada em um único passo, com status imediato."}
-                  </span>
+          <div className={styles.heroContent}>
+            <span className={styles.heroBadge}>{timingState.label}</span>
+            <h1 className={styles.heroTitle}>{eventItem.title}</h1>
+
+            <div className={styles.infoGrid}>
+              <article className={styles.infoCard}>
+                <div className={styles.infoIcon}>
+                  <Clock3 size={15} strokeWidth={2.1} />
                 </div>
-
-                <div style={{ display: "grid", gap: "8px" }}>
-                  {isPaid ? (
-                    <>
-                      <span style={{ color: "var(--elo-text-secondary, #374151)", fontSize: ".92rem" }}>1. Gere o PIX manual.</span>
-                      <span style={{ color: "var(--elo-text-secondary, #374151)", fontSize: ".92rem" }}>2. Pague e envie o comprovante.</span>
-                      <span style={{ color: "var(--elo-text-secondary, #374151)", fontSize: ".92rem" }}>3. Aguarde a validação para confirmar a presença.</span>
-                    </>
-                  ) : (
-                    <span style={{ color: "var(--elo-text-secondary, #374151)", fontSize: ".92rem" }}>
-                      Sua confirmação acontece em um único passo e o status fica visível imediatamente.
-                    </span>
-                  )}
+                <div className={styles.infoMeta}>
+                  <p className={styles.infoLabel}>Date &amp; Hour</p>
+                  <p className={styles.infoPrimary}>{formatDate(eventItem.startsAt)}</p>
+                  <p className={styles.infoSecondary}>{formatTimeWindow(eventItem.startsAt)}</p>
                 </div>
+              </article>
 
-                {checkoutStatusUnavailable ? (
-                  <Alert variant="warning" title="Status temporariamente indisponível">
-                    A consulta do checkout oscilou agora. A jornada continua disponível, mas a confirmação pode levar alguns instantes para reaparecer.
-                  </Alert>
-                ) : null}
-
-                <Badge variant={statusBadge.variant} style={{ justifySelf: "start" }}>
-                  {statusBadge.label}
-                </Badge>
-
-                <Button
-                  type="button"
-                  onClick={isPaid ? () => void handlePaidCheckout() : () => void handleFreeConfirm()}
-                  disabled={loadingAction || polling || presenceConfirmed}
-                  size="lg"
-                >
-                  {isPaid
-                    ? loadingAction
-                      ? "Processando..."
-                      : polling
-                        ? "Aguardando pagamento..."
-                        : presenceConfirmed
-                          ? "Pagamento confirmado"
-                          : checkoutStatus?.paymentStatus === "pending"
-                            ? "Consultar confirmação"
-                            : `Gerar PIX ${formatCurrency(eventItem.priceCents ?? 0)}`
-                    : loadingAction
-                      ? "Confirmando..."
-                      : presenceConfirmed
-                        ? "Presença confirmada"
-                        : "Confirmar presença"}
-                </Button>
-
-                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                  <Badge variant={statusBadge.variant}>{statusBadge.label}</Badge>
-                  <Badge variant={eventItem.onlineUrl ? "info" : "neutral"}>
-                    {eventItem.onlineUrl ? "Link online disponível" : "Experiência presencial"}
-                  </Badge>
+              <article className={styles.infoCard}>
+                <div className={styles.infoIcon}>
+                  <MapPin size={15} strokeWidth={2.1} />
                 </div>
-              </div>
-            </Card>
-
-            <Card title="Linha do status" subtitle="Acompanhe como a jornada deste evento está evoluindo.">
-              <div style={{ display: "grid", gap: "10px" }}>
-                {[
-                  {
-                    label: "Evento lido",
-                    active: true
-                  },
-                  {
-                    label: isPaid ? "Checkout gerado" : "Presença iniciada",
-                    active: Boolean(checkoutStatus?.paymentStatus && checkoutStatus.paymentStatus !== "none") || presenceConfirmed
-                  },
-                  {
-                    label: isPaid ? "Pagamento validado" : "Presença confirmada",
-                    active: isPaid ? checkoutStatus?.paymentStatus === "paid" || presenceConfirmed : presenceConfirmed
-                  }
-                ].map((step) => (
-                  <div key={step.label} style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                    <span
-                      style={{
-                        width: "24px",
-                        height: "24px",
-                        display: "grid",
-                        placeItems: "center",
-                        borderRadius: "999px",
-                        background: step.active ? "rgba(22, 101, 52, 0.14)" : "rgba(17, 19, 24, 0.08)",
-                        color: step.active ? "var(--elo-semantic-success, #166534)" : "var(--elo-text-tertiary, #6B7280)"
-                      }}
-                    >
-                      <CircleCheckBig size={12} />
-                    </span>
-                    <span style={{ color: "var(--elo-text-secondary, #374151)", fontSize: ".92rem" }}>{step.label}</span>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            <Card title="Confiança da jornada" subtitle="Clareza operacional para evitar dúvida na hora de pagar ou confirmar.">
-              <div style={{ display: "grid", gap: "10px" }}>
-                <div style={{ color: "var(--elo-text-secondary, #374151)", fontSize: ".92rem" }}>
-                  Seu status fica visível nesta página o tempo todo, sem precisar voltar para a agenda.
+                <div className={styles.infoMeta}>
+                  <p className={styles.infoLabel}>Local</p>
+                  <p className={styles.infoPrimary}>{eventItem.location}</p>
+                  <p className={styles.infoSecondary}>
+                    {eventItem.onlineUrl ? "Presencial e online" : "Experiencia presencial"}
+                  </p>
                 </div>
-                <div style={{ color: "var(--elo-text-secondary, #374151)", fontSize: ".92rem" }}>
-                  Em eventos pagos, o fluxo deixa explícito quando o checkout foi gerado, quando o pagamento entrou e quando a presença foi validada.
-                </div>
-              </div>
-            </Card>
-
-            {manualPaymentData ? (
-              <Card title="Pagamento PIX" subtitle={`TXID: ${manualPaymentData.txId}`}>
-                <div style={{ display: "grid", gap: "12px", justifyItems: "center", textAlign: "center" }}>
-                  <div
-                    style={{
-                      width: "220px",
-                      maxWidth: "100%",
-                      aspectRatio: "1 / 1",
-                      borderRadius: "18px",
-                      border: "1px solid var(--elo-border-soft, rgba(17, 17, 17, 0.06))",
-                      overflow: "hidden",
-                      position: "relative"
-                    }}
-                  >
-                    <Image
-                      loader={passthroughImageLoader}
-                      unoptimized
-                      fill
-                      sizes="220px"
-                      src={manualPaymentData.pixQrCodeImage}
-                      alt="QR Code PIX para pagamento do evento"
-                      style={{ objectFit: "cover" }}
-                    />
-                  </div>
-                  <Badge variant="brand">{formatCurrency(manualPaymentData.amountCents)}</Badge>
-                  <span style={{ color: "var(--elo-text-secondary, #374151)", fontSize: ".9rem" }}>Chave PIX: {manualPaymentData.pixKey}</span>
-                  <div
-                    style={{
-                      width: "100%",
-                      padding: "12px",
-                      borderRadius: "16px",
-                      background: "var(--elo-panel, #F4F6FF)",
-                      color: "var(--elo-text-secondary, #374151)",
-                      wordBreak: "break-all",
-                      fontFamily: "var(--elo-font-mono)",
-                      fontSize: ".82rem"
-                    }}
-                  >
-                    {manualPaymentData.pixCopyPaste}
-                  </div>
-                  <Button type="button" variant="secondary" onClick={() => void copyPixCode()}>
-                    <Copy size={14} />
-                    {copiedPixCode ? "Código PIX copiado" : "Copiar código PIX"}
-                  </Button>
-                </div>
-              </Card>
-            ) : null}
+              </article>
+            </div>
           </div>
         </section>
+
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Sobre o Evento</h2>
+          <p className={styles.sectionText}>{eventItem.summary}</p>
+          {eventItem.onlineUrl ? (
+            <a href={eventItem.onlineUrl} target="_blank" rel="noreferrer" className={styles.inlineLink}>
+              <Video size={15} strokeWidth={2.1} />
+              Abrir link do evento
+              <ExternalLink size={14} strokeWidth={2.1} />
+            </a>
+          ) : null}
+        </section>
+
+        <section className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>Quem vai?</h2>
+            <span className={styles.sectionLink}>Ver Todos (250)</span>
+          </div>
+
+          <div className={styles.attendeeRow}>
+            {attendeeTokens.map((attendee) =>
+              attendee.imageUrl ? (
+                <Image
+                  key={attendee.id}
+                  loader={passthroughImageLoader}
+                  unoptimized
+                  src={attendee.imageUrl}
+                  alt="Participante do evento"
+                  width={36}
+                  height={36}
+                  className={styles.attendeeAvatar}
+                />
+              ) : (
+                <div key={attendee.id} className={styles.attendeeFallback}>
+                  {attendee.initials}
+                </div>
+              )
+            )}
+            <div className={styles.attendeeMore}>+124</div>
+          </div>
+        </section>
+
+        <section className={styles.actionCard}>
+          <button
+            className={styles.primaryButton}
+            type="button"
+            onClick={isPaid ? () => void handlePaidCheckout() : () => void handleFreeConfirm()}
+            disabled={loadingAction || polling || presenceConfirmed}
+          >
+            {isPaid
+              ? loadingAction
+                ? "Processando..."
+                : polling
+                  ? "Aguardando pagamento..."
+                  : presenceConfirmed
+                    ? "Pagamento confirmado"
+                    : checkoutStatus?.paymentStatus === "pending"
+                      ? "Consultar confirmacao"
+                      : "Confirmar Presenca"
+              : loadingAction
+                ? "Confirmando..."
+                : presenceConfirmed
+                  ? "Presenca confirmada"
+                  : "Confirmar Presenca"}
+          </button>
+
+          <p className={styles.actionMeta}>
+            {isPaid
+              ? `${formatCurrency(eventItem.priceCents ?? 0)} · status: ${currentStatusLabel}`
+              : `Vagas limitadas disponiveis · ${currentStatusLabel}`}
+          </p>
+
+          <div className={styles.timelineList}>
+            {[
+              { label: "Evento lido", active: true },
+              {
+                label: isPaid ? "Checkout gerado" : "Confirmacao iniciada",
+                active: Boolean(checkoutStatus?.paymentStatus && checkoutStatus.paymentStatus !== "none") || presenceConfirmed
+              },
+              {
+                label: isPaid ? "Pagamento validado" : "Presenca confirmada",
+                active: isPaid ? checkoutStatus?.paymentStatus === "paid" || presenceConfirmed : presenceConfirmed
+              }
+            ].map((step) => (
+              <div key={step.label} className={styles.timelineRow}>
+                <span className={`${styles.timelineIcon} ${step.active ? styles.timelineIconActive : ""}`}>
+                  <CircleCheckBig size={12} strokeWidth={2.1} />
+                </span>
+                <span className={styles.timelineText}>{step.label}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {manualPaymentData ? (
+          <section className={styles.pixCard}>
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>Pagamento PIX</h2>
+              <span className={styles.txid}>TXID: {manualPaymentData.txId}</span>
+            </div>
+
+            <div className={styles.pixQrWrap}>
+              <Image
+                loader={passthroughImageLoader}
+                unoptimized
+                src={manualPaymentData.pixQrCodeImage}
+                alt="QR Code PIX para pagamento do evento"
+                width={220}
+                height={220}
+                className={styles.pixQr}
+              />
+            </div>
+
+            <p className={styles.pixAmount}>{formatCurrency(manualPaymentData.amountCents)}</p>
+            <p className={styles.pixKey}>Chave PIX: {manualPaymentData.pixKey}</p>
+
+            <div className={styles.pixCodeBox}>{manualPaymentData.pixCopyPaste}</div>
+
+            <button className={styles.secondaryButton} type="button" onClick={() => void copyPixCode()}>
+              <Copy size={14} strokeWidth={2.1} />
+              {copiedPixCode ? "Codigo PIX copiado" : "Copiar codigo PIX"}
+            </button>
+          </section>
+        ) : null}
       </div>
     </MemberShell>
   );
