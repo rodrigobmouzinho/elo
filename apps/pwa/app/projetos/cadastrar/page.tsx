@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Lock, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MemberShell } from "../../../components/member-shell";
@@ -170,11 +170,6 @@ export default function CadastrarIdeiaPage() {
           <article className={styles.tipCard}>
             <Sparkles size={16} strokeWidth={2.1} className={styles.tipIconPrimary} />
             <p className={styles.tipText}>Projetos com descricoes de alta qualidade recebem mais interacao de investidores.</p>
-          </article>
-
-          <article className={styles.tipCard}>
-            <Lock size={16} strokeWidth={2.1} className={styles.tipIconSecondary} />
-            <p className={styles.tipText}>Sua propriedade intelectual e protegida pelo nosso acordo de adesao a comunidade.</p>
           </article>
         </section>
       </div>
