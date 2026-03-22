@@ -734,6 +734,8 @@
   border-radius: 1.35rem;
   overflow: hidden;
   background: rgba(14, 14, 14, 0.82);
+  touch-action: pan-y;
+  user-select: none;
 }
 
 .galleryModalImage {

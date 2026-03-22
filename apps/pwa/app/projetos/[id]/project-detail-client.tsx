@@ -20,7 +20,7 @@ import {
   UsersRound,
   X
 } from "lucide-react";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { MemberShell } from "../../../components/member-shell";
 import { apiRequest, getStoredAuth } from "../../../lib/auth-client";
 import {
@@ -43,6 +43,8 @@ type FeedbackState = {
   description: string;
   tone: FeedbackTone;
 };
+
+const GALLERY_SWIPE_THRESHOLD = 42;
 
 function initialsOf(value: string) {
   return (
@@ -194,6 +196,8 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
   const [advancedProjectApiAvailable, setAdvancedProjectApiAvailable] = useState(true);
   const [applicationsApiAvailable, setApplicationsApiAvailable] = useState(true);
   const [activeGalleryIndex, setActiveGalleryIndex] = useState<number | null>(null);
+  const galleryTouchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const galleryTouchEndRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -533,6 +537,59 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
       if (current === null || galleryImages.length === 0) return current;
       return current === galleryImages.length - 1 ? 0 : current + 1;
     });
+  }
+
+  function handleGalleryTouchStart(event: React.TouchEvent<HTMLDivElement>) {
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    galleryTouchStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY
+    };
+    galleryTouchEndRef.current = null;
+  }
+
+  function handleGalleryTouchMove(event: React.TouchEvent<HTMLDivElement>) {
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    galleryTouchEndRef.current = {
+      x: touch.clientX,
+      y: touch.clientY
+    };
+  }
+
+  function handleGalleryTouchEnd() {
+    if (galleryImages.length <= 1) {
+      galleryTouchStartRef.current = null;
+      galleryTouchEndRef.current = null;
+      return;
+    }
+
+    const start = galleryTouchStartRef.current;
+    const end = galleryTouchEndRef.current;
+
+    galleryTouchStartRef.current = null;
+    galleryTouchEndRef.current = null;
+
+    if (!start || !end) {
+      return;
+    }
+
+    const deltaX = end.x - start.x;
+    const deltaY = end.y - start.y;
+
+    if (Math.abs(deltaX) < GALLERY_SWIPE_THRESHOLD || Math.abs(deltaX) <= Math.abs(deltaY)) {
+      return;
+    }
+
+    if (deltaX < 0) {
+      showNextGalleryImage();
+      return;
+    }
+
+    showPreviousGalleryImage();
   }
 
   function renderApplicantCard(applicant: ProjectApplicant, group: "pending" | "approved" | "rejected") {
@@ -1049,7 +1106,12 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
                 </button>
               </div>
 
-              <div className={styles.galleryModalViewport}>
+              <div
+                className={styles.galleryModalViewport}
+                onTouchStart={handleGalleryTouchStart}
+                onTouchMove={handleGalleryTouchMove}
+                onTouchEnd={handleGalleryTouchEnd}
+              >
                 {galleryImages.length > 1 ? (
                   <button
                     className={`${styles.galleryNavButton} ${styles.galleryNavPrev}`}
