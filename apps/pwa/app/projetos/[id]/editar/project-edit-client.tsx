@@ -60,8 +60,6 @@ export function ProjectEditClient({ projectId }: { projectId: string }) {
   const [processingGallery, setProcessingGallery] = useState(false);
   const [processingDocumentation, setProcessingDocumentation] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
-  const galleryInputRef = useRef<HTMLInputElement | null>(null);
-  const documentationInputRef = useRef<HTMLInputElement | null>(null);
   const assetsRef = useRef<ProjectDraftAsset[]>([]);
 
   useEffect(() => {
@@ -551,27 +549,35 @@ export function ProjectEditClient({ projectId }: { projectId: string }) {
                         PDFs reais do projeto. Ate {PROJECT_DOCUMENT_MAX_FILES} arquivos de 10 MB cada.
                       </p>
                     </div>
-                    <button
-                      className={styles.inlineAddButton}
-                      type="button"
-                      onClick={() => documentationInputRef.current?.click()}
-                      disabled={
+                    <label
+                      className={`${styles.inlineAddButton} ${
+                        processingDocumentation ||
+                        form.documentationFiles.length >= PROJECT_DOCUMENT_MAX_FILES
+                          ? styles.inlineAddButtonDisabled
+                          : ""
+                      }`}
+                      htmlFor={`project-documentation-upload-${idea.id}`}
+                      aria-disabled={
                         processingDocumentation ||
                         form.documentationFiles.length >= PROJECT_DOCUMENT_MAX_FILES
                       }
                     >
                       <FilePlus2 size={15} strokeWidth={2.1} />
                       {processingDocumentation ? "Preparando..." : "Selecionar PDFs"}
-                    </button>
+                    </label>
                   </div>
 
                   <input
-                    ref={documentationInputRef}
-                    className={styles.hiddenInput}
+                    id={`project-documentation-upload-${idea.id}`}
+                    className={styles.fileInput}
                     type="file"
                     accept="application/pdf"
                     multiple
                     onChange={(event) => void handleDocumentationSelection(event)}
+                    disabled={
+                      processingDocumentation ||
+                      form.documentationFiles.length >= PROJECT_DOCUMENT_MAX_FILES
+                    }
                   />
 
                   {form.documentationFiles.length > 0 ? (
@@ -614,24 +620,28 @@ export function ProjectEditClient({ projectId }: { projectId: string }) {
                         Ate {PROJECT_GALLERY_MAX_FILES} imagens. O app comprime antes do envio para manter a galeria leve.
                       </p>
                     </div>
-                    <button
-                      className={styles.inlineAddButton}
-                      type="button"
-                      onClick={() => galleryInputRef.current?.click()}
-                      disabled={processingGallery || form.galleryFiles.length >= PROJECT_GALLERY_MAX_FILES}
+                    <label
+                      className={`${styles.inlineAddButton} ${
+                        processingGallery || form.galleryFiles.length >= PROJECT_GALLERY_MAX_FILES
+                          ? styles.inlineAddButtonDisabled
+                          : ""
+                      }`}
+                      htmlFor={`project-gallery-upload-${idea.id}`}
+                      aria-disabled={processingGallery || form.galleryFiles.length >= PROJECT_GALLERY_MAX_FILES}
                     >
                       <ImagePlus size={15} strokeWidth={2.1} />
                       {processingGallery ? "Preparando..." : "Selecionar imagens"}
-                    </button>
+                    </label>
                   </div>
 
                   <input
-                    ref={galleryInputRef}
-                    className={styles.hiddenInput}
+                    id={`project-gallery-upload-${idea.id}`}
+                    className={styles.fileInput}
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
                     multiple
                     onChange={(event) => void handleGallerySelection(event)}
+                    disabled={processingGallery || form.galleryFiles.length >= PROJECT_GALLERY_MAX_FILES}
                   />
 
                   {form.galleryFiles.length > 0 ? (

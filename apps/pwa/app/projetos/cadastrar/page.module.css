@@ -202,8 +202,16 @@
   gap: 0.8rem;
 }
 
-.hiddenInput {
-  display: none;
+.fileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .inlineFieldRow {
@@ -259,6 +267,7 @@
   padding: 0 0.9rem;
   background: rgba(89, 50, 209, 0.14);
   color: #cbbeff;
+  cursor: pointer;
 }
 
 .inlineRemoveButton {
@@ -269,16 +278,17 @@
   flex-shrink: 0;
 }
 
-.inlineAddButton:hover,
+.inlineAddButton:not([aria-disabled="true"]):hover,
 .inlineRemoveButton:hover,
 .previewRemoveButton:hover,
-.inlineAddButton:focus-visible,
+.inlineAddButton:not([aria-disabled="true"]):focus-visible,
 .inlineRemoveButton:focus-visible,
 .previewRemoveButton:focus-visible {
   transform: translateY(-0.0625rem);
 }
 
-.inlineAddButton:disabled {
+.inlineAddButtonDisabled,
+.inlineAddButton[aria-disabled="true"] {
   opacity: 0.46;
   cursor: not-allowed;
   transform: none;
