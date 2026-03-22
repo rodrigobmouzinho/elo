@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BrainCircuit, CirclePlus, HeartPulse, Layers3, Leaf, Rocket, Search, Sparkles } from "lucide-react";
+import { CirclePlus, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { MemberShell } from "../../components/member-shell";
 import { apiRequest } from "../../lib/auth-client";
@@ -16,15 +16,13 @@ type Idea = {
   ownerName?: string;
 };
 
-type FeedbackTone = "danger" | "info" | "success";
+type FeedbackTone = "danger" | "success";
 
 type FeedbackState = {
   title: string;
   description: string;
   tone: FeedbackTone;
 };
-
-type ApplicationState = "created" | "existing";
 
 function normalizeApiError(raw: string) {
   const normalized = raw.trim().toLowerCase();
@@ -43,50 +41,22 @@ function normalizeSearchValue(value: string) {
     .toLowerCase();
 }
 
-function excerpt(text: string, max = 140) {
+function excerpt(text: string, max = 110) {
   if (text.length <= max) return text;
   return `${text.slice(0, max).trimEnd()}...`;
 }
 
-function initials(value: string) {
-  return value
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
+function extractPitch(description: string) {
+  const firstLine = description
+    .split(/\n+/)
+    .map((part) => part.trim())
+    .find(Boolean);
+
+  return excerpt(firstLine ?? description, 118);
 }
 
 function ideaIndex(idea: Idea) {
-  return normalizeSearchValue([idea.title, idea.category, idea.description, idea.lookingFor, idea.ownerName ?? ""].join(" "));
-}
-
-function applicationLabel(state?: ApplicationState) {
-  if (state === "created") return "Candidatura enviada";
-  if (state === "existing") return "Ja candidatado";
-  return null;
-}
-
-function actionLabel(index: number, state: ApplicationState | undefined, applyingId: string | null, ideaId: string) {
-  if (applyingId === ideaId) return "Enviando...";
-  if (state === "created") return "Candidatura enviada";
-  if (state === "existing") return "Ja candidatado";
-  if (index === 0) return "Participar";
-  if (index % 3 === 0) return "Investir";
-  return "Apoiar";
-}
-
-function iconForIdea(idea: Idea, index: number) {
-  const normalized = normalizeSearchValue(idea.category);
-
-  if (normalized.includes("health")) return <HeartPulse size={18} strokeWidth={2.1} />;
-  if (normalized.includes("fin")) return <Rocket size={18} strokeWidth={2.1} />;
-  if (normalized.includes("green") || normalized.includes("sustent")) return <Leaf size={18} strokeWidth={2.1} />;
-  if (normalized.includes("ia") || normalized.includes("ai") || normalized.includes("neural")) {
-    return <BrainCircuit size={18} strokeWidth={2.1} />;
-  }
-
-  return index % 3 === 0 ? <Sparkles size={18} strokeWidth={2.1} /> : <Layers3 size={18} strokeWidth={2.1} />;
+  return normalizeSearchValue([idea.title, idea.category, extractPitch(idea.description), idea.description, idea.lookingFor].join(" "));
 }
 
 export default function ProjetosPage() {
@@ -94,8 +64,6 @@ export default function ProjetosPage() {
   const [search, setSearch] = useState("");
   const [loadingIdeas, setLoadingIdeas] = useState(true);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
-  const [applyingId, setApplyingId] = useState<string | null>(null);
-  const [applicationStateById, setApplicationStateById] = useState<Record<string, ApplicationState>>({});
 
   async function loadIdeas() {
     setLoadingIdeas(true);
@@ -127,54 +95,16 @@ export default function ProjetosPage() {
     window.sessionStorage.removeItem("elo-project-created");
     setFeedback({
       title: "Ideia publicada",
-      description: "Seu projeto ja esta disponivel para novas candidaturas.",
+      description: "Seu projeto ja esta disponivel para novas visualizacoes e candidaturas.",
       tone: "success"
     });
   }, []);
-
-  async function applyToIdea(projectId: string) {
-    const targetIdea = ideas.find((idea) => idea.id === projectId);
-
-    setApplyingId(projectId);
-    setFeedback(null);
-
-    try {
-      const response = await apiRequest<{ message: string; application: { created: boolean } }>(`/app/projects/${projectId}/apply`, {
-        method: "POST",
-        body: JSON.stringify({})
-      });
-
-      const state: ApplicationState = response.application.created ? "created" : "existing";
-      setApplicationStateById((previous) => ({
-        ...previous,
-        [projectId]: state
-      }));
-
-      setFeedback({
-        title: response.application.created ? "Candidatura enviada" : "Candidatura ja registrada",
-        description: response.application.created
-          ? `Voce se candidatou para participar de "${targetIdea?.title ?? "este projeto"}".`
-          : `Sua candidatura em "${targetIdea?.title ?? "este projeto"}" ja estava registrada.`,
-        tone: response.application.created ? "success" : "info"
-      });
-    } catch (applyError) {
-      setFeedback({
-        title: "Falha ao enviar candidatura",
-        description: normalizeApiError((applyError as Error).message),
-        tone: "danger"
-      });
-    } finally {
-      setApplyingId(null);
-    }
-  }
 
   const filteredIdeas = useMemo(() => {
     const normalizedSearch = normalizeSearchValue(search.trim());
 
     return ideas.filter((idea) => normalizedSearch === "" || ideaIndex(idea).includes(normalizedSearch));
   }, [ideas, search]);
-
-  const orbitIdeas = useMemo(() => filteredIdeas.slice(0, 3), [filteredIdeas]);
 
   return (
     <MemberShell>
@@ -203,7 +133,7 @@ export default function ProjetosPage() {
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Pesquisar ideias e projetos..."
+            placeholder="Pesquisar startups e ideias..."
             type="search"
           />
         </label>
@@ -212,7 +142,7 @@ export default function ProjetosPage() {
           <div className={styles.ctaAura} aria-hidden="true" />
           <div className={styles.ctaContent}>
             <h3 className={styles.ctaTitle}>Construa o futuro</h3>
-            <p className={styles.ctaText}>Tem um conceito que precisa de asas? Submeta sua ideia para a comunidade Elo.</p>
+            <p className={styles.ctaText}>Tem uma nova tese de negocio? Publique sua ideia e abra espaco para conexoes qualificadas.</p>
             <Link href="/projetos/cadastrar" className={styles.primaryButton}>
               Cadastrar Ideia
               <CirclePlus size={16} strokeWidth={2.1} />
@@ -223,7 +153,7 @@ export default function ProjetosPage() {
         {loadingIdeas ? (
           <section className={styles.statusCard} aria-live="polite">
             <h2 className={styles.statusTitle}>Carregando projetos</h2>
-            <p className={styles.statusText}>Buscando ideias abertas para candidatura e colaboracao.</p>
+            <p className={styles.statusText}>Buscando ideias abertas para visualizacao e candidatura.</p>
           </section>
         ) : null}
 
@@ -235,64 +165,22 @@ export default function ProjetosPage() {
         ) : null}
 
         <section className={styles.feedGrid}>
-          {filteredIdeas.map((idea, index) => {
-            const applicationState = applicationStateById[idea.id];
-            const applicationStatus = applicationLabel(applicationState);
-            const largeCard = index % 3 === 0;
-            const featuredCard = index === 0;
-            const disableApply = applyingId === idea.id || applicationState === "created" || applicationState === "existing";
-            const cardIcon = iconForIdea(idea, index);
+          {filteredIdeas.map((idea) => (
+            <article key={idea.id} className={styles.projectCard}>
+              <div className={styles.cardHeader}>
+                <span className={styles.categoryBadge}>{idea.category}</span>
+              </div>
 
-            return (
-              <article
-                key={idea.id}
-                className={`${styles.projectCard} ${largeCard ? styles.projectCardLarge : styles.projectCardCompact} ${
-                  featuredCard ? styles.projectCardFeatured : ""
-                }`}
-              >
-                <div className={styles.cardHeader}>
-                  <span className={`${styles.categoryBadge} ${featuredCard ? styles.categoryBadgeAccent : ""}`}>{idea.category}</span>
-                  {featuredCard ? (
-                    <div className={styles.avatarStack} aria-hidden="true">
-                      {orbitIdeas.map((orbitIdea) => (
-                        <span key={orbitIdea.id} className={styles.avatarToken}>
-                          {initials(orbitIdea.ownerName || orbitIdea.title)}
-                        </span>
-                      ))}
-                    </div>
-                  ) : applicationStatus ? (
-                    <span className={styles.stateBadge}>{applicationStatus}</span>
-                  ) : null}
-                </div>
+              <h3 className={styles.cardTitle}>{idea.title}</h3>
+              <p className={styles.cardPitch}>{extractPitch(idea.description)}</p>
 
-                {largeCard ? (
-                  <>
-                    <h3 className={styles.cardTitleLarge}>{idea.title}</h3>
-                    <p className={styles.cardDescriptionLarge}>{excerpt(idea.description, featuredCard ? 180 : 160)}</p>
-
-                    <div className={styles.cardFooterLarge}>
-                      <div className={styles.cardMeta}>
-                        <Sparkles size={14} strokeWidth={2.1} />
-                        <span>{idea.lookingFor}</span>
-                      </div>
-                      <button className={styles.secondaryButton} type="button" onClick={() => void applyToIdea(idea.id)} disabled={disableApply}>
-                        {actionLabel(index, applicationState, applyingId, idea.id)}
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className={styles.iconTile}>{cardIcon}</div>
-                    <h3 className={styles.cardTitleSmall}>{idea.title}</h3>
-                    <p className={styles.cardDescriptionSmall}>{excerpt(idea.description, 92)}</p>
-                    <button className={styles.compactButton} type="button" onClick={() => void applyToIdea(idea.id)} disabled={disableApply}>
-                      {actionLabel(index, applicationState, applyingId, idea.id)}
-                    </button>
-                  </>
-                )}
-              </article>
-            );
-          })}
+              <div className={styles.cardFooter}>
+                <Link href={`/projetos/${idea.id}`} className={styles.viewButton}>
+                  Visualizar
+                </Link>
+              </div>
+            </article>
+          ))}
         </section>
       </div>
     </MemberShell>
