@@ -36,6 +36,11 @@ function dispatchNotificationsRefresh() {
   window.dispatchEvent(new Event("elo-notifications-updated"));
 }
 
+function isUnavailableInCurrentApi(error: unknown) {
+  const message = normalizeApiError((error as Error).message);
+  return message.includes("HTTP 405") || message.includes("HTTP 404");
+}
+
 export default function NotificacoesPage() {
   const router = useRouter();
   const [feed, setFeed] = useState<ProjectNotificationsFeed | null>(null);
@@ -52,7 +57,9 @@ export default function NotificacoesPage() {
     } catch (requestError) {
       setFeedback({
         title: "Falha ao carregar notificacoes",
-        description: normalizeApiError((requestError as Error).message),
+        description: isUnavailableInCurrentApi(requestError)
+          ? "A inbox nova depende da versao mais recente do elo-api. Assim que ela for promovida, o sino passa a refletir as aprovacoes e recusas."
+          : normalizeApiError((requestError as Error).message),
         tone: "danger"
       });
     } finally {

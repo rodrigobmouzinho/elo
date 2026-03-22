@@ -17,12 +17,13 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { MemberShell } from "../../../components/member-shell";
-import { apiRequest } from "../../../lib/auth-client";
+import { apiRequest, getStoredAuth } from "../../../lib/auth-client";
 import {
   normalizeApiError,
   projectApplicationLabel,
   projectStatusDescription,
   projectStatusLabel,
+  type ProjectIdea,
   type ProjectApplicant,
   type ProjectApplicationsView,
   type ProjectDetail,
@@ -119,6 +120,61 @@ function buildApplicationBanner(project: ProjectDetail | null) {
   return null;
 }
 
+function isMissingAdvancedProjectApi(error: unknown) {
+  const message = normalizeApiError((error as Error).message);
+  return message.includes("HTTP 405") || message.includes("HTTP 404");
+}
+
+function buildFallbackProjectDetail(project: ProjectIdea, viewerMemberId: string | null): ProjectDetail {
+  const normalizedStatus = project.status ?? "active";
+  const myApplicationStatus = project.myApplicationStatus ?? null;
+  const isOwner = viewerMemberId !== null && project.ownerMemberId === viewerMemberId;
+  const isApprovedMember = myApplicationStatus === "accepted";
+
+  return {
+    ...project,
+    status: normalizedStatus,
+    completedAt: project.completedAt ?? null,
+    inactivatedAt: project.inactivatedAt ?? null,
+    updatedAt: project.updatedAt ?? null,
+    acceptingApplications: project.acceptingApplications ?? normalizedStatus === "active",
+    myApplicationStatus,
+    viewerAccess: {
+      isOwner,
+      isApprovedMember,
+      canApply: !isOwner && normalizedStatus === "active" && myApplicationStatus === null,
+      canModerateApplications: false,
+      canViewApplicants: false
+    }
+  };
+}
+
+async function loadProjectDetail(projectId: string, viewerMemberId: string | null) {
+  try {
+    const project = await apiRequest<ProjectDetail>(`/app/projects/${projectId}`);
+    return {
+      project,
+      usingFallback: false
+    };
+  } catch (requestError) {
+    if (!isMissingAdvancedProjectApi(requestError)) {
+      throw requestError;
+    }
+
+    const projects = await apiRequest<ProjectIdea[]>("/app/projects");
+    const targetProject = projects.find((project) => project.id === projectId);
+
+    if (!targetProject) {
+      throw requestError;
+    }
+
+    return {
+      project: buildFallbackProjectDetail(targetProject, viewerMemberId),
+      usingFallback: true
+    };
+  }
+}
+
 export function ProjectDetailClient({ projectId }: { projectId: string }) {
   const router = useRouter();
   const [idea, setIdea] = useState<ProjectDetail | null>(null);
@@ -130,6 +186,7 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReasons, setRejectReasons] = useState<Record<string, string>>({});
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
+  const [advancedProjectApiAvailable, setAdvancedProjectApiAvailable] = useState(true);
 
   useEffect(() => {
     let active = true;
@@ -138,12 +195,14 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
       setLoading(true);
 
       try {
-        const project = await apiRequest<ProjectDetail>(`/app/projects/${projectId}`);
+        const viewerMemberId = getStoredAuth()?.user.memberId ?? null;
+        const { project, usingFallback } = await loadProjectDetail(projectId, viewerMemberId);
         if (!active) return;
 
+        setAdvancedProjectApiAvailable(!usingFallback);
         setIdea(project);
 
-        if (project.viewerAccess.canViewApplicants) {
+        if (project.viewerAccess.canViewApplicants && !usingFallback) {
           const nextApplications = await apiRequest<ProjectApplicationsView>(
             `/app/projects/${projectId}/applications`
           );
@@ -157,6 +216,7 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
 
         setIdea(null);
         setApplications(null);
+        setAdvancedProjectApiAvailable(false);
         setFeedback({
           title: "Falha ao carregar projeto",
           description: normalizeApiError((requestError as Error).message),
@@ -191,10 +251,12 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
   }, [projectId]);
 
   async function refreshProject() {
-    const project = await apiRequest<ProjectDetail>(`/app/projects/${projectId}`);
+    const viewerMemberId = getStoredAuth()?.user.memberId ?? null;
+    const { project, usingFallback } = await loadProjectDetail(projectId, viewerMemberId);
     setIdea(project);
+    setAdvancedProjectApiAvailable(!usingFallback);
 
-    if (project.viewerAccess.canViewApplicants) {
+    if (project.viewerAccess.canViewApplicants && !usingFallback) {
       const nextApplications = await apiRequest<ProjectApplicationsView>(
         `/app/projects/${projectId}/applications`
       );
@@ -647,35 +709,44 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
                     <PencilLine size={16} strokeWidth={2.1} />
                   </Link>
 
-                  {idea.status === "completed" ? (
-                    <button
-                      className={styles.secondaryActionButton}
-                      type="button"
-                      onClick={() => void handleStatusChange("active")}
-                      disabled={statusAction === "active"}
-                    >
-                      {statusAction === "active" ? "Reabrindo..." : "Reabrir projeto"}
-                    </button>
-                  ) : (
-                    <button
-                      className={styles.secondaryActionButton}
-                      type="button"
-                      onClick={() => void handleStatusChange("completed")}
-                      disabled={statusAction === "completed" || idea.status !== "active"}
-                    >
-                      {statusAction === "completed" ? "Concluindo..." : "Concluir projeto"}
-                    </button>
-                  )}
+                  {advancedProjectApiAvailable ? (
+                    <>
+                      {idea.status === "completed" ? (
+                        <button
+                          className={styles.secondaryActionButton}
+                          type="button"
+                          onClick={() => void handleStatusChange("active")}
+                          disabled={statusAction === "active"}
+                        >
+                          {statusAction === "active" ? "Reabrindo..." : "Reabrir projeto"}
+                        </button>
+                      ) : (
+                        <button
+                          className={styles.secondaryActionButton}
+                          type="button"
+                          onClick={() => void handleStatusChange("completed")}
+                          disabled={statusAction === "completed" || idea.status !== "active"}
+                        >
+                          {statusAction === "completed" ? "Concluindo..." : "Concluir projeto"}
+                        </button>
+                      )}
 
-                  <button
-                    className={styles.dangerActionButton}
-                    type="button"
-                    onClick={() => void handleStatusChange("inactive")}
-                    disabled={statusAction === "inactive" || idea.status === "inactive"}
-                  >
-                    {statusAction === "inactive" ? "Arquivando..." : "Excluir projeto"}
-                    <Trash2 size={16} strokeWidth={2.1} />
-                  </button>
+                      <button
+                        className={styles.dangerActionButton}
+                        type="button"
+                        onClick={() => void handleStatusChange("inactive")}
+                        disabled={statusAction === "inactive" || idea.status === "inactive"}
+                      >
+                        {statusAction === "inactive" ? "Arquivando..." : "Excluir projeto"}
+                        <Trash2 size={16} strokeWidth={2.1} />
+                      </button>
+                    </>
+                  ) : (
+                    <p className={styles.managementHint}>
+                      Acoes de status e moderacao ficam disponiveis assim que a versao nova do
+                      elo-api for promovida.
+                    </p>
+                  )}
                 </div>
               </section>
             ) : null}

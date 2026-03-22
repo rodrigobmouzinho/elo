@@ -156,6 +156,14 @@
   font-size: 1rem;
 }
 
+.managementHint {
+  margin: 0;
+  color: rgba(202, 195, 215, 0.74);
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
 .teamTitle {
   display: inline-flex;
   align-items: center;
