@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   eventSchema,
+  firstAccessPasswordSchema,
   loginSchema,
+  memberApplicationSchema,
   memberSchema,
   projectIdeaSchema
 } from "../src/schemas";
@@ -29,6 +31,35 @@ describe("core schemas", () => {
     };
 
     expect(memberSchema.safeParse(payload).success).toBe(true);
+  });
+
+  it("validates member application payload", () => {
+    const payload = {
+      fullName: "Rodrigo Mouzinho",
+      email: "rodrigo@elo.com",
+      whatsapp: "83999887766",
+      city: "Joao Pessoa",
+      state: "PB",
+      area: "Tecnologia",
+      specialty: "Produto e crescimento",
+      bio: "Construo produtos e comunidades com foco em conexao de negocio."
+    };
+
+    expect(memberApplicationSchema.safeParse(payload).success).toBe(true);
+  });
+
+  it("enforces strong password policy on first access", () => {
+    expect(
+      firstAccessPasswordSchema.safeParse({
+        password: "SenhaForte@2026"
+      }).success
+    ).toBe(true);
+
+    expect(
+      firstAccessPasswordSchema.safeParse({
+        password: "fraca"
+      }).success
+    ).toBe(false);
   });
 
   it("validates paid event payload with image", () => {

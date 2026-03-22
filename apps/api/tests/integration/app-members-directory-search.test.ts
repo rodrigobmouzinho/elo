@@ -26,7 +26,10 @@ describe("app members directory search", () => {
       city: "Joao Pessoa",
       state: "PB",
       area: "operacoes",
-      active: false
+      active: false,
+      authUserId: null,
+      mustChangePassword: false,
+      onboardingApplicationId: null
     });
 
     const headers = {

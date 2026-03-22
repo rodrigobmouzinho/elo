@@ -2,7 +2,12 @@ import { loginSchema } from "@elo/core";
 import { getMemberById } from "../../../../lib/repositories";
 import { fail, ok, parseJson } from "../../../../lib/http";
 import { hasSupabaseAuthClient, supabaseAuthClient } from "../../../../lib/supabase";
-import { resolveMemberIdByAuthUser, requireAuth } from "../../../../lib/auth";
+import {
+  buildMockAuthToken,
+  requireAuth,
+  resolveMemberPasswordStateByAuthUser
+} from "../../../../lib/auth";
+import { memoryStore } from "../../../../lib/store";
 
 export async function POST(request: Request) {
   const payload = await parseJson<unknown>(request);
@@ -15,21 +20,31 @@ export async function POST(request: Request) {
   if (!hasSupabaseAuthClient || !supabaseAuthClient) {
     if (process.env.ALLOW_MOCK_AUTH === "true") {
       const isAdmin = parsed.data.email.includes("admin");
+      const normalizedEmail = parsed.data.email.trim().toLowerCase();
+      const memberProfile = !isAdmin
+        ? memoryStore.members.find((member) => member.email.trim().toLowerCase() === normalizedEmail) ?? null
+        : null;
+      const userId = isAdmin
+        ? "00000000-0000-0000-0000-000000000010"
+        : memberProfile?.authUserId ?? "00000000-0000-0000-0000-000000000020";
 
       return ok({
         session: {
-          accessToken: "mock-access-token",
+          accessToken: buildMockAuthToken({
+            role: isAdmin ? "admin" : "member",
+            userId,
+            email: normalizedEmail
+          }),
           refreshToken: "mock-refresh-token",
           expiresAt: Date.now() + 3600 * 1000
         },
         user: {
-          userId: isAdmin
-            ? "00000000-0000-0000-0000-000000000010"
-            : "00000000-0000-0000-0000-000000000020",
-          email: parsed.data.email,
+          userId,
+          email: normalizedEmail,
           role: isAdmin ? "admin" : "member",
-          memberId: isAdmin ? null : "f9e4f3e6-95ab-4be5-b513-c1bbf5b10b3e",
-          displayName: isAdmin ? "Admin Elo" : "Membro Elo"
+          memberId: isAdmin ? null : memberProfile?.id ?? "f9e4f3e6-95ab-4be5-b513-c1bbf5b10b3e",
+          displayName: isAdmin ? "Admin Elo" : memberProfile?.fullName ?? "Membro Elo",
+          mustChangePassword: isAdmin ? false : Boolean(memberProfile?.mustChangePassword)
         }
       });
     }
@@ -58,7 +73,8 @@ export async function POST(request: Request) {
     return fail("Usuário sem role autorizada", 403);
   }
 
-  const memberId = await resolveMemberIdByAuthUser(data.user.id);
+  const passwordState = await resolveMemberPasswordStateByAuthUser(data.user.id);
+  const memberId = passwordState.memberId;
   const memberProfile = memberId ? await getMemberById(memberId) : null;
 
   return ok({
@@ -72,7 +88,8 @@ export async function POST(request: Request) {
       email: data.user.email ?? parsed.data.email,
       role: auth.auth.role,
       memberId,
-      displayName: memberProfile?.fullName ?? (auth.auth.role === "admin" ? "Admin Elo" : "Membro Elo")
+      displayName: memberProfile?.fullName ?? (auth.auth.role === "admin" ? "Admin Elo" : "Membro Elo"),
+      mustChangePassword: passwordState.mustChangePassword
     }
   });
 }

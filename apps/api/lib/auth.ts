@@ -1,6 +1,7 @@
 import type { UserRole } from "@elo/core";
 import type { NextResponse } from "next/server";
 import { fail } from "./http";
+import { memoryStore } from "./store";
 import { hasSupabase, supabaseAdmin } from "./supabase";
 
 type AuthContext = {
@@ -21,6 +22,32 @@ function extractBearerToken(request: Request) {
   }
 
   return authorization.slice(7).trim();
+}
+
+function parseMockAuthToken(token: string | null): AuthContext | null {
+  if (!token?.startsWith("mock:")) {
+    return null;
+  }
+
+  const [, role, userId, encodedEmail] = token.split(":");
+
+  if ((role !== "admin" && role !== "member") || !userId || !encodedEmail) {
+    return null;
+  }
+
+  try {
+    return {
+      userId,
+      email: Buffer.from(encodedEmail, "base64url").toString("utf8"),
+      role
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function buildMockAuthToken(input: { role: UserRole; userId: string; email: string }) {
+  return `mock:${input.role}:${input.userId}:${Buffer.from(input.email).toString("base64url")}`;
 }
 
 async function resolveRole(userId: string, userRoleFromMetadata?: string): Promise<UserRole | null> {
@@ -58,30 +85,37 @@ export async function requireAuth(request: Request, allowedRoles?: UserRole[]): 
 
   if (!hasSupabase || !supabaseAdmin) {
     if (process.env.ALLOW_MOCK_AUTH === "true") {
+      const tokenAuth = parseMockAuthToken(token);
       const devRoleHeader = request.headers.get("x-dev-role");
       const devRole = devRoleHeader === "admin" || devRoleHeader === "member" ? devRoleHeader : "member";
+      const mockAuth =
+        tokenAuth ??
+        ({
+          userId:
+            devRole === "admin"
+              ? "00000000-0000-0000-0000-000000000010"
+              : "00000000-0000-0000-0000-000000000020",
+          email: devRole === "admin" ? "admin@elo.local" : "member@elo.local",
+          role: devRole
+        } satisfies AuthContext);
 
-      if (allowedRoles && !allowedRoles.includes(devRole)) {
-        return { ok: false, response: fail("Não autorizado para este recurso", 403) };
+      if (allowedRoles && !allowedRoles.includes(mockAuth.role)) {
+        return { ok: false, response: fail("Nao autorizado para este recurso", 403) };
       }
 
       return {
         ok: true,
-        auth: {
-          userId: "00000000-0000-0000-0000-000000000001",
-          email: "dev@elo.local",
-          role: devRole
-        }
+        auth: mockAuth
       };
     }
 
-    return { ok: false, response: fail("Supabase não configurado para autenticação", 503) };
+    return { ok: false, response: fail("Supabase nao configurado para autenticacao", 503) };
   }
 
   const { data, error } = await supabaseAdmin.auth.getUser(token);
 
   if (error || !data.user) {
-    return { ok: false, response: fail("Token inválido ou expirado", 401) };
+    return { ok: false, response: fail("Token invalido ou expirado", 401) };
   }
 
   const role = await resolveRole(data.user.id, String(data.user.app_metadata?.role ?? ""));
@@ -91,7 +125,7 @@ export async function requireAuth(request: Request, allowedRoles?: UserRole[]): 
   }
 
   if (allowedRoles && !allowedRoles.includes(role)) {
-    return { ok: false, response: fail("Não autorizado para este recurso", 403) };
+    return { ok: false, response: fail("Nao autorizado para este recurso", 403) };
   }
 
   return {
@@ -106,7 +140,17 @@ export async function requireAuth(request: Request, allowedRoles?: UserRole[]): 
 
 export async function resolveMemberIdByAuthUser(authUserId: string): Promise<string | null> {
   if (!hasSupabase || !supabaseAdmin) {
-    return process.env.ALLOW_MOCK_AUTH === "true"
+    if (process.env.ALLOW_MOCK_AUTH !== "true") {
+      return null;
+    }
+
+    const member = memoryStore.members.find((entry) => entry.authUserId === authUserId);
+
+    if (member) {
+      return member.id;
+    }
+
+    return authUserId === "00000000-0000-0000-0000-000000000020"
       ? "f9e4f3e6-95ab-4be5-b513-c1bbf5b10b3e"
       : null;
   }
@@ -122,4 +166,36 @@ export async function resolveMemberIdByAuthUser(authUserId: string): Promise<str
   }
 
   return data?.id ?? null;
+}
+
+export async function resolveMemberPasswordStateByAuthUser(authUserId: string): Promise<{
+  memberId: string | null;
+  mustChangePassword: boolean;
+}> {
+  if (!hasSupabase || !supabaseAdmin) {
+    const memberId = await resolveMemberIdByAuthUser(authUserId);
+    const member = memberId
+      ? memoryStore.members.find((entry) => entry.id === memberId) ?? null
+      : null;
+
+    return {
+      memberId,
+      mustChangePassword: Boolean(member?.mustChangePassword)
+    };
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("member_profiles")
+    .select("id, must_change_password")
+    .eq("auth_user_id", authUserId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return {
+    memberId: data?.id ?? null,
+    mustChangePassword: Boolean(data?.must_change_password)
+  };
 }

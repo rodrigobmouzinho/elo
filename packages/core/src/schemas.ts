@@ -32,6 +32,19 @@ export const resetPasswordSchema = z.object({
   email: z.email()
 });
 
+export const strongPasswordSchema = z
+  .string()
+  .min(10, "A senha precisa ter ao menos 10 caracteres")
+  .max(72, "A senha deve ter no maximo 72 caracteres")
+  .regex(/[a-z]/, "A senha precisa ter ao menos uma letra minuscula")
+  .regex(/[A-Z]/, "A senha precisa ter ao menos uma letra maiuscula")
+  .regex(/[0-9]/, "A senha precisa ter ao menos um numero")
+  .regex(/[^A-Za-z0-9]/, "A senha precisa ter ao menos um caractere especial");
+
+export const firstAccessPasswordSchema = z.object({
+  password: strongPasswordSchema
+});
+
 const eventImageSchema = z
   .string()
   .trim()
@@ -50,6 +63,42 @@ export const memberSchema = z.object({
   bio: z.string().max(500).optional(),
   specialty: z.string().max(120).optional(),
   membershipExpiresAt: z.string().datetime()
+});
+
+export const memberApplicationSchema = z.object({
+  fullName: z.string().trim().min(3).max(120),
+  email: z.email(),
+  phone: z.string().trim().min(8).max(24).optional(),
+  whatsapp: z.string().trim().min(8).max(24),
+  city: z.string().trim().min(2).max(80),
+  state: z.string().trim().min(2).max(2),
+  area: z.string().trim().min(2).max(40),
+  bio: z.string().trim().max(500).optional(),
+  specialty: z.string().trim().max(120).optional(),
+  avatarUrl: z.url().optional()
+});
+
+export const memberApplicationStatusCreateSchema = z.object({
+  label: z.string().trim().min(3).max(50)
+});
+
+export const memberApplicationUpdateSchema = z
+  .object({
+    statusId: z.uuid().optional(),
+    internalNotes: z.string().trim().max(1000).optional()
+  })
+  .refine((payload) => payload.statusId !== undefined || payload.internalNotes !== undefined, {
+    message: "Informe ao menos um campo para atualizar"
+  });
+
+export const memberApplicationApproveSchema = z.object({
+  membershipExpiresAt: z.string().datetime(),
+  internalNotes: z.string().trim().max(1000).optional()
+});
+
+export const memberApplicationRejectSchema = z.object({
+  reason: z.string().trim().min(3).max(500),
+  internalNotes: z.string().trim().max(1000).optional()
 });
 
 export const eventBaseSchema = z.object({

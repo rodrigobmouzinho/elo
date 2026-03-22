@@ -1308,6 +1308,9 @@ export async function createMember(payload: MemberInput) {
     const record = {
       id: crypto.randomUUID(),
       active: memberIsActive,
+      authUserId: null,
+      mustChangePassword: false,
+      onboardingApplicationId: null,
       ...payload
     };
 

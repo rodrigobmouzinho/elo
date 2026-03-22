@@ -1,5 +1,11 @@
 import { mockEvents, mockMembers, mockRanking } from "@elo/core";
 
+type MockMember = (typeof mockMembers)[number] & {
+  authUserId: string | null;
+  mustChangePassword: boolean;
+  onboardingApplicationId: string | null;
+};
+
 type MockProjectIdea = {
   id: string;
   title: string;
@@ -93,6 +99,48 @@ type MockMemberNotification = {
   body: string;
   metadata: Record<string, unknown> | null;
   readAt: string | null;
+  createdAt: string;
+};
+
+type MockMemberApplicationStatus = {
+  id: string;
+  code: string;
+  label: string;
+  isFinal: boolean;
+  isSystem: boolean;
+  active: boolean;
+  sortOrder: number;
+};
+
+type MockMemberApplication = {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string | null;
+  whatsapp: string;
+  city: string;
+  state: string;
+  area: string;
+  bio: string | null;
+  specialty: string | null;
+  avatarUrl: string | null;
+  currentStatusId: string;
+  internalNotes: string | null;
+  rejectionReason: string | null;
+  approvedMemberId: string | null;
+  approvedAuthUserId: string | null;
+  approvedAt: string | null;
+  rejectedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type MockMemberApplicationStatusHistory = {
+  id: string;
+  applicationId: string;
+  statusId: string;
+  actorUserId: string | null;
+  note: string | null;
   createdAt: string;
 };
 
@@ -193,6 +241,63 @@ const defaultMemberships: MockMembership[] = mockMembers.map((member) => ({
   createdAt: new Date(now - 30 * 24 * 3600 * 1000).toISOString()
 }));
 
+const defaultMemberApplicationStatuses: MockMemberApplicationStatus[] = [
+  {
+    id: "member-status-new-request",
+    code: "new_request",
+    label: "Nova solicitacao",
+    isFinal: false,
+    isSystem: true,
+    active: true,
+    sortOrder: 10
+  },
+  {
+    id: "member-status-awaiting-whatsapp",
+    code: "awaiting_whatsapp_contact",
+    label: "Aguardando contato via WhatsApp",
+    isFinal: false,
+    isSystem: true,
+    active: true,
+    sortOrder: 20
+  },
+  {
+    id: "member-status-awaiting-payment",
+    code: "awaiting_payment",
+    label: "Aguardando pagamento",
+    isFinal: false,
+    isSystem: true,
+    active: true,
+    sortOrder: 30
+  },
+  {
+    id: "member-status-under-review",
+    code: "under_review",
+    label: "Em analise",
+    isFinal: false,
+    isSystem: true,
+    active: true,
+    sortOrder: 40
+  },
+  {
+    id: "member-status-approved",
+    code: "approved",
+    label: "Aprovado",
+    isFinal: true,
+    isSystem: true,
+    active: true,
+    sortOrder: 90
+  },
+  {
+    id: "member-status-rejected",
+    code: "rejected",
+    label: "Recusado",
+    isFinal: true,
+    isSystem: true,
+    active: true,
+    sortOrder: 100
+  }
+];
+
 const defaultSeasons: MockSeason[] = [
   {
     id: "7b2b6d8b-2d68-47f1-b56c-a2d28383887d",
@@ -238,7 +343,15 @@ const defaultBadges: MockBadge[] = [
 ];
 
 export const memoryStore = {
-  members: [...mockMembers],
+  members: mockMembers.map((member) => ({
+    ...member,
+    authUserId:
+      member.id === "f9e4f3e6-95ab-4be5-b513-c1bbf5b10b3e"
+        ? "00000000-0000-0000-0000-000000000020"
+        : null,
+    mustChangePassword: false,
+    onboardingApplicationId: null
+  })) as MockMember[],
   memberships: [...defaultMemberships],
   seasons: [...defaultSeasons],
   pointsLedger: [...defaultPointsLedger],
@@ -250,6 +363,9 @@ export const memoryStore = {
   projectIdeas,
   projectApplications: [] as MockProjectApplication[],
   memberNotifications: [] as MockMemberNotification[],
+  memberApplicationStatuses: [...defaultMemberApplicationStatuses],
+  memberApplications: [] as MockMemberApplication[],
+  memberApplicationStatusHistory: [] as MockMemberApplicationStatusHistory[],
   auditLogs: [] as MockAuditLog[],
   membershipPayments: [] as MockMembershipPayment[],
   eventPayments: [] as MockEventPayment[],
