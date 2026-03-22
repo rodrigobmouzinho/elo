@@ -210,10 +210,10 @@ export function ProjectEditClient({ projectId }: { projectId: string }) {
   }
 
   async function handleGallerySelection(event: ChangeEvent<HTMLInputElement>) {
-    const selectedFiles = event.target.files;
+    const selectedFiles = Array.from(event.target.files ?? []);
     event.target.value = "";
 
-    if (!selectedFiles || selectedFiles.length === 0 || !form) {
+    if (selectedFiles.length === 0 || !form) {
       return;
     }
 
@@ -246,10 +246,10 @@ export function ProjectEditClient({ projectId }: { projectId: string }) {
   }
 
   async function handleDocumentationSelection(event: ChangeEvent<HTMLInputElement>) {
-    const selectedFiles = event.target.files;
+    const selectedFiles = Array.from(event.target.files ?? []);
     event.target.value = "";
 
-    if (!selectedFiles || selectedFiles.length === 0 || !form) {
+    if (selectedFiles.length === 0 || !form) {
       return;
     }
 

@@ -143,10 +143,10 @@ export default function CadastrarIdeiaPage() {
   }
 
   async function handleGallerySelection(event: ChangeEvent<HTMLInputElement>) {
-    const selectedFiles = event.target.files;
+    const selectedFiles = Array.from(event.target.files ?? []);
     event.target.value = "";
 
-    if (!selectedFiles || selectedFiles.length === 0) {
+    if (selectedFiles.length === 0) {
       return;
     }
 
@@ -175,10 +175,10 @@ export default function CadastrarIdeiaPage() {
   }
 
   async function handleDocumentationSelection(event: ChangeEvent<HTMLInputElement>) {
-    const selectedFiles = event.target.files;
+    const selectedFiles = Array.from(event.target.files ?? []);
     event.target.value = "";
 
-    if (!selectedFiles || selectedFiles.length === 0) {
+    if (selectedFiles.length === 0) {
       return;
     }
 
