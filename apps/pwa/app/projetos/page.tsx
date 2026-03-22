@@ -242,7 +242,6 @@ export default function ProjetosPage() {
         ) : null}
 
         <section className={styles.hero}>
-          <p className={styles.eyebrow}>Laboratorio Nexus</p>
           <h2 className={styles.title}>
             Projetos
             <br />
