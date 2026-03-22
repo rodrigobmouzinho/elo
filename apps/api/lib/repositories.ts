@@ -1,19 +1,29 @@
-import type { EventSummary, Member, PaymentStatus, SeasonRankingEntry } from "@elo/core";
+import type { EventSummary, Member, PaymentStatus, ProjectStatus, SeasonRankingEntry } from "@elo/core";
 import type { z } from "zod";
 import {
   eventSchema,
   memberSchema,
   pointsLaunchSchema,
+  projectStatusUpdateSchema,
   seasonSchema
 } from "@elo/core";
 import {
   buildProjectDbPayload,
+  buildProjectLifecycleDbPayload,
   isMissingProjectEnhancedColumnsError,
+  isMissingProjectLifecycleColumnsError,
   normalizeProjectRow,
   PROJECT_LIST_SELECT_BASE,
-  PROJECT_LIST_SELECT_WITH_ENHANCED
+  PROJECT_LIST_SELECT_WITH_ENHANCED,
+  PROJECT_LIST_SELECT_WITH_ENHANCED_AND_LIFECYCLE,
+  PROJECT_LIST_SELECT_WITH_LIFECYCLE,
+  toProjectInput
 } from "./project-ideas";
-import type { ProjectInput, ProjectRow } from "./project-ideas";
+import type {
+  ProjectInput,
+  ProjectLifecycleState,
+  ProjectRow
+} from "./project-ideas";
 import { memoryStore } from "./store";
 import { hasSupabase, supabaseAdmin } from "./supabase";
 
@@ -58,6 +68,10 @@ type MemberRow = {
 type ProjectOwnerRow = {
   id: string;
   owner_member_id: string;
+  status?: ProjectStatus | null;
+  completed_at?: string | null;
+  inactivated_at?: string | null;
+  updated_at?: string | null;
 };
 type ProjectApplicationRow = {
   id: string;
@@ -245,6 +259,8 @@ let eventGalleryColumnSupported: boolean | null = null;
 let eventGalleryColumnSupportProbe: Promise<boolean> | null = null;
 let projectEnhancedColumnsSupported: boolean | null = null;
 let projectEnhancedColumnsSupportProbe: Promise<boolean> | null = null;
+let projectLifecycleColumnsSupported: boolean | null = null;
+let projectLifecycleColumnsSupportProbe: Promise<boolean> | null = null;
 
 const EVENT_LIST_SELECT_BASE =
   "id, title, description, starts_at, location, online_url, access_type, price_cents, hero_image_url";
@@ -333,6 +349,137 @@ async function ensureProjectEnhancedColumnsSupport() {
   }
 
   return projectEnhancedColumnsSupportProbe;
+}
+
+async function ensureProjectLifecycleColumnsSupport() {
+  if (!hasSupabase) {
+    return true;
+  }
+
+  if (projectLifecycleColumnsSupported !== null) {
+    return projectLifecycleColumnsSupported;
+  }
+
+  if (!projectLifecycleColumnsSupportProbe) {
+    projectLifecycleColumnsSupportProbe = (async () => {
+      const supabase = assertSupabase();
+      const { error } = await supabase
+        .from("projects")
+        .select("status, completed_at, inactivated_at, updated_at")
+        .limit(1);
+
+      if (error) {
+        if (isMissingProjectLifecycleColumnsError(error)) {
+          projectLifecycleColumnsSupported = false;
+          return false;
+        }
+
+        throw error;
+      }
+
+      projectLifecycleColumnsSupported = true;
+      return true;
+    })().finally(() => {
+      projectLifecycleColumnsSupportProbe = null;
+    });
+  }
+
+  return projectLifecycleColumnsSupportProbe;
+}
+
+function buildProjectListSelectClause(options: { enhanced: boolean; lifecycle: boolean }) {
+  if (options.enhanced && options.lifecycle) {
+    return PROJECT_LIST_SELECT_WITH_ENHANCED_AND_LIFECYCLE;
+  }
+
+  if (options.enhanced) {
+    return PROJECT_LIST_SELECT_WITH_ENHANCED;
+  }
+
+  if (options.lifecycle) {
+    return PROJECT_LIST_SELECT_WITH_LIFECYCLE;
+  }
+
+  return PROJECT_LIST_SELECT_BASE;
+}
+
+function normalizeProjectTimestamp(value: string | null | undefined) {
+  if (!value) return null;
+  const parsed = new Date(value);
+  const timestamp = parsed.getTime();
+  return Number.isFinite(timestamp) ? parsed.toISOString() : null;
+}
+
+function createProjectLifecycleState(
+  status: ProjectStatus,
+  previous?: {
+    completedAt?: string | null;
+    inactivatedAt?: string | null;
+  }
+): ProjectLifecycleState {
+  const now = new Date().toISOString();
+
+  if (status === "completed") {
+    return {
+      status,
+      completedAt: now,
+      inactivatedAt: null,
+      updatedAt: now
+    };
+  }
+
+  if (status === "inactive") {
+    return {
+      status,
+      completedAt: normalizeProjectTimestamp(previous?.completedAt),
+      inactivatedAt: now,
+      updatedAt: now
+    };
+  }
+
+  return {
+    status: "active",
+    completedAt: null,
+    inactivatedAt: null,
+    updatedAt: now
+  };
+}
+
+async function recordAuditLog(payload: {
+  actorId: string | null;
+  actorRole: string | null;
+  action: string;
+  entityType: string;
+  entityId: string | null;
+  details?: Record<string, unknown> | null;
+}) {
+  if (!hasSupabase) {
+    memoryStore.auditLogs.unshift({
+      id: crypto.randomUUID(),
+      actorId: payload.actorId,
+      actorRole: payload.actorRole,
+      action: payload.action,
+      entityType: payload.entityType,
+      entityId: payload.entityId,
+      payload: payload.details ?? null,
+      createdAt: new Date().toISOString()
+    });
+    return;
+  }
+
+  const supabase = assertSupabase();
+  const { error } = await supabase.from("audit_logs").insert({
+    actor_id: payload.actorId,
+    actor_role: payload.actorRole,
+    action: payload.action,
+    entity_type: payload.entityType,
+    entity_id: payload.entityId,
+    payload: payload.details ?? null
+  });
+
+  if (error) {
+    throw error;
+  }
 }
 
 function withGalleryFallback<T extends EventRowMaybeGallery>(
@@ -1709,41 +1856,157 @@ export async function processAutomaticBadgesJob(): Promise<BadgeGrantResult> {
   };
 }
 
-export async function listProjects() {
+export async function listProjects(viewerMemberId?: string | null) {
   if (!hasSupabase) {
-    return memoryStore.projectIdeas;
+    return memoryStore.projectIdeas
+      .map((project) =>
+        normalizeProjectRow({
+          id: project.id,
+          title: project.title,
+          category: project.category,
+          description: project.description,
+          looking_for: project.lookingFor,
+          summary: project.summary,
+          business_areas: project.businessAreas,
+          vision: project.vision,
+          needs: project.needs,
+          gallery_image_urls: project.galleryImageUrls,
+          owner_member_id: project.ownerMemberId ?? null,
+          member_profiles: {
+            full_name: project.ownerName,
+            avatar_url: project.ownerAvatarUrl ?? null
+          },
+          status: project.status ?? "active",
+          completed_at: project.completedAt ?? null,
+          inactivated_at: project.inactivatedAt ?? null,
+          updated_at: project.updatedAt ?? null
+        })
+      )
+      .filter((project) => project.status !== "inactive" || project.ownerMemberId === viewerMemberId);
   }
 
   const supabase = assertSupabase();
-  const enhancedColumnsSupported = await ensureProjectEnhancedColumnsSupport();
-  const selectClause = enhancedColumnsSupported ? PROJECT_LIST_SELECT_WITH_ENHANCED : PROJECT_LIST_SELECT_BASE;
+  let supportsEnhanced = await ensureProjectEnhancedColumnsSupport();
+  let supportsLifecycle = await ensureProjectLifecycleColumnsSupport();
+  let data: unknown[] | null = null;
 
-  const response = await supabase
-    .from("projects")
-    .select(selectClause)
-    .order("created_at", { ascending: false });
-  let data = response.data as unknown[] | null;
-  let error = response.error;
-
-  if (error && enhancedColumnsSupported && isMissingProjectEnhancedColumnsError(error)) {
-    projectEnhancedColumnsSupported = false;
-    const fallbackResponse = await supabase
+  for (;;) {
+    const selectClause = buildProjectListSelectClause({
+      enhanced: supportsEnhanced,
+      lifecycle: supportsLifecycle
+    });
+    const response = await supabase
       .from("projects")
-      .select(PROJECT_LIST_SELECT_BASE)
+      .select(selectClause)
       .order("created_at", { ascending: false });
 
-    data = fallbackResponse.data as unknown[] | null;
-    error = fallbackResponse.error;
-  }
+    if (!response.error) {
+      data = response.data as unknown[] | null;
+      break;
+    }
 
-  if (error) throw error;
+    if (supportsEnhanced && isMissingProjectEnhancedColumnsError(response.error)) {
+      projectEnhancedColumnsSupported = false;
+      supportsEnhanced = false;
+      continue;
+    }
+
+    if (supportsLifecycle && isMissingProjectLifecycleColumnsError(response.error)) {
+      projectLifecycleColumnsSupported = false;
+      supportsLifecycle = false;
+      continue;
+    }
+
+    throw response.error;
+  }
 
   const rows = (data ?? []) as ProjectRow[];
 
-  return rows.map((project) => normalizeProjectRow(project));
+  return rows
+    .map((project) => normalizeProjectRow(project))
+    .filter((project) => project.status !== "inactive" || project.ownerMemberId === viewerMemberId);
 }
 
 export async function createProject(payload: ProjectInput, ownerMemberId: string) {
+  const lifecycle = createProjectLifecycleState("active");
+
+  if (!hasSupabase) {
+    const record = {
+      id: crypto.randomUUID(),
+      ownerName: "Membro Elo",
+      ownerAvatarUrl: null,
+      ownerMemberId,
+      title: payload.title.trim(),
+      summary: payload.summary.trim(),
+      category: payload.businessAreas[0]?.trim() || "Negocios",
+      businessAreas: payload.businessAreas.map((entry) => entry.trim()).filter(Boolean),
+      vision: payload.vision.trim(),
+      needs: payload.needs.map((need) => ({
+        title: need.title.trim(),
+        description: need.description.trim()
+      })),
+      galleryImageUrls: payload.galleryImageUrls.map((entry) => entry.trim()).filter(Boolean),
+      description: `${payload.summary.trim()}\n\n${payload.vision.trim()}`.trim(),
+      lookingFor: payload.needs.map((need) => need.title.trim()).filter(Boolean).join(" | "),
+      status: lifecycle.status,
+      completedAt: lifecycle.completedAt,
+      inactivatedAt: lifecycle.inactivatedAt,
+      updatedAt: lifecycle.updatedAt
+    };
+
+    memoryStore.projectIdeas.unshift(record);
+    return record;
+  }
+
+  const supabase = assertSupabase();
+  let supportsEnhanced = await ensureProjectEnhancedColumnsSupport();
+  let supportsLifecycle = await ensureProjectLifecycleColumnsSupport();
+  let projectId: string | null = null;
+
+  for (;;) {
+    const dbPayload = buildProjectDbPayload(payload, supportsEnhanced, lifecycle);
+    const response = await supabase
+      .from("projects")
+      .insert({
+        owner_member_id: ownerMemberId,
+        ...dbPayload,
+        ...(supportsLifecycle ? buildProjectLifecycleDbPayload(lifecycle) : {})
+      })
+      .select("id")
+      .single();
+
+    if (!response.error) {
+      projectId = (response.data as { id: string }).id;
+      break;
+    }
+
+    if (supportsEnhanced && isMissingProjectEnhancedColumnsError(response.error)) {
+      projectEnhancedColumnsSupported = false;
+      supportsEnhanced = false;
+      continue;
+    }
+
+    if (supportsLifecycle && isMissingProjectLifecycleColumnsError(response.error)) {
+      projectLifecycleColumnsSupported = false;
+      supportsLifecycle = false;
+      continue;
+    }
+
+    throw response.error;
+  }
+
+  const projects = await listProjects(ownerMemberId);
+  const createdProject = projects.find((project) => project.id === projectId);
+
+  if (!createdProject) {
+    throw new Error("Projeto nao encontrado");
+  }
+
+  return createdProject;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function createProjectLegacy(payload: ProjectInput, ownerMemberId: string) {
   if (!hasSupabase) {
     const record = {
       id: crypto.randomUUID(),
@@ -1835,6 +2098,246 @@ export async function updateProject(projectId: string, payload: ProjectInput, ed
       })),
       galleryImageUrls: payload.galleryImageUrls.map((entry) => entry.trim()).filter(Boolean),
       description: `${payload.summary.trim()}\n\n${payload.vision.trim()}`.trim(),
+      lookingFor: payload.needs.map((need) => need.title.trim()).filter(Boolean).join(" | "),
+      updatedAt: new Date().toISOString()
+    });
+
+    return project;
+  }
+
+  const supabase = assertSupabase();
+  const lifecycleColumnsSupported = await ensureProjectLifecycleColumnsSupport();
+  const { data: existing, error: lookupError } = await supabase
+    .from("projects")
+    .select(
+      lifecycleColumnsSupported
+        ? "id, owner_member_id, status, completed_at, inactivated_at, updated_at"
+        : "id, owner_member_id"
+    )
+    .eq("id", projectId)
+    .maybeSingle();
+
+  if (lookupError) throw lookupError;
+  if (!existing) {
+    throw new Error("Projeto nao encontrado");
+  }
+
+  const projectOwner = existing as unknown as ProjectOwnerRow;
+
+  if (!projectOwner.owner_member_id || projectOwner.owner_member_id !== editorMemberId) {
+    throw new Error("Somente o dono pode editar o projeto");
+  }
+
+  const lifecycle: ProjectLifecycleState = {
+    status: (projectOwner.status as ProjectStatus | null) ?? "active",
+    completedAt: projectOwner.completed_at ?? null,
+    inactivatedAt: projectOwner.inactivated_at ?? null,
+    updatedAt: new Date().toISOString()
+  };
+
+  let supportsEnhanced = await ensureProjectEnhancedColumnsSupport();
+  let supportsLifecycle = lifecycleColumnsSupported;
+  let updatedProjectId: string | null = null;
+
+  for (;;) {
+    const dbPayload = buildProjectDbPayload(payload, supportsEnhanced, lifecycle);
+    const response = await supabase
+      .from("projects")
+      .update({
+        ...dbPayload,
+        ...(supportsLifecycle ? buildProjectLifecycleDbPayload(lifecycle) : {})
+      })
+      .eq("id", projectId)
+      .select("id")
+      .single();
+
+    if (!response.error) {
+      updatedProjectId = (response.data as { id: string }).id;
+      break;
+    }
+
+    if (supportsEnhanced && isMissingProjectEnhancedColumnsError(response.error)) {
+      projectEnhancedColumnsSupported = false;
+      supportsEnhanced = false;
+      continue;
+    }
+
+    if (supportsLifecycle && isMissingProjectLifecycleColumnsError(response.error)) {
+      projectLifecycleColumnsSupported = false;
+      supportsLifecycle = false;
+      continue;
+    }
+
+    throw response.error;
+  }
+
+  const projects = await listProjects(editorMemberId);
+  const updatedProject = projects.find((project) => project.id === updatedProjectId);
+
+  if (!updatedProject) {
+    throw new Error("Projeto nao encontrado");
+  }
+
+  return updatedProject;
+}
+
+export async function updateProjectStatus(
+  projectId: string,
+  nextStatus: ProjectStatus,
+  actorMemberId: string
+) {
+  const parsed = projectStatusUpdateSchema.parse({ status: nextStatus });
+
+  if (!hasSupabase) {
+    const project = memoryStore.projectIdeas.find((item) => item.id === projectId);
+
+    if (!project) {
+      throw new Error("Projeto nao encontrado");
+    }
+
+    if (!project.ownerMemberId || project.ownerMemberId !== actorMemberId) {
+      throw new Error("Somente o dono pode alterar o status do projeto");
+    }
+
+    if ((project.status ?? "active") === "inactive" && parsed.status !== "inactive") {
+      throw new Error("Projeto inativo nao pode ser reaberto pelo PWA");
+    }
+
+    const lifecycle = createProjectLifecycleState(parsed.status, {
+      completedAt: project.completedAt ?? null,
+      inactivatedAt: project.inactivatedAt ?? null
+    });
+
+    Object.assign(project, {
+      status: lifecycle.status,
+      completedAt: lifecycle.completedAt,
+      inactivatedAt: lifecycle.inactivatedAt,
+      updatedAt: lifecycle.updatedAt
+    });
+
+    await recordAuditLog({
+      actorId: actorMemberId,
+      actorRole: "member",
+      action: "project.status_changed",
+      entityType: "project",
+      entityId: projectId,
+      details: {
+        status: lifecycle.status
+      }
+    });
+
+    return normalizeProjectRow({
+      id: project.id,
+      title: project.title,
+      category: project.category,
+      description: project.description,
+      looking_for: project.lookingFor,
+      summary: project.summary,
+      business_areas: project.businessAreas,
+      vision: project.vision,
+      needs: project.needs,
+      gallery_image_urls: project.galleryImageUrls,
+      owner_member_id: project.ownerMemberId ?? null,
+      member_profiles: {
+        full_name: project.ownerName,
+        avatar_url: project.ownerAvatarUrl ?? null
+      },
+      status: project.status ?? "active",
+      completed_at: project.completedAt ?? null,
+      inactivated_at: project.inactivatedAt ?? null,
+      updated_at: project.updatedAt ?? null
+    });
+  }
+
+  const supabase = assertSupabase();
+  const lifecycleColumnsSupported = await ensureProjectLifecycleColumnsSupport();
+  const enhancedColumnsSupported = await ensureProjectEnhancedColumnsSupport();
+  const selectClause = buildProjectListSelectClause({
+    enhanced: enhancedColumnsSupported,
+    lifecycle: lifecycleColumnsSupported
+  });
+  const { data: existing, error: lookupError } = await supabase
+    .from("projects")
+    .select(selectClause)
+    .eq("id", projectId)
+    .maybeSingle();
+
+  if (lookupError) throw lookupError;
+  if (!existing) {
+    throw new Error("Projeto nao encontrado");
+  }
+
+  const normalizedProject = normalizeProjectRow(existing as unknown as ProjectRow);
+
+  if (!normalizedProject.ownerMemberId || normalizedProject.ownerMemberId !== actorMemberId) {
+    throw new Error("Somente o dono pode alterar o status do projeto");
+  }
+
+  if (normalizedProject.status === "inactive" && parsed.status !== "inactive") {
+    throw new Error("Projeto inativo nao pode ser reaberto pelo PWA");
+  }
+
+  const lifecycle = createProjectLifecycleState(parsed.status, {
+    completedAt: normalizedProject.completedAt,
+    inactivatedAt: normalizedProject.inactivatedAt
+  });
+  const projectInput = toProjectInput(normalizedProject);
+  const { error: updateError } = await supabase
+    .from("projects")
+    .update({
+      looking_for: buildProjectDbPayload(projectInput, enhancedColumnsSupported, lifecycle).looking_for,
+      ...(lifecycleColumnsSupported ? buildProjectLifecycleDbPayload(lifecycle) : {})
+    })
+    .eq("id", projectId);
+
+  if (updateError) throw updateError;
+
+  await recordAuditLog({
+    actorId: actorMemberId,
+    actorRole: "member",
+    action: "project.status_changed",
+    entityType: "project",
+    entityId: projectId,
+    details: {
+      status: lifecycle.status
+    }
+  });
+
+  const projects = await listProjects(actorMemberId);
+  const updatedProject = projects.find((project) => project.id === projectId);
+
+  if (!updatedProject) {
+    throw new Error("Projeto nao encontrado");
+  }
+
+  return updatedProject;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function updateProjectLegacy(projectId: string, payload: ProjectInput, editorMemberId: string) {
+  if (!hasSupabase) {
+    const project = memoryStore.projectIdeas.find((item) => item.id === projectId);
+
+    if (!project) {
+      throw new Error("Projeto nao encontrado");
+    }
+
+    if (!project.ownerMemberId || project.ownerMemberId !== editorMemberId) {
+      throw new Error("Somente o dono pode editar o projeto");
+    }
+
+    Object.assign(project, {
+      title: payload.title.trim(),
+      summary: payload.summary.trim(),
+      category: payload.businessAreas[0]?.trim() || "Negocios",
+      businessAreas: payload.businessAreas.map((entry) => entry.trim()).filter(Boolean),
+      vision: payload.vision.trim(),
+      needs: payload.needs.map((need) => ({
+        title: need.title.trim(),
+        description: need.description.trim()
+      })),
+      galleryImageUrls: payload.galleryImageUrls.map((entry) => entry.trim()).filter(Boolean),
+      description: `${payload.summary.trim()}\n\n${payload.vision.trim()}`.trim(),
       lookingFor: payload.needs.map((need) => need.title.trim()).filter(Boolean).join(" • ")
     });
 
@@ -1898,6 +2401,138 @@ export async function updateProject(projectId: string, payload: ProjectInput, ed
 }
 
 export async function applyToProject(projectId: string, applicantMemberId: string, message?: string) {
+  const normalizedMessage = message?.trim() ? message.trim() : null;
+
+  if (!hasSupabase) {
+    const project = memoryStore.projectIdeas.find((item) => item.id === projectId);
+
+    if (!project) {
+      throw new Error("Projeto nÃ£o encontrado");
+    }
+
+    if (!project.ownerMemberId) {
+      throw new Error("Projeto sem dono vinculado");
+    }
+
+    if (project.ownerMemberId === applicantMemberId) {
+      throw new Error("NÃ£o Ã© permitido candidatar-se ao prÃ³prio projeto");
+    }
+
+    if ((project.status ?? "active") !== "active") {
+      throw new Error("Projeto nao aceita novas candidaturas");
+    }
+
+    const existingApplication = memoryStore.projectApplications.find(
+      (item) => item.projectId === projectId && item.applicantMemberId === applicantMemberId
+    );
+
+    if (existingApplication) {
+      return {
+        ...existingApplication,
+        created: false
+      };
+    }
+
+    const createdAt = new Date().toISOString();
+    const application = {
+      id: crypto.randomUUID(),
+      projectId,
+      ownerMemberId: project.ownerMemberId,
+      applicantMemberId,
+      message: normalizedMessage,
+      status: "applied" as const,
+      createdAt
+    };
+
+    memoryStore.projectApplications.unshift(application);
+
+    return {
+      ...application,
+      created: true
+    };
+  }
+
+  const supabase = assertSupabase();
+  const lifecycleColumnsSupported = await ensureProjectLifecycleColumnsSupport();
+  const { data: project, error: projectError } = await supabase
+    .from("projects")
+    .select(lifecycleColumnsSupported ? "id, owner_member_id, status" : "id, owner_member_id, looking_for")
+    .eq("id", projectId)
+    .maybeSingle();
+
+  if (projectError) throw projectError;
+
+  const projectRow = project as ProjectOwnerRow | null;
+
+  if (!projectRow) {
+    throw new Error("Projeto nÃ£o encontrado");
+  }
+
+  if (projectRow.owner_member_id === applicantMemberId) {
+    throw new Error("NÃ£o Ã© permitido candidatar-se ao prÃ³prio projeto");
+  }
+
+  const projectStatus = lifecycleColumnsSupported
+    ? (projectRow.status as ProjectStatus | null) ?? "active"
+    : normalizeProjectRow(project as ProjectRow).status;
+
+  if (projectStatus !== "active") {
+    throw new Error("Projeto nao aceita novas candidaturas");
+  }
+
+  const { data: existingApplication, error: existingApplicationError } = await supabase
+    .from("project_applications")
+    .select("id, project_id, applicant_member_id, status, message, created_at")
+    .eq("project_id", projectId)
+    .eq("applicant_member_id", applicantMemberId)
+    .maybeSingle();
+
+  if (existingApplicationError) throw existingApplicationError;
+
+  if (existingApplication) {
+    const application = existingApplication as ProjectApplicationRow;
+
+    return {
+      id: application.id,
+      projectId: application.project_id,
+      ownerMemberId: projectRow.owner_member_id,
+      applicantMemberId: application.applicant_member_id,
+      message: application.message,
+      status: application.status,
+      createdAt: application.created_at,
+      created: false
+    };
+  }
+
+  const { data, error } = await supabase
+    .from("project_applications")
+    .insert({
+      project_id: projectId,
+      applicant_member_id: applicantMemberId,
+      message: normalizedMessage,
+      status: "applied"
+    })
+    .select("id, project_id, applicant_member_id, status, message, created_at")
+    .single();
+
+  if (error) throw error;
+
+  const application = data as ProjectApplicationRow;
+
+  return {
+    id: application.id,
+    projectId: application.project_id,
+    ownerMemberId: projectRow.owner_member_id,
+    applicantMemberId: application.applicant_member_id,
+    message: application.message,
+    status: application.status,
+    createdAt: application.created_at,
+    created: true
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function applyToProjectLegacy(projectId: string, applicantMemberId: string, message?: string) {
   const normalizedMessage = message?.trim() ? message.trim() : null;
 
   if (!hasSupabase) {

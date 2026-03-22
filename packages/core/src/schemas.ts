@@ -103,6 +103,12 @@ export const projectNeedSchema = z.object({
   description: z.string().trim().min(3).max(180)
 });
 
+export const projectStatusSchema = z.enum(["active", "completed", "inactive"]);
+
+export const projectStatusUpdateSchema = z.object({
+  status: projectStatusSchema
+});
+
 export const projectIdeaSchema = z.object({
   title: z.string().trim().min(3).max(80),
   summary: z.string().trim().min(3).max(140),

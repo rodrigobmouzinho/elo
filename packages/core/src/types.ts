@@ -6,6 +6,11 @@ export type EventAccessType =
   | "public_with_member_discount";
 
 export type PaymentStatus = "pending" | "paid" | "expired" | "refunded";
+export type ProjectStatus = "active" | "completed" | "inactive";
+export type ProjectApplicationStatus = "applied" | "accepted" | "rejected";
+export type ProjectNotificationType =
+  | "project_application_accepted"
+  | "project_application_rejected";
 
 export type Member = {
   id: string;

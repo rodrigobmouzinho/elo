@@ -1,10 +1,16 @@
-import { projectIdeaSchema } from "@elo/core";
+import { projectIdeaSchema, type ProjectStatus } from "@elo/core";
 import type { z } from "zod";
 
 const PROJECT_META_MARKER = "\n[[elo-project-v2]]";
 
 export type ProjectInput = z.infer<typeof projectIdeaSchema>;
 export type ProjectNeed = ProjectInput["needs"][number];
+export type ProjectLifecycleState = {
+  status: ProjectStatus;
+  completedAt: string | null;
+  inactivatedAt: string | null;
+  updatedAt: string | null;
+};
 
 type ProjectMeta = {
   summary: string;
@@ -12,6 +18,10 @@ type ProjectMeta = {
   vision: string;
   needs: ProjectNeed[];
   galleryImageUrls: string[];
+  status?: ProjectStatus;
+  completedAt?: string | null;
+  inactivatedAt?: string | null;
+  updatedAt?: string | null;
 };
 
 type ProjectOwnerProfileRow = {
@@ -32,6 +42,10 @@ export type ProjectRow = {
   gallery_image_urls?: string[] | null;
   owner_member_id?: string | null;
   member_profiles?: ProjectOwnerProfileRow | ProjectOwnerProfileRow[] | null;
+  status?: string | null;
+  completed_at?: string | null;
+  inactivated_at?: string | null;
+  updated_at?: string | null;
 };
 
 export type NormalizedProjectIdea = {
@@ -48,14 +62,26 @@ export type NormalizedProjectIdea = {
   ownerName: string;
   ownerAvatarUrl: string | null;
   ownerMemberId: string | null;
+  status: ProjectStatus;
+  completedAt: string | null;
+  inactivatedAt: string | null;
+  updatedAt: string | null;
+  acceptingApplications: boolean;
 };
 
 export const PROJECT_LIST_SELECT_BASE =
   "id, title, category, description, looking_for, owner_member_id, member_profiles(full_name, avatar_url)";
 export const PROJECT_LIST_SELECT_WITH_ENHANCED = `${PROJECT_LIST_SELECT_BASE}, summary, business_areas, vision, needs, gallery_image_urls`;
+export const PROJECT_LIST_SELECT_WITH_LIFECYCLE = `${PROJECT_LIST_SELECT_BASE}, status, completed_at, inactivated_at, updated_at`;
+export const PROJECT_LIST_SELECT_WITH_ENHANCED_AND_LIFECYCLE = `${PROJECT_LIST_SELECT_WITH_ENHANCED}, status, completed_at, inactivated_at, updated_at`;
 
 function trimText(value: string | null | undefined) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function trimOptionalIso(value: string | null | undefined) {
+  const trimmed = trimText(value);
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 function truncateText(value: string, max: number) {
@@ -77,6 +103,14 @@ function sanitizeGalleryImageUrls(value: string[] | null | undefined) {
     .filter(Boolean);
 
   return cleaned.slice(0, 8);
+}
+
+function sanitizeProjectStatus(value: unknown): ProjectStatus {
+  if (value === "completed" || value === "inactive") {
+    return value;
+  }
+
+  return "active";
 }
 
 function sanitizeNeeds(value: unknown): ProjectNeed[] {
@@ -133,7 +167,11 @@ function decodeProjectMeta(rawLookingFor: string | null | undefined): ProjectMet
       businessAreas: sanitizeBusinessAreas(parsed.businessAreas),
       vision: trimText(parsed.vision),
       needs: sanitizeNeeds(parsed.needs),
-      galleryImageUrls: sanitizeGalleryImageUrls(parsed.galleryImageUrls)
+      galleryImageUrls: sanitizeGalleryImageUrls(parsed.galleryImageUrls),
+      status: sanitizeProjectStatus(parsed.status),
+      completedAt: trimOptionalIso(parsed.completedAt),
+      inactivatedAt: trimOptionalIso(parsed.inactivatedAt),
+      updatedAt: trimOptionalIso(parsed.updatedAt)
     };
   } catch {
     return null;
@@ -228,6 +266,10 @@ export function normalizeProjectRow(row: ProjectRow): NormalizedProjectIdea {
   const galleryImageUrls =
     projectGallery.length > 0 ? projectGallery : (decodedMeta?.galleryImageUrls ?? []);
   const ownerProfile = resolveOwnerProfile(row.member_profiles);
+  const status = sanitizeProjectStatus(row.status ?? decodedMeta?.status);
+  const completedAt = trimOptionalIso(row.completed_at) ?? decodedMeta?.completedAt ?? null;
+  const inactivatedAt = trimOptionalIso(row.inactivated_at) ?? decodedMeta?.inactivatedAt ?? null;
+  const updatedAt = trimOptionalIso(row.updated_at) ?? decodedMeta?.updatedAt ?? null;
 
   return {
     id: row.id,
@@ -242,24 +284,51 @@ export function normalizeProjectRow(row: ProjectRow): NormalizedProjectIdea {
     galleryImageUrls,
     ownerName: ownerProfile.ownerName,
     ownerAvatarUrl: ownerProfile.ownerAvatarUrl,
-    ownerMemberId: row.owner_member_id ?? null
+    ownerMemberId: row.owner_member_id ?? null,
+    status,
+    completedAt,
+    inactivatedAt,
+    updatedAt,
+    acceptingApplications: status === "active"
   };
 }
 
-function encodeProjectMeta(payload: ProjectInput) {
+export function toProjectInput(project: Pick<
+  NormalizedProjectIdea,
+  "title" | "summary" | "businessAreas" | "vision" | "needs" | "galleryImageUrls"
+>): ProjectInput {
+  return {
+    title: project.title,
+    summary: project.summary,
+    businessAreas: project.businessAreas,
+    vision: project.vision,
+    needs: project.needs,
+    galleryImageUrls: project.galleryImageUrls
+  };
+}
+
+function encodeProjectMeta(payload: ProjectInput, lifecycle?: Partial<ProjectLifecycleState>) {
   const summary = buildNeedsSummary(payload.needs);
   const meta: ProjectMeta = {
     summary: payload.summary.trim(),
     businessAreas: sanitizeBusinessAreas(payload.businessAreas),
     vision: payload.vision.trim(),
     needs: sanitizeNeeds(payload.needs),
-    galleryImageUrls: sanitizeGalleryImageUrls(payload.galleryImageUrls)
+    galleryImageUrls: sanitizeGalleryImageUrls(payload.galleryImageUrls),
+    status: sanitizeProjectStatus(lifecycle?.status),
+    completedAt: lifecycle?.completedAt ?? null,
+    inactivatedAt: lifecycle?.inactivatedAt ?? null,
+    updatedAt: lifecycle?.updatedAt ?? null
   };
 
   return `${summary}${PROJECT_META_MARKER}${JSON.stringify(meta)}`;
 }
 
-export function buildProjectDbPayload(payload: ProjectInput, enhancedColumnsSupported: boolean) {
+export function buildProjectDbPayload(
+  payload: ProjectInput,
+  enhancedColumnsSupported: boolean,
+  lifecycle?: Partial<ProjectLifecycleState>
+) {
   const businessAreas = sanitizeBusinessAreas(payload.businessAreas);
   const needs = sanitizeNeeds(payload.needs);
   const galleryImageUrls = sanitizeGalleryImageUrls(payload.galleryImageUrls);
@@ -270,7 +339,7 @@ export function buildProjectDbPayload(payload: ProjectInput, enhancedColumnsSupp
     title: payload.title.trim(),
     description: buildLegacyDescription(summary, vision),
     category: businessAreas[0] ?? "Negocios",
-    looking_for: enhancedColumnsSupported ? buildNeedsSummary(needs) : encodeProjectMeta(payload)
+    looking_for: encodeProjectMeta(payload, lifecycle)
   };
 
   if (!enhancedColumnsSupported) {
@@ -284,6 +353,15 @@ export function buildProjectDbPayload(payload: ProjectInput, enhancedColumnsSupp
     vision,
     needs,
     gallery_image_urls: galleryImageUrls
+  };
+}
+
+export function buildProjectLifecycleDbPayload(lifecycle: ProjectLifecycleState) {
+  return {
+    status: lifecycle.status,
+    completed_at: lifecycle.completedAt,
+    inactivated_at: lifecycle.inactivatedAt,
+    updated_at: lifecycle.updatedAt
   };
 }
 
@@ -302,5 +380,21 @@ export function isMissingProjectEnhancedColumnsError(error: unknown) {
     message.includes("gallery_image_urls") ||
     message.includes("column projects.needs does not exist") ||
     message.includes("column \"needs\" does not exist")
+  );
+}
+
+export function isMissingProjectLifecycleColumnsError(error: unknown) {
+  const code = (error as { code?: string })?.code ?? "";
+  const message = ((error as { message?: string })?.message ?? "").toLowerCase();
+
+  if (code === "42703") {
+    return true;
+  }
+
+  return (
+    message.includes("status") ||
+    message.includes("completed_at") ||
+    message.includes("inactivated_at") ||
+    message.includes("updated_at")
   );
 }

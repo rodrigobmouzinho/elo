@@ -17,7 +17,13 @@ type MockProjectIdea = {
   ownerName: string;
   ownerAvatarUrl?: string | null;
   ownerMemberId?: string;
+  status?: "active" | "completed" | "inactive";
+  completedAt?: string | null;
+  inactivatedAt?: string | null;
+  updatedAt?: string | null;
 };
+
+const now = Date.now();
 
 const projectIdeas: MockProjectIdea[] = [
   {
@@ -39,7 +45,11 @@ const projectIdeas: MockProjectIdea[] = [
       "Operacao de RH com automacao e analytics para PMEs.\n\nConstruir uma plataforma de RH para PMEs que combine automacao operacional, acompanhamento de performance e inteligencia de dados para liderancas.",
     lookingFor: "Cofounder tecnico",
     ownerName: "Ana Costa",
-    ownerMemberId: "60948757-e688-41ec-b0fc-cf30cf8cc3d8"
+    ownerMemberId: "60948757-e688-41ec-b0fc-cf30cf8cc3d8",
+    status: "active",
+    completedAt: null,
+    inactivatedAt: null,
+    updatedAt: new Date(now - 24 * 3600 * 1000).toISOString()
   }
 ];
 
@@ -50,6 +60,17 @@ type MockProjectApplication = {
   applicantMemberId: string;
   message: string | null;
   status: "applied" | "accepted" | "rejected";
+  createdAt: string;
+};
+
+type MockAuditLog = {
+  id: string;
+  actorId: string | null;
+  actorRole: string | null;
+  action: string;
+  entityType: string;
+  entityId: string | null;
+  payload: Record<string, unknown> | null;
   createdAt: string;
 };
 
@@ -141,7 +162,6 @@ type MockMemberLink = {
   createdAt: string;
 };
 
-const now = Date.now();
 const defaultMemberships: MockMembership[] = mockMembers.map((member) => ({
   id: `membership-${member.id}`,
   memberId: member.id,
@@ -207,6 +227,7 @@ export const memoryStore = {
   ranking: [...mockRanking],
   projectIdeas,
   projectApplications: [] as MockProjectApplication[],
+  auditLogs: [] as MockAuditLog[],
   membershipPayments: [] as MockMembershipPayment[],
   eventPayments: [] as MockEventPayment[],
   eventRegistrations: [] as MockEventRegistration[]

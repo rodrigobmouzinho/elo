@@ -8,7 +8,8 @@ export async function GET(request: Request) {
   if (!auth.ok) return auth.response;
 
   try {
-    const projects = await listProjects();
+    const viewerMemberId = await resolveMemberIdByAuthUser(auth.auth.userId);
+    const projects = await listProjects(viewerMemberId);
     return ok(projects);
   } catch (error) {
     return fail(`Falha ao listar projetos: ${(error as Error).message}`, 500);

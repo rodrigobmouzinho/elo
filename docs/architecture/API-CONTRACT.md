@@ -38,6 +38,7 @@ Base URL local: `http://localhost:3002`
 - `GET /api/app/projects`
 - `POST /api/app/projects`
 - `PATCH /api/app/projects/:id`
+- `PATCH /api/app/projects/:id/status`
 - `POST /api/app/projects/:id/apply`
 
 ## Health
@@ -54,8 +55,11 @@ Base URL local: `http://localhost:3002`
 - `PATCH /api/app/profile` atualiza somente dados permitidos do perfil; `email` e `phone` permanecem inalterados.
 - `POST /api/app/projects` publica projeto/ideia valida e o item fica disponivel na listagem `GET /api/app/projects`.
 - `PATCH /api/app/projects/:id` permite atualizacao somente pelo dono do projeto.
+- `PATCH /api/app/projects/:id/status` controla ciclo de vida do projeto com `active|completed|inactive`; `inactive` e exclusao logica e nao reabre pelo PWA nesta fase.
+- `GET /api/app/projects` expoe `status` e `acceptingApplications`; projetos `inactive` so aparecem para o proprio dono.
 - `POST /api/app/projects/:id/apply` registra candidatura idempotente e vincula a inscricao ao dono do projeto.
-- Projetos agora expõem `summary`, `businessAreas`, `vision`, `needs[]` e `galleryImageUrls[]`, preservando `category`, `description` e `lookingFor` como compatibilidade legada.
+- `POST /api/app/projects/:id/apply` bloqueia novas candidaturas quando o projeto esta `completed` ou `inactive`.
+- Projetos agora expoem `summary`, `businessAreas`, `vision`, `needs[]`, `galleryImageUrls[]`, `status` e `acceptingApplications`, preservando `category`, `description` e `lookingFor` como compatibilidade legada.
 - Fluxo de pagamentos opera exclusivamente em `PAYMENTS_MODE=manual_pix`.
 - Checkout pago retorna `manualPayment` com `pixQrCodeImage` e `pixCopyPaste` para UX de pagamento.
 - CRUD de eventos suporta `onlineUrl`, `heroImageUrl` e `galleryImageUrls` (array de ate 8 imagens).

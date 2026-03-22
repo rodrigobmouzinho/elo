@@ -1,22 +1,18 @@
-import { z } from "zod";
+import { projectStatusUpdateSchema } from "@elo/core";
 import { requireAuth, resolveMemberIdByAuthUser } from "../../../../../../lib/auth";
 import { fail, ok, parseJson } from "../../../../../../lib/http";
-import { applyToProject } from "../../../../../../lib/repositories";
-
-const applySchema = z.object({
-  message: z.string().max(500).optional()
-});
+import { updateProjectStatus } from "../../../../../../lib/repositories";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-export async function POST(request: Request, context: RouteContext) {
+export async function PATCH(request: Request, context: RouteContext) {
   const auth = await requireAuth(request, ["member"]);
   if (!auth.ok) return auth.response;
 
   const payload = await parseJson<unknown>(request);
-  const parsed = applySchema.safeParse(payload);
+  const parsed = projectStatusUpdateSchema.safeParse(payload);
 
   if (!parsed.success) {
     return fail(parsed.error.issues[0]?.message ?? "Payload invalido", 422);
@@ -30,12 +26,9 @@ export async function POST(request: Request, context: RouteContext) {
     }
 
     const { id: projectId } = await context.params;
-    const result = await applyToProject(projectId, memberId, parsed.data.message);
+    const project = await updateProjectStatus(projectId, parsed.data.status, memberId);
 
-    return ok({
-      message: result.created ? "Candidatura enviada" : "Candidatura ja enviada",
-      application: result
-    });
+    return ok(project);
   } catch (error) {
     const errorMessage = (error as Error).message;
 
@@ -44,12 +37,12 @@ export async function POST(request: Request, context: RouteContext) {
     }
 
     if (
-      errorMessage.includes("proprio projeto") ||
-      errorMessage.includes("nao aceita novas candidaturas")
+      errorMessage.includes("Somente o dono") ||
+      errorMessage.includes("Projeto inativo nao pode ser reaberto")
     ) {
       return fail(errorMessage, 422);
     }
 
-    return fail(`Falha ao candidatar no projeto: ${(error as Error).message}`, 500);
+    return fail(`Falha ao atualizar status do projeto: ${(error as Error).message}`, 500);
   }
 }
