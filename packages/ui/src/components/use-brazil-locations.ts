@@ -48,33 +48,12 @@ export function useBrazilLocations({
   selectedCity = "",
   basePath = "/backend/public/locations"
 }: UseBrazilLocationsOptions): UseBrazilLocationsResult {
-  const [states, setStates] = useState<BrazilStateOption[]>([]);
+  const states = useMemo<BrazilStateOption[]>(() => [...BRAZIL_STATE_OPTIONS], []);
   const [cities, setCities] = useState<BrazilCityOption[]>([]);
-  const [loadingStates, setLoadingStates] = useState(true);
   const [loadingCities, setLoadingCities] = useState(false);
-  const [statesError, setStatesError] = useState<string | null>(null);
   const [citiesError, setCitiesError] = useState<string | null>(null);
 
   const normalizedState = selectedState.trim().toUpperCase();
-
-  const loadStates = useCallback(async () => {
-    setLoadingStates(true);
-    setStatesError(null);
-
-    try {
-      const response = await fetch(`${basePath}/states`, { cache: "force-cache" });
-      const data = await parseEnvelope<BrazilStateOption[]>(
-        response,
-        "Não foi possível carregar os estados agora."
-      );
-      setStates(data);
-    } catch (error) {
-      setStates([...BRAZIL_STATE_OPTIONS]);
-      setStatesError(null);
-    } finally {
-      setLoadingStates(false);
-    }
-  }, [basePath]);
 
   const loadCities = useCallback(async () => {
     if (!isBrazilStateCode(normalizedState)) {
@@ -105,10 +84,6 @@ export function useBrazilLocations({
   }, [basePath, normalizedState]);
 
   useEffect(() => {
-    void loadStates();
-  }, [loadStates]);
-
-  useEffect(() => {
     void loadCities();
   }, [loadCities]);
 
@@ -126,11 +101,11 @@ export function useBrazilLocations({
   return {
     states,
     cities: resolvedCities,
-    loadingStates,
+    loadingStates: false,
     loadingCities,
-    statesError,
+    statesError: null,
     citiesError,
-    reloadStates: loadStates,
+    reloadStates: async () => undefined,
     reloadCities: loadCities
   };
 }
