@@ -14,6 +14,11 @@ type AuthResult =
   | { ok: true; auth: AuthContext }
   | { ok: false; response: NextResponse };
 
+function isMissingColumnError(error: unknown, columnName: string) {
+  const message = ((error as { message?: string })?.message ?? "").toLowerCase();
+  return message.includes(columnName.toLowerCase()) && message.includes("does not exist");
+}
+
 function extractBearerToken(request: Request) {
   const authorization = request.headers.get("authorization")?.trim() ?? "";
 
@@ -189,6 +194,23 @@ export async function resolveMemberPasswordStateByAuthUser(authUserId: string): 
     .select("id, must_change_password")
     .eq("auth_user_id", authUserId)
     .maybeSingle();
+
+  if (error && isMissingColumnError(error, "must_change_password")) {
+    const fallback = await supabaseAdmin
+      .from("member_profiles")
+      .select("id")
+      .eq("auth_user_id", authUserId)
+      .maybeSingle();
+
+    if (fallback.error) {
+      throw fallback.error;
+    }
+
+    return {
+      memberId: fallback.data?.id ?? null,
+      mustChangePassword: false
+    };
+  }
 
   if (error) {
     throw error;
