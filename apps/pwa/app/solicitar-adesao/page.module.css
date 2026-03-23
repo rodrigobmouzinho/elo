@@ -192,16 +192,23 @@
 .input::placeholder,
 .textarea::placeholder,
 .select:invalid {
-  color: rgba(255, 255, 255, 0.28);
+  color: rgba(202, 195, 215, 0.42);
 }
 
 .input::placeholder,
 .textarea::placeholder {
+  -webkit-text-fill-color: rgba(202, 195, 215, 0.42);
   opacity: 1;
 }
 
+.input::-webkit-input-placeholder,
+.textarea::-webkit-input-placeholder {
+  color: rgba(202, 195, 215, 0.42);
+  -webkit-text-fill-color: rgba(202, 195, 215, 0.42);
+}
+
 .selectPlaceholder {
-  color: rgba(255, 255, 255, 0.28);
+  color: rgba(202, 195, 215, 0.42);
 }
 
 .input:hover:enabled,
