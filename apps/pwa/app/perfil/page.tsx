@@ -1,16 +1,24 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import {
+  PROJECT_GALLERY_ACCEPTED_TYPES,
   formatBrazilianPhoneInput,
   normalizeBrazilianPhone
 } from "@elo/core";
-import Image from "next/image";
 import { Camera, Edit3, LogOut, Mail, MapPin, Phone, Sparkles, Star, Zap } from "lucide-react";
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { passthroughImageLoader, useBrazilLocations } from "@elo/ui";
+import { useBrazilLocations } from "@elo/ui";
 import { MemberShell } from "../../components/member-shell";
 import { apiRequest, clearStoredAuth } from "../../lib/auth-client";
+import {
+  formatMemberAvatarSize,
+  prepareMemberAvatarUpload,
+  revokePreparedMemberAvatar,
+  type PreparedMemberAvatarUpload,
+  uploadPreparedMemberAvatar
+} from "../../lib/member-avatar-upload-client";
 import styles from "./page.module.css";
 
 type EditableProfile = {
@@ -90,11 +98,17 @@ function createPatchFromDraft(draft: EditableProfile, keys: Array<keyof Editable
   return patch;
 }
 
+function isLocalAvatarPreview(value: string) {
+  return value.startsWith("blob:") || value.startsWith("data:");
+}
+
 export default function PerfilPage() {
   const router = useRouter();
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
   const [draft, setDraft] = useState<EditableProfile>(initialDraft);
+  const [pendingAvatarUpload, setPendingAvatarUpload] = useState<PreparedMemberAvatarUpload | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
+  const [processingAvatar, setProcessingAvatar] = useState(false);
   const [activeEditor, setActiveEditor] = useState<EditorSection>(null);
   const [savingSection, setSavingSection] = useState<EditorSection>(null);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
@@ -158,7 +172,7 @@ export default function PerfilPage() {
       },
       avatar: {
         container: avatarEditorRef.current,
-        field: avatarInputRef.current
+        field: null
       },
       expertise: {
         container: expertiseEditorRef.current,
@@ -182,7 +196,19 @@ export default function PerfilPage() {
     };
   }, [activeEditor]);
 
+  useEffect(() => {
+    return () => {
+      if (pendingAvatarUpload) {
+        revokePreparedMemberAvatar(pendingAvatarUpload);
+      }
+    };
+  }, [pendingAvatarUpload]);
+
   const whatsappUrl = toWhatsappUrl(profile?.whatsapp ?? "");
+  const avatarBusy = processingAvatar || savingSection === "avatar";
+  const avatarDisplayUrl =
+    activeEditor === "avatar" && pendingAvatarUpload ? pendingAvatarUpload.previewUrl : draft.avatarUrl.trim();
+  const avatarEditorPreviewUrl = pendingAvatarUpload?.previewUrl ?? draft.avatarUrl.trim();
 
   const profileBadges = useMemo(
     () => [
@@ -230,6 +256,11 @@ export default function PerfilPage() {
         ...current,
         avatarUrl: profile.avatarUrl ?? ""
       }));
+      setPendingAvatarUpload(null);
+
+      if (avatarInputRef.current) {
+        avatarInputRef.current.value = "";
+      }
     }
 
     if (section === "expertise") {
@@ -251,7 +282,7 @@ export default function PerfilPage() {
   }
 
   async function savePatch(section: EditorSection, patch: Partial<EditableProfile>, successMessage: string) {
-    if (!section) return;
+    if (!section) return false;
 
     setSavingSection(section);
     setFeedback(null);
@@ -278,12 +309,14 @@ export default function PerfilPage() {
         description: successMessage,
         tone: "success"
       });
+      return true;
     } catch (submitError) {
       setFeedback({
         title: "Falha ao salvar alterações",
         description: normalizeApiError((submitError as Error).message),
         tone: "danger"
       });
+      return false;
     } finally {
       setSavingSection(null);
     }
@@ -300,7 +333,39 @@ export default function PerfilPage() {
 
   async function handleAvatarSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    await savePatch("avatar", createPatchFromDraft(draft, ["avatarUrl"]), "Sua foto do perfil foi atualizada.");
+
+    if (!pendingAvatarUpload) {
+      setFeedback({
+        title: "Selecione uma imagem",
+        description: "Escolha uma imagem da sua biblioteca para atualizar a foto do perfil.",
+        tone: "info"
+      });
+      return;
+    }
+
+    setProcessingAvatar(true);
+    setFeedback(null);
+
+    try {
+      const uploaded = await uploadPreparedMemberAvatar(pendingAvatarUpload);
+      const saved = await savePatch("avatar", { avatarUrl: uploaded.url }, "Sua foto do perfil foi atualizada.");
+
+      if (saved) {
+        setPendingAvatarUpload(null);
+
+        if (avatarInputRef.current) {
+          avatarInputRef.current.value = "";
+        }
+      }
+    } catch (submitError) {
+      setFeedback({
+        title: "Falha ao enviar foto",
+        description: normalizeApiError((submitError as Error).message),
+        tone: "danger"
+      });
+    } finally {
+      setProcessingAvatar(false);
+    }
   }
 
   async function handleExpertiseSubmit(event: FormEvent<HTMLFormElement>) {
@@ -317,15 +382,36 @@ export default function PerfilPage() {
     await savePatch("story", createPatchFromDraft(draft, ["bio"]), "Sua narrativa foi atualizada com sucesso.");
   }
 
+  async function handleAvatarSelection(event: ChangeEvent<HTMLInputElement>) {
+    const selectedFile = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!selectedFile) {
+      return;
+    }
+
+    setFeedback(null);
+    setProcessingAvatar(true);
+
+    try {
+      const preparedUpload = await prepareMemberAvatarUpload(selectedFile);
+      setPendingAvatarUpload(preparedUpload);
+    } catch (selectionError) {
+      setFeedback({
+        title: "Falha ao preparar imagem",
+        description: normalizeApiError((selectionError as Error).message),
+        tone: "danger"
+      });
+    } finally {
+      setProcessingAvatar(false);
+    }
+  }
+
   const avatarContent =
-    draft.avatarUrl.trim() !== "" ? (
-      <Image
-        loader={passthroughImageLoader}
-        unoptimized
-        src={draft.avatarUrl}
+    avatarDisplayUrl !== "" ? (
+      <img
+        src={avatarDisplayUrl}
         alt={draft.fullName || "Membro Elo"}
-        width={128}
-        height={128}
         className={styles.avatar}
       />
     ) : (
@@ -631,23 +717,59 @@ export default function PerfilPage() {
                 </div>
               </div>
 
-              <label className={styles.fieldGroup}>
-                <span className={styles.fieldLabel}>URL pública da imagem</span>
-                <input
-                  ref={avatarInputRef}
-                  className={styles.fieldControl}
-                  value={draft.avatarUrl}
-                  onChange={(event) => setDraft((current) => ({ ...current, avatarUrl: event.target.value }))}
-                  placeholder="https://..."
-                  type="url"
-                />
-              </label>
+              <input
+                ref={avatarInputRef}
+                id="profile-avatar-upload"
+                className={styles.fileInput}
+                type="file"
+                accept={PROJECT_GALLERY_ACCEPTED_TYPES.join(",")}
+                onChange={(event) => void handleAvatarSelection(event)}
+                disabled={avatarBusy}
+              />
+
+              <div className={styles.avatarUploadCard}>
+                <div className={styles.avatarUploadPreview}>
+                  {avatarEditorPreviewUrl ? (
+                    <img
+                      src={avatarEditorPreviewUrl}
+                      alt={draft.fullName || "Preview da foto do perfil"}
+                      className={styles.avatarUploadImage}
+                    />
+                  ) : (
+                    <div className={styles.avatarUploadFallback}>{initials(draft.fullName || "Elo")}</div>
+                  )}
+                </div>
+
+                <div className={styles.avatarUploadMeta}>
+                  <p className={styles.uploadTitle}>
+                    {pendingAvatarUpload ? "Imagem pronta para envio" : "Selecione uma nova foto"}
+                  </p>
+                  <p className={styles.supportValue}>
+                    {pendingAvatarUpload
+                      ? `${pendingAvatarUpload.name} • ${formatMemberAvatarSize(pendingAvatarUpload.sizeBytes)}`
+                      : "Envie JPG, PNG ou WebP. O app comprime automaticamente antes do envio."}
+                  </p>
+                  <p className={styles.fieldHint}>
+                    {isLocalAvatarPreview(avatarEditorPreviewUrl)
+                      ? "Pré-visualização local pronta. Sua foto será atualizada quando você salvar."
+                      : "A foto atual será substituída somente depois que você salvar."}
+                  </p>
+                </div>
+              </div>
 
               <div className={styles.actionsRow}>
-                <button className={styles.accentButton} type="submit" disabled={savingSection === "avatar"}>
-                  {savingSection === "avatar" ? "Salvando..." : "Salvar foto"}
+                <label
+                  className={`${styles.uploadButton} ${avatarBusy ? styles.uploadButtonDisabled : ""}`}
+                  htmlFor="profile-avatar-upload"
+                  aria-disabled={avatarBusy}
+                >
+                  <Camera size={16} strokeWidth={2.1} />
+                  {processingAvatar ? "Preparando..." : "Selecionar imagem"}
+                </label>
+                <button className={styles.accentButton} type="submit" disabled={avatarBusy}>
+                  {avatarBusy ? "Salvando..." : "Salvar foto"}
                 </button>
-                <button className={styles.ghostButton} type="button" onClick={() => cancelEditor("avatar")} disabled={savingSection === "avatar"}>
+                <button className={styles.ghostButton} type="button" onClick={() => cancelEditor("avatar")} disabled={avatarBusy}>
                   Cancelar
                 </button>
               </div>
