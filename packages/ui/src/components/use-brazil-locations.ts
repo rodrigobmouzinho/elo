@@ -1,7 +1,7 @@
 "use client";
 
 import type { BrazilCityOption, BrazilStateOption } from "@elo/core";
-import { isBrazilStateCode } from "@elo/core";
+import { BRAZIL_STATE_OPTIONS, isBrazilStateCode } from "@elo/core";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 type ApiEnvelope<T> = {
@@ -69,8 +69,8 @@ export function useBrazilLocations({
       );
       setStates(data);
     } catch (error) {
-      setStates([]);
-      setStatesError((error as Error).message);
+      setStates([...BRAZIL_STATE_OPTIONS]);
+      setStatesError(null);
     } finally {
       setLoadingStates(false);
     }
