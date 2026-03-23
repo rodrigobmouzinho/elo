@@ -35,6 +35,20 @@ describe("localidades do Brasil", () => {
     ]);
   });
 
+  it("faz fallback local para os estados quando a consulta externa falha", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockRejectedValue(new Error("falha de rede"))
+    );
+
+    const { listBrazilStates } = await import("../../lib/brazil-locations");
+    const states = await listBrazilStates();
+
+    expect(states).toContainEqual({ code: "PB", name: "Paraíba" });
+    expect(states).toContainEqual({ code: "SP", name: "São Paulo" });
+    expect(states).toHaveLength(27);
+  });
+
   it("valida cidade dentro da UF selecionada", async () => {
     vi.stubGlobal(
       "fetch",

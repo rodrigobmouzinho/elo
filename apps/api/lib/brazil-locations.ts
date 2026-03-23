@@ -34,25 +34,22 @@ function assertOk(response: Response, fallbackMessage: string) {
 }
 
 export async function listBrazilStates(fetchImpl: typeof fetch = fetch): Promise<BrazilStateOption[]> {
-  let response: Response;
-
   try {
-    response = await fetchImpl(`${IBGE_BASE_URL}/estados`, REQUEST_OPTIONS);
+    const response = await fetchImpl(`${IBGE_BASE_URL}/estados`, REQUEST_OPTIONS);
+    assertOk(response, "Não foi possível consultar os estados do Brasil agora.");
+
+    const payload = (await response.json()) as IbgeState[];
+
+    return payload
+      .map((state) => ({
+        code: state.sigla.trim().toUpperCase() as BrazilStateCode,
+        name: state.nome.trim()
+      }))
+      .filter((state) => isBrazilStateCode(state.code))
+      .sort((first, second) => first.name.localeCompare(second.name, "pt-BR"));
   } catch {
-    throw new BrazilLocationsServiceError("Não foi possível consultar os estados do Brasil agora.");
+    return [...BRAZIL_STATE_OPTIONS];
   }
-
-  assertOk(response, "Não foi possível consultar os estados do Brasil agora.");
-
-  const payload = (await response.json()) as IbgeState[];
-
-  return payload
-    .map((state) => ({
-      code: state.sigla.trim().toUpperCase() as BrazilStateCode,
-      name: state.nome.trim()
-    }))
-    .filter((state) => isBrazilStateCode(state.code))
-    .sort((first, second) => first.name.localeCompare(second.name, "pt-BR"));
 }
 
 export async function listBrazilCitiesByState(
