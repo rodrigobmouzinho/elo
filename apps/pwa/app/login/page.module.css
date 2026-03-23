@@ -298,14 +298,24 @@
 }
 
 .signupLink {
+  border: none;
+  padding: 0;
+  background: none;
   color: #f7f2ff;
+  font: inherit;
   font-weight: 700;
+  line-height: inherit;
+  cursor: pointer;
   transition: color 160ms ease;
 }
 
 .signupLink:hover,
 .signupLink:focus-visible {
   color: #cbbeff;
+}
+
+.signupLink:focus-visible {
+  outline: none;
 }
 
 .footerMark {

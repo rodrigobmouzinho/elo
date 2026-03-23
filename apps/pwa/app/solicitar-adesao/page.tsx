@@ -1,7 +1,8 @@
 "use client";
 
-import { Menu, UserCircle2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
@@ -108,13 +109,18 @@ export default function SolicitarAdesaoPage() {
 
       <div className={styles.appShell}>
         <header className={styles.topBar}>
-          <button className={styles.topIcon} type="button" aria-label="Abrir menu" disabled>
-            <Menu size={17} />
-          </button>
-          <span className={styles.brand}>ELO</span>
-          <span className={styles.topAvatar} aria-hidden="true">
-            <UserCircle2 size={20} />
-          </span>
+          <Link className={styles.backButton} href="/login" aria-label="Voltar para o login">
+            <ArrowLeft size={18} />
+          </Link>
+          <Image
+            src="/brand/elo-wordmark.png"
+            alt="Elo Networking"
+            width={96}
+            height={54}
+            priority
+            className={styles.brandMark}
+          />
+          <span className={styles.topSpacer} aria-hidden="true" />
         </header>
 
         <section className={styles.content}>
@@ -279,7 +285,7 @@ export default function SolicitarAdesaoPage() {
           </form>
 
           <p className={styles.note}>
-            A adesao esta sujeita a curadoria interna da comunidade E.L.O.
+            A adesao esta sujeita a curadoria interna da comunidade Elo.
           </p>
 
           <Link className={styles.backLink} href="/login">
