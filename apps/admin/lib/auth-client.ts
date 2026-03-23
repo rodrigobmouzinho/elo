@@ -125,7 +125,7 @@ export async function login(email: string, password: string) {
   const auth = parsed.data;
 
   if (auth.user.role !== "admin") {
-    throw new Error("Este acesso e exclusivo para administradores.");
+    throw new Error("Este acesso é exclusivo para administradores.");
   }
 
   setStoredAuth(auth);
@@ -142,7 +142,7 @@ export async function requestPasswordReset(email: string) {
     body: JSON.stringify({ email })
   });
 
-  const parsed = await parseApiResponse<{ message: string }>(response, "Falha ao solicitar reset");
+  const parsed = await parseApiResponse<{ message: string }>(response, "Falha ao solicitar redefinição de senha");
 
   if (!parsed.ok) {
     throw new Error(parsed.error);

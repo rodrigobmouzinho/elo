@@ -6,3 +6,4 @@ export * from "./components/form-primitives";
 export * from "./components/logo";
 export * from "./components/data-display";
 export * from "./components/navigation-shell";
+export * from "./components/use-brazil-locations";

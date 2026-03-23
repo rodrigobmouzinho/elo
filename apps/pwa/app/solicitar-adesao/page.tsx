@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  formatBrazilianPhoneInput,
+  isValidBrazilianMobile
+} from "@elo/core";
+import { useBrazilLocations } from "@elo/ui";
 import { ArrowLeft } from "lucide-react";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import Image from "next/image";
@@ -33,9 +38,9 @@ const areaOptions = [
   "Marketing",
   "Comercial",
   "Financeiro",
-  "Operacoes",
+  "Operações",
   "Jurídico",
-  "People",
+  "Pessoas",
   "Produto",
   "Outro"
 ];
@@ -44,7 +49,7 @@ function normalizeApiError(raw: string) {
   const normalized = raw.trim().toLowerCase();
 
   if (normalized.includes("conectar") || normalized.includes("network")) {
-    return "Nao foi possivel conectar ao servidor agora. Tente novamente em instantes.";
+    return "Não foi possível conectar ao servidor agora. Tente novamente em instantes.";
   }
 
   return raw;
@@ -56,26 +61,46 @@ export default function SolicitarAdesaoPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
-  const [city, setCity] = useState("");
   const [state, setState] = useState("");
-  const [area, setArea] = useState(areaOptions[0]);
+  const [city, setCity] = useState("");
+  const [area, setArea] = useState("");
   const [specialty, setSpecialty] = useState("");
   const [bio, setBio] = useState("");
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
-
-  const isAreaCustom = area === "Outro";
   const [customArea, setCustomArea] = useState("");
 
+  const isAreaCustom = area === "Outro";
   const resolvedArea = useMemo(
     () => (isAreaCustom ? customArea.trim() : area),
     [area, customArea, isAreaCustom]
   );
+  const {
+    states,
+    cities,
+    loadingStates,
+    loadingCities,
+    statesError,
+    citiesError
+  } = useBrazilLocations({
+    selectedState: state,
+    selectedCity: city
+  });
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setLoading(true);
     setFeedback(null);
+
+    if (!isValidBrazilianMobile(whatsapp)) {
+      setFeedback({
+        title: "WhatsApp inválido",
+        description: "Informe um número de celular válido no padrão brasileiro.",
+        tone: "danger"
+      });
+      return;
+    }
+
+    setLoading(true);
 
     try {
       await submitMemberApplication({
@@ -93,7 +118,7 @@ export default function SolicitarAdesaoPage() {
       router.push("/solicitacao-enviada");
     } catch (error) {
       setFeedback({
-        title: "Falha ao enviar solicitacao",
+        title: "Falha ao enviar solicitação",
         description: normalizeApiError((error as Error).message),
         tone: "danger"
       });
@@ -120,22 +145,30 @@ export default function SolicitarAdesaoPage() {
             priority
             className={styles.brandMark}
           />
-          <span className={styles.topSpacer} aria-hidden="true" />
         </header>
 
         <section className={styles.content}>
           <div className={styles.hero}>
             <h1 className={styles.headline}>
-              Sejam <span>Visionarios.</span>
+              Seja <span>Visionário.</span>
             </h1>
             <p className={styles.copy}>
-              O acesso a ELO e exclusivo para fundadores e lideres. Preencha sua solicitacao para analise.
+              O acesso à Elo é exclusivo para fundadores e líderes. Preencha sua solicitação para análise.
             </p>
           </div>
 
+          {statesError || citiesError ? (
+            <div className={`${styles.feedback} ${styles.feedbackInfo}`} role="status">
+              <strong>Localização indisponível</strong>
+              <span>{statesError ?? citiesError}</span>
+            </div>
+          ) : null}
+
           {feedback ? (
             <div
-              className={`${styles.feedback} ${feedback.tone === "danger" ? styles.feedbackDanger : styles.feedbackInfo}`}
+              className={`${styles.feedback} ${
+                feedback.tone === "danger" ? styles.feedbackDanger : styles.feedbackInfo
+              }`}
               role="alert"
             >
               <strong>{feedback.title}</strong>
@@ -150,7 +183,7 @@ export default function SolicitarAdesaoPage() {
                 className={styles.input}
                 value={fullName}
                 onChange={(event) => setFullName(event.target.value)}
-                placeholder="Como devemos chama-lo?"
+                placeholder="Como devemos chamá-lo?"
                 autoComplete="name"
                 required
                 disabled={loading}
@@ -158,7 +191,7 @@ export default function SolicitarAdesaoPage() {
             </label>
 
             <label className={styles.fieldGroup}>
-              <span className={styles.fieldLabel}>E-mail corporativo</span>
+              <span className={styles.fieldLabel}>E-mail</span>
               <input
                 className={styles.input}
                 value={email}
@@ -176,9 +209,10 @@ export default function SolicitarAdesaoPage() {
               <input
                 className={styles.input}
                 value={whatsapp}
-                onChange={(event) => setWhatsapp(event.target.value)}
-                placeholder="+55 00 00000-0000"
+                onChange={(event) => setWhatsapp(formatBrazilianPhoneInput(event.target.value))}
+                placeholder="(11) 91234-5678"
                 autoComplete="tel"
+                inputMode="numeric"
                 required
                 disabled={loading}
               />
@@ -189,51 +223,73 @@ export default function SolicitarAdesaoPage() {
               <input
                 className={styles.input}
                 value={phone}
-                onChange={(event) => setPhone(event.target.value)}
-                placeholder="+55 00 00000-0000"
+                onChange={(event) => setPhone(formatBrazilianPhoneInput(event.target.value))}
+                placeholder="(11) 91234-5678"
                 autoComplete="tel-national"
+                inputMode="numeric"
                 disabled={loading}
               />
             </label>
 
             <div className={styles.row}>
               <label className={styles.fieldGroup}>
-                <span className={styles.fieldLabel}>Cidade</span>
-                <input
-                  className={styles.input}
-                  value={city}
-                  onChange={(event) => setCity(event.target.value)}
-                  placeholder="Sua cidade"
-                  autoComplete="address-level2"
+                <span className={styles.fieldLabel}>UF</span>
+                <select
+                  className={`${styles.select} ${!state ? styles.selectPlaceholder : ""}`}
+                  value={state}
+                  onChange={(event) => {
+                    setState(event.target.value);
+                    setCity("");
+                  }}
+                  autoComplete="address-level1"
                   required
-                  disabled={loading}
-                />
+                  disabled={loading || loadingStates}
+                >
+                  <option value="" disabled>
+                    {loadingStates ? "Carregando..." : "Selecione a UF"}
+                  </option>
+                  {states.map((currentState) => (
+                    <option key={currentState.code} value={currentState.code}>
+                      {currentState.code}
+                    </option>
+                  ))}
+                </select>
               </label>
 
               <label className={styles.fieldGroup}>
-                <span className={styles.fieldLabel}>UF</span>
-                <input
-                  className={styles.input}
-                  value={state}
-                  onChange={(event) => setState(event.target.value.replace(/\s/g, "").toUpperCase())}
-                  placeholder="UF"
-                  maxLength={2}
-                  autoComplete="address-level1"
+                <span className={styles.fieldLabel}>Cidade</span>
+                <select
+                  className={`${styles.select} ${!city ? styles.selectPlaceholder : ""}`}
+                  value={city}
+                  onChange={(event) => setCity(event.target.value)}
+                  autoComplete="address-level2"
                   required
-                  disabled={loading}
-                />
+                  disabled={loading || !state || loadingCities || Boolean(citiesError)}
+                >
+                  <option value="" disabled>
+                    {!state ? "Selecione a UF primeiro" : loadingCities ? "Carregando..." : "Selecione a cidade"}
+                  </option>
+                  {cities.map((currentCity) => (
+                    <option key={currentCity.name} value={currentCity.name}>
+                      {currentCity.name}
+                    </option>
+                  ))}
+                </select>
               </label>
             </div>
 
             <label className={styles.fieldGroup}>
-              <span className={styles.fieldLabel}>Area de atuacao</span>
+              <span className={styles.fieldLabel}>Área de atuação</span>
               <select
-                className={styles.select}
+                className={`${styles.select} ${!area ? styles.selectPlaceholder : ""}`}
                 value={area}
                 onChange={(event) => setArea(event.target.value)}
                 required
                 disabled={loading}
               >
+                <option value="" disabled>
+                  Selecione a área
+                </option>
                 {areaOptions.map((option) => (
                   <option key={option} value={option}>
                     {option}
@@ -244,12 +300,12 @@ export default function SolicitarAdesaoPage() {
 
             {isAreaCustom ? (
               <label className={styles.fieldGroup}>
-                <span className={styles.fieldLabel}>Qual area representa melhor voce?</span>
+                <span className={styles.fieldLabel}>Qual área representa melhor você?</span>
                 <input
                   className={styles.input}
                   value={customArea}
                   onChange={(event) => setCustomArea(event.target.value)}
-                  placeholder="Ex: Consultoria estrategica"
+                  placeholder="Ex.: Consultoria estratégica"
                   required
                   disabled={loading}
                 />
@@ -257,18 +313,18 @@ export default function SolicitarAdesaoPage() {
             ) : null}
 
             <label className={styles.fieldGroup}>
-              <span className={styles.fieldLabel}>No que voce e bom?</span>
+              <span className={styles.fieldLabel}>No que você é bom?</span>
               <input
                 className={styles.input}
                 value={specialty}
                 onChange={(event) => setSpecialty(event.target.value)}
-                placeholder="Ex: Escalar times, M&A, cloud..."
+                placeholder="Ex.: Escalar times, M&A, cloud..."
                 disabled={loading}
               />
             </label>
 
             <label className={styles.fieldGroup}>
-              <span className={styles.fieldLabel}>Conte sua historia</span>
+              <span className={styles.fieldLabel}>Conte sua história</span>
               <textarea
                 className={styles.textarea}
                 value={bio}
@@ -280,12 +336,12 @@ export default function SolicitarAdesaoPage() {
             </label>
 
             <button className={styles.submit} type="submit" disabled={loading || !resolvedArea}>
-              {loading ? "Enviando..." : "Enviar Solicitacao"}
+              {loading ? "Enviando..." : "Enviar solicitação"}
             </button>
           </form>
 
           <p className={styles.note}>
-            A adesao esta sujeita a curadoria interna da comunidade Elo.
+            A adesão está sujeita à curadoria interna da comunidade Elo.
           </p>
 
           <Link className={styles.backLink} href="/login">

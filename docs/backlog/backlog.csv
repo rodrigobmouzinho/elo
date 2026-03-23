@@ -75,3 +75,5 @@ ELO-094,Members,"Workflow de adesao com status intermediarios, historico e statu
 ELO-095,Admin UX,"Painel admin de adesoes com filtros, notas, aprovacao, recusa e cadastro de status",Must,High,8,M7 Total UX Refactor,Done
 ELO-096,Auth,"Aprovacao de adesao com provisionamento automatico de conta, role, membership e senha temporaria",Must,High,8,M7 Total UX Refactor,Done
 ELO-097,PWA UX,"Primeiro acesso no PWA com troca obrigatoria de senha forte apos aprovacao da adesao",Must,High,5,M7 Total UX Refactor,Done
+ELO-098,PWA/Admin UX,"Correcao de UX/UI e revisao textual pt-BR nos formularios, headers e mensagens visiveis",Must,High,5,M7 Total UX Refactor,Done
+ELO-099,Platform,"Integracao UF->cidade por API publica, bloco compartilhado e mascara/validacao BR de WhatsApp",Must,High,8,M7 Total UX Refactor,Done

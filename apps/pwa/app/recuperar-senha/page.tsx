@@ -32,7 +32,7 @@ function normalizeApiError(raw: string) {
   const normalized = raw.trim().toLowerCase();
 
   if (normalized.includes("network") || normalized.includes("conexao")) {
-    return "Nao foi possivel conectar ao servidor. Tente novamente em instantes.";
+    return "Não foi possível conectar ao servidor. Tente novamente em instantes.";
   }
 
   return raw;
@@ -65,7 +65,7 @@ export default function RecuperarSenhaPage() {
       const result = await requestPasswordReset(email.trim());
 
       setFeedback({
-        title: "Solicitacao enviada",
+        title: "Solicitação enviada",
         description: result.message,
         tone: "success"
       });
@@ -99,7 +99,7 @@ export default function RecuperarSenhaPage() {
           <div className={styles.copy}>
             <h1 className={styles.headline}>Recuperar Senha</h1>
             <p className={styles.subtitle}>
-              Informe seu e-mail cadastrado para receber as instrucoes de recuperacao.
+              Informe seu e-mail cadastrado para receber as instruções de recuperação.
             </p>
           </div>
         </header>
@@ -138,14 +138,14 @@ export default function RecuperarSenhaPage() {
           </label>
 
           <button className={styles.submit} type="submit" disabled={loading}>
-            <span>{loading ? "Enviando..." : "Enviar instrucoes"}</span>
+            <span>{loading ? "Enviando..." : "Enviar instruções"}</span>
             <ArrowRight size={18} strokeWidth={2.2} aria-hidden="true" />
           </button>
         </form>
 
         <Link href="/login" className={styles.backLink}>
           <ArrowLeft size={16} strokeWidth={2.2} aria-hidden="true" />
-          <span>Voltar ao Login</span>
+          <span>Voltar ao login</span>
         </Link>
       </section>
     </main>

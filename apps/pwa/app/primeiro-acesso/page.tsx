@@ -35,7 +35,7 @@ function normalizeApiError(raw: string) {
   const normalized = raw.trim().toLowerCase();
 
   if (normalized.includes("sessao")) {
-    return "Sua sessao nao esta mais valida. Entre novamente com a senha temporaria.";
+    return "Sua sessão não está mais válida. Entre novamente com a senha temporária.";
   }
 
   return raw;
@@ -75,9 +75,9 @@ export default function PrimeiroAcessoPage() {
   const helperChecks = useMemo(
     () => [
       { label: "Pelo menos 10 caracteres", ok: password.length >= 10 },
-      { label: "Uma letra maiuscula", ok: /[A-Z]/.test(password) },
-      { label: "Uma letra minuscula", ok: /[a-z]/.test(password) },
-      { label: "Um numero", ok: /[0-9]/.test(password) },
+      { label: "Uma letra maiúscula", ok: /[A-Z]/.test(password) },
+      { label: "Uma letra minúscula", ok: /[a-z]/.test(password) },
+      { label: "Um número", ok: /[0-9]/.test(password) },
       { label: "Um caractere especial", ok: /[^A-Za-z0-9]/.test(password) }
     ],
     [password]
@@ -88,8 +88,8 @@ export default function PrimeiroAcessoPage() {
 
     if (password !== confirmPassword) {
       setFeedback({
-        title: "As senhas nao conferem",
-        description: "Revise a confirmacao antes de concluir o primeiro acesso.",
+        title: "As senhas não conferem",
+        description: "Revise a confirmação antes de concluir o primeiro acesso.",
         tone: "danger"
       });
       return;
@@ -102,7 +102,7 @@ export default function PrimeiroAcessoPage() {
       await submitFirstAccessPassword(password);
       setFeedback({
         title: "Senha definida com sucesso",
-        description: "Seu acesso esta pronto. Vamos entrar no app.",
+        description: "Seu acesso está pronto. Vamos entrar no app.",
         tone: "success"
       });
       router.replace("/");
@@ -139,7 +139,7 @@ export default function PrimeiroAcessoPage() {
         <div className={styles.copyBlock}>
           <h1 className={styles.headline}>Crie sua senha definitiva</h1>
           <p className={styles.copy}>
-            Voce entrou com uma senha temporaria. Antes de acessar a comunidade, precisamos registrar uma senha forte e exclusiva para a sua conta.
+            Você entrou com uma senha temporária. Antes de acessar a comunidade, precisamos registrar uma senha forte e exclusiva para a sua conta.
           </p>
         </div>
 

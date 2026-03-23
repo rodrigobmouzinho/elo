@@ -1,10 +1,14 @@
 "use client";
 
+import {
+  formatBrazilianPhoneInput,
+  normalizeBrazilianPhone
+} from "@elo/core";
 import Image from "next/image";
 import { Camera, Edit3, LogOut, Mail, MapPin, Phone, Sparkles, Star, Zap } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { passthroughImageLoader } from "@elo/ui";
+import { passthroughImageLoader, useBrazilLocations } from "@elo/ui";
 import { MemberShell } from "../../components/member-shell";
 import { apiRequest, clearStoredAuth } from "../../lib/auth-client";
 import styles from "./page.module.css";
@@ -50,7 +54,7 @@ const initialDraft: EditableProfile = {
 function normalizeApiError(raw: string) {
   const normalized = raw.trim().toLowerCase();
 
-  if (normalized.includes("network") || normalized.includes("conexao")) {
+  if (normalized.includes("network") || normalized.includes("conexao") || normalized.includes("conexão")) {
     return "N\u00e3o foi poss\u00edvel conectar ao servidor. Tente novamente em instantes.";
   }
 
@@ -67,7 +71,7 @@ function initials(name: string) {
 }
 
 function toWhatsappUrl(value: string) {
-  const digits = value.replace(/\D/g, "");
+  const digits = normalizeBrazilianPhone(value);
   if (!digits) return null;
 
   const normalized = digits.startsWith("55") ? digits : `55${digits}`;
@@ -102,6 +106,17 @@ export default function PerfilPage() {
   const expertiseInputRef = useRef<HTMLInputElement | null>(null);
   const storyEditorRef = useRef<HTMLElement | null>(null);
   const storyInputRef = useRef<HTMLTextAreaElement | null>(null);
+  const {
+    states,
+    cities,
+    loadingCities,
+    loadingStates,
+    statesError,
+    citiesError
+  } = useBrazilLocations({
+    selectedState: draft.state,
+    selectedCity: draft.city
+  });
 
   useEffect(() => {
     async function loadProfile() {
@@ -173,7 +188,7 @@ export default function PerfilPage() {
     () => [
       {
         icon: <Star size={18} strokeWidth={2.1} />,
-        label: draft.area || "Area em definicao",
+        label: draft.area || "Área em definição",
         tone: styles.chipPrimary
       },
       {
@@ -183,7 +198,7 @@ export default function PerfilPage() {
       },
       {
         icon: <Sparkles size={18} strokeWidth={2.1} />,
-        label: profile?.active ? "Visionario" : "Perfil pausado",
+        label: profile?.active ? "Visionário" : "Perfil pausado",
         tone: styles.chipTertiary
       }
     ],
@@ -265,7 +280,7 @@ export default function PerfilPage() {
       });
     } catch (submitError) {
       setFeedback({
-        title: "Falha ao salvar alteracoes",
+        title: "Falha ao salvar alterações",
         description: normalizeApiError((submitError as Error).message),
         tone: "danger"
       });
@@ -279,7 +294,7 @@ export default function PerfilPage() {
     await savePatch(
       "identity",
       createPatchFromDraft(draft, ["fullName", "city", "state"]),
-      "Seu nome e sua localizacao principal foram atualizados."
+      "Seu nome e sua localização principal foram atualizados."
     );
   }
 
@@ -293,7 +308,7 @@ export default function PerfilPage() {
     await savePatch(
       "expertise",
       createPatchFromDraft(draft, ["area", "specialty"]),
-      "Sua area de atuacao e sua especialidade ja refletem seu posicionamento atual."
+      "Sua área de atuação e sua especialidade já refletem seu posicionamento atual."
     );
   }
 
@@ -334,7 +349,7 @@ export default function PerfilPage() {
         {loadingProfile ? (
           <section className={styles.statusCard} aria-live="polite">
             <h2 className={styles.statusTitle}>Carregando perfil</h2>
-            <p className={styles.statusText}>Preparando seus dados para exibicao e edicao.</p>
+            <p className={styles.statusText}>Preparando seus dados para exibição e edição.</p>
           </section>
         ) : null}
 
@@ -352,7 +367,7 @@ export default function PerfilPage() {
             <h2 className={styles.heroName}>{draft.fullName || "Membro Elo"}</h2>
             <div className={styles.heroLocation}>
               <MapPin size={14} strokeWidth={2.1} />
-              <span>{draft.city && draft.state ? `${draft.city}, ${draft.state}` : "Cidade nao informada"}</span>
+              <span>{draft.city && draft.state ? `${draft.city}, ${draft.state}` : "Cidade não informada"}</span>
             </div>
           </div>
 
@@ -382,7 +397,7 @@ export default function PerfilPage() {
         <section className={styles.panel} ref={expertiseEditorRef}>
           <div className={styles.panelHeader}>
             <div>
-              <p className={styles.panelEyebrow}>Sincronizacao de Contato</p>
+              <p className={styles.panelEyebrow}>Sincronização de contato</p>
               <h3 className={styles.panelTitle}>Contato oficial do membro</h3>
             </div>
             <span className={styles.panelBadge}>Sincronizado</span>
@@ -395,7 +410,9 @@ export default function PerfilPage() {
               </div>
               <div className={styles.contactMeta}>
                 <p className={styles.contactLabel}>Celular e WhatsApp</p>
-                <p className={styles.contactValue}>{profile?.whatsapp || profile?.phone || "Nao disponivel"}</p>
+                <p className={styles.contactValue}>
+                  {formatBrazilianPhoneInput(profile?.whatsapp || profile?.phone || "") || "Não disponível"}
+                </p>
               </div>
             </div>
 
@@ -405,7 +422,7 @@ export default function PerfilPage() {
               </div>
               <div className={styles.contactMeta}>
                 <p className={styles.contactLabel}>E-mail oficial</p>
-                <p className={styles.contactStatic}>{profile?.email || "Nao disponivel"}</p>
+                <p className={styles.contactStatic}>{profile?.email || "Não disponível"}</p>
               </div>
             </div>
           </div>
@@ -415,7 +432,7 @@ export default function PerfilPage() {
           <div className={styles.panelHeader}>
             <div>
               <p className={styles.panelEyebrow}>Especialidade</p>
-              <h3 className={styles.panelTitle}>Como voce quer ser encontrado</h3>
+              <h3 className={styles.panelTitle}>Como você quer ser encontrado</h3>
             </div>
             <button className={styles.ghostButton} type="button" onClick={() => openEditor("expertise")}>
               <Edit3 size={16} strokeWidth={2.1} />
@@ -426,7 +443,7 @@ export default function PerfilPage() {
           {activeEditor === "expertise" ? (
             <form className={styles.fieldStack} onSubmit={handleExpertiseSubmit}>
               <label className={styles.fieldGroup}>
-                <span className={styles.fieldLabel}>Area de atuacao</span>
+                <span className={styles.fieldLabel}>Área de atuação</span>
                 <input
                   ref={expertiseInputRef}
                   className={styles.fieldControl}
@@ -461,9 +478,9 @@ export default function PerfilPage() {
             </form>
           ) : (
             <div>
-              <p className={styles.plainValue}>{draft.area || "Qual sua area?"}</p>
+              <p className={styles.plainValue}>{draft.area || "Qual sua área?"}</p>
               <p className={styles.supportValue}>
-                {draft.specialty || "Defina seu recorte profissional para que a comunidade entenda rapidamente onde voce gera valor."}
+                {draft.specialty || "Defina seu recorte profissional para que a comunidade entenda rapidamente onde você gera valor."}
               </p>
             </div>
           )}
@@ -472,7 +489,7 @@ export default function PerfilPage() {
         <section className={styles.panel} ref={storyEditorRef}>
           <div className={styles.panelHeader}>
             <div>
-              <p className={styles.panelEyebrow}>A Historia</p>
+              <p className={styles.panelEyebrow}>A história</p>
               <h3 className={styles.panelTitle}>Sua narrativa dentro da Elo</h3>
             </div>
             <button className={styles.ghostButton} type="button" onClick={() => openEditor("story")}>
@@ -490,14 +507,14 @@ export default function PerfilPage() {
                   className={styles.storyInput}
                   value={draft.bio}
                   onChange={(event) => setDraft((current) => ({ ...current, bio: event.target.value }))}
-                  placeholder="Compartilhe sua jornada com o nexus..."
+                  placeholder="Compartilhe sua jornada com a comunidade Elo..."
                   maxLength={500}
                 />
               </label>
 
               <div className={styles.actionsRow}>
                 <button className={styles.accentButton} type="submit" disabled={savingSection === "story"}>
-                  {savingSection === "story" ? "Salvando..." : "Salvar historia"}
+                  {savingSection === "story" ? "Salvando..." : "Salvar história"}
                 </button>
                 <button className={styles.ghostButton} type="button" onClick={() => cancelEditor("story")} disabled={savingSection === "story"}>
                   Cancelar
@@ -507,7 +524,7 @@ export default function PerfilPage() {
           ) : (
             <p className={styles.supportValue}>
               {draft.bio ||
-                "Conte sua jornada, o tipo de conversa que voce quer abrir e o contexto que ajuda outros membros a se aproximarem com mais clareza."}
+                "Conte sua jornada, o tipo de conversa que você quer abrir e o contexto que ajuda outros membros a se aproximarem com mais clareza."}
             </p>
           )}
         </section>
@@ -521,9 +538,13 @@ export default function PerfilPage() {
               <div className={styles.panelHeader}>
                 <div>
                   <p className={styles.panelEyebrow}>Identidade</p>
-                  <h3 className={styles.panelTitle}>Atualize seu nome e sua localizacao</h3>
+                  <h3 className={styles.panelTitle}>Atualize seu nome e sua localização</h3>
                 </div>
               </div>
+
+              {statesError || citiesError ? (
+                <p className={styles.fieldHintError}>{statesError ?? citiesError}</p>
+              ) : null}
 
               <label className={styles.fieldGroup}>
                 <span className={styles.fieldLabel}>Nome completo</span>
@@ -539,31 +560,54 @@ export default function PerfilPage() {
 
               <div className={styles.gridFields}>
                 <label className={styles.fieldGroup}>
-                  <span className={styles.fieldLabel}>Cidade</span>
-                  <input
-                    className={styles.fieldControl}
-                    value={draft.city}
-                    onChange={(event) => setDraft((current) => ({ ...current, city: event.target.value }))}
-                    minLength={2}
-                    required
-                  />
-                </label>
-
-                <label className={styles.fieldGroup}>
                   <span className={styles.fieldLabel}>UF</span>
-                  <input
+                  <select
                     className={styles.fieldControl}
                     value={draft.state}
                     onChange={(event) =>
                       setDraft((current) => ({
                         ...current,
-                        state: event.target.value.replace(/\s/g, "").toUpperCase()
+                        state: event.target.value,
+                        city: ""
                       }))
                     }
-                    maxLength={2}
-                    minLength={2}
                     required
-                  />
+                    disabled={loadingStates || savingSection === "identity"}
+                  >
+                    <option value="" disabled>
+                      {loadingStates ? "Carregando..." : "Selecione a UF"}
+                    </option>
+                    {states.map((currentState) => (
+                      <option key={currentState.code} value={currentState.code}>
+                        {currentState.code}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className={styles.fieldGroup}>
+                  <span className={styles.fieldLabel}>Cidade</span>
+                  <select
+                    className={styles.fieldControl}
+                    value={draft.city}
+                    onChange={(event) =>
+                      setDraft((current) => ({
+                        ...current,
+                        city: event.target.value
+                      }))
+                    }
+                    required
+                    disabled={!draft.state || loadingCities || savingSection === "identity" || Boolean(citiesError)}
+                  >
+                    <option value="" disabled>
+                      {!draft.state ? "Selecione a UF primeiro" : loadingCities ? "Carregando..." : "Selecione a cidade"}
+                    </option>
+                    {cities.map((currentCity) => (
+                      <option key={currentCity.name} value={currentCity.name}>
+                        {currentCity.name}
+                      </option>
+                    ))}
+                  </select>
                 </label>
               </div>
 
@@ -582,13 +626,13 @@ export default function PerfilPage() {
             <form className={styles.fieldStack} onSubmit={handleAvatarSubmit}>
               <div className={styles.panelHeader}>
                 <div>
-                  <p className={styles.panelEyebrow}>Foto do Perfil</p>
+                  <p className={styles.panelEyebrow}>Foto do perfil</p>
                   <h3 className={styles.panelTitle}>Atualize sua imagem principal</h3>
                 </div>
               </div>
 
               <label className={styles.fieldGroup}>
-                <span className={styles.fieldLabel}>URL publica da imagem</span>
+                <span className={styles.fieldLabel}>URL pública da imagem</span>
                 <input
                   ref={avatarInputRef}
                   className={styles.fieldControl}
@@ -620,7 +664,7 @@ export default function PerfilPage() {
           }}
         >
           <LogOut size={18} strokeWidth={2.1} />
-          Encerrar Sessao
+          Encerrar sessão
         </button>
       </div>
     </MemberShell>

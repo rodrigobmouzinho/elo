@@ -44,7 +44,7 @@ function normalizeApiError(raw: string) {
   const normalized = raw.trim().toLowerCase();
 
   if (normalized.includes("conectar") || normalized.includes("network")) {
-    return "Nao foi possivel conectar ao servidor. Tente novamente em instantes.";
+    return "Não foi possível conectar ao servidor. Tente novamente em instantes.";
   }
 
   return raw;
@@ -141,29 +141,28 @@ export default function AdesoesPage() {
       {
         title:
           metrics.awaitingWhatsapp > 0
-            ? `${metrics.awaitingWhatsapp} solicitacao(oes) aguardando contato`
+            ? `${metrics.awaitingWhatsapp} solicitação(ões) aguardando contato`
             : "Fila de contato via WhatsApp em dia",
         description:
           metrics.awaitingWhatsapp > 0
-            ? "Concentre o time nas solicitacoes que ja estao em fase de abordagem comercial."
-            : "Nenhuma solicitacao depende de contato inicial neste momento.",
+            ? "Concentre o time nas solicitações que já estão em fase de abordagem comercial."
+            : "Nenhuma solicitação depende de contato inicial neste momento.",
         tone: metrics.awaitingWhatsapp > 0 ? ("warning" as const) : ("success" as const)
       },
       {
         title:
           metrics.open > 0
-            ? `${metrics.open} solicitacao(oes) ainda em fluxo`
-            : "Nao ha solicitacoes abertas",
+            ? `${metrics.open} solicitação(ões) ainda em fluxo`
+            : "Não há solicitações abertas",
         description:
           metrics.open > 0
-            ? "Use status intermediarios para refletir o funil real de curadoria e pagamentos."
-            : "A fila atual ja foi totalmente decidida pelos administradores.",
+            ? "Use status intermediários para refletir o funil real de curadoria e pagamentos."
+            : "A fila atual já foi totalmente decidida pelos administradores.",
         tone: metrics.open > 0 ? ("brand" as const) : ("neutral" as const)
       },
       {
         title: `${metrics.approved} aprovadas / ${metrics.rejected} recusadas`,
-        description:
-          "As decisoes finais ficam registradas para auditoria e evitam retrabalho na triagem.",
+        description: "As decisões finais ficam registradas para auditoria e evitam retrabalho na triagem.",
         tone: "info" as const
       }
     ],
@@ -184,7 +183,7 @@ export default function AdesoesPage() {
       );
     } catch (error) {
       setFeedback({
-        title: "Falha ao carregar solicitacoes",
+        title: "Falha ao carregar solicitações",
         description: normalizeApiError((error as Error).message),
         variant: "danger"
       });
@@ -231,7 +230,7 @@ export default function AdesoesPage() {
       setCustomStatusLabel("");
       setFeedback({
         title: "Novo status criado",
-        description: `${status.label} ja esta disponivel para o funil administrativo.`,
+        description: `${status.label} já está disponível para o funil administrativo.`,
         variant: "success"
       });
     } catch (error) {
@@ -263,14 +262,14 @@ export default function AdesoesPage() {
       });
 
       setFeedback({
-        title: "Solicitacao atualizada",
-        description: "Status intermediario e notas internas foram sincronizados com sucesso.",
+        title: "Solicitação atualizada",
+        description: "Status intermediário e notas internas foram sincronizados com sucesso.",
         variant: "success"
       });
       await loadFeed();
     } catch (error) {
       setFeedback({
-        title: "Falha ao atualizar solicitacao",
+        title: "Falha ao atualizar solicitação",
         description: normalizeApiError((error as Error).message),
         variant: "danger"
       });
@@ -299,17 +298,17 @@ export default function AdesoesPage() {
       });
 
       setFeedback({
-        title: "Solicitacao aprovada",
+        title: "Solicitação aprovada",
         description:
           result.deliveryMode === "email"
-            ? "A conta foi criada e a senha temporaria foi enviada por e-mail."
-            : `A conta foi criada. Senha temporaria para entrega manual: ${result.temporaryPassword ?? "indisponivel"}.`,
+            ? "A conta foi criada e a senha temporária foi enviada por e-mail."
+            : `A conta foi criada. Senha temporária para entrega manual: ${result.temporaryPassword ?? "indisponível"}.`,
         variant: "success"
       });
       await loadFeed();
     } catch (error) {
       setFeedback({
-        title: "Falha ao aprovar solicitacao",
+        title: "Falha ao aprovar solicitação",
         description: normalizeApiError((error as Error).message),
         variant: "danger"
       });
@@ -334,14 +333,14 @@ export default function AdesoesPage() {
       });
 
       setFeedback({
-        title: "Solicitacao recusada",
-        description: "A decisao final foi registrada com a justificativa indicada.",
+        title: "Solicitação recusada",
+        description: "A decisão final foi registrada com a justificativa indicada.",
         variant: "warning"
       });
       await loadFeed();
     } catch (error) {
       setFeedback({
-        title: "Falha ao recusar solicitacao",
+        title: "Falha ao recusar solicitação",
         description: normalizeApiError((error as Error).message),
         variant: "danger"
       });
@@ -353,17 +352,17 @@ export default function AdesoesPage() {
   return (
     <AdminShell>
       <PageHeader
-        eyebrow={<Badge variant="brand">Adesoes</Badge>}
-        title="Curadoria de novas adesoes"
-        description="Acompanhe a entrada de candidatos, reflita o funil real da operacao e conclua aprovacoes com criacao automatica da conta do membro."
+        eyebrow={<Badge variant="brand">Adesões</Badge>}
+        title="Curadoria de novas adesões"
+        description="Acompanhe a entrada de candidatos, reflita o funil real da operação e conclua aprovações com criação automática da conta do membro."
         meta={
           <FilterBar
-            actions={<Badge variant="neutral">{filteredItems.length.toLocaleString("pt-BR")} visivel(is)</Badge>}
+            actions={<Badge variant="neutral">{filteredItems.length.toLocaleString("pt-BR")} visível(is)</Badge>}
           >
             <Input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Buscar por nome, e-mail, WhatsApp, cidade ou area"
+              placeholder="Buscar por nome, e-mail, WhatsApp, cidade ou área"
               type="search"
               style={{ maxWidth: "360px" }}
             />
@@ -399,8 +398,8 @@ export default function AdesoesPage() {
       ) : null}
 
       {loading ? (
-        <Alert variant="info" title="Atualizando fila de adesoes">
-          Carregando solicitacoes, status intermediarios e decisoes finais.
+        <Alert variant="info" title="Atualizando fila de adesões">
+          Carregando solicitações, status intermediários e decisões finais.
         </Alert>
       ) : null}
 
@@ -415,22 +414,22 @@ export default function AdesoesPage() {
           <Card
             tone="default"
             title="Mesa de triagem"
-            subtitle="Transforme o funil comercial e operacional em status visiveis para o time."
+            subtitle="Transforme o funil comercial e operacional em status visíveis para o time."
           >
             <div style={{ display: "grid", gap: "12px" }}>
               {[
                 {
-                  label: "Solicitacoes abertas",
+                  label: "Solicitações abertas",
                   value: metrics.open.toLocaleString("pt-BR"),
-                  detail: "Ainda sem decisao final"
+                  detail: "Ainda sem decisão final"
                 },
                 {
                   label: "Aguardando WhatsApp",
                   value: metrics.awaitingWhatsapp.toLocaleString("pt-BR"),
-                  detail: "Etapa operacional mais sensivel"
+                  detail: "Etapa operacional mais sensível"
                 },
                 {
-                  label: "Decisoes finais",
+                  label: "Decisões finais",
                   value: `${metrics.approved}/${metrics.rejected}`,
                   detail: "Aprovadas / recusadas"
                 }
@@ -476,14 +475,14 @@ export default function AdesoesPage() {
             {
               label: "Total recebido",
               value: metrics.total.toLocaleString("pt-BR"),
-              hint: "solicitacoes registradas",
+              hint: "solicitações registradas",
               badge: <Badge variant="brand">Entrada</Badge>,
               tone: "brand"
             },
             {
               label: "Em fluxo",
               value: metrics.open.toLocaleString("pt-BR"),
-              hint: "sem decisao final",
+              hint: "sem decisão final",
               badge: <Badge variant="warning">Ativas</Badge>,
               tone: "warning"
             },
@@ -519,8 +518,8 @@ export default function AdesoesPage() {
               rowKey={(item) => item.id}
               emptyState={
                 <EmptyState
-                  title="Nenhuma solicitacao encontrada"
-                  description="Ajuste os filtros ou aguarde novas entradas no formulario publico."
+                  title="Nenhuma solicitação encontrada"
+                  description="Ajuste os filtros ou aguarde novas entradas no formulário público."
                 />
               }
               columns={[
@@ -591,7 +590,7 @@ export default function AdesoesPage() {
                 },
                 {
                   key: "actions",
-                  header: "Acoes",
+                  header: "Ações",
                   width: "160px",
                   align: "right",
                   render: (item) => (
@@ -607,12 +606,12 @@ export default function AdesoesPage() {
           </div>
 
           <SidePanelForm
-            badge={<Badge variant={selectedApplication?.status.isFinal ? "neutral" : "brand"}>Painel da adesao</Badge>}
-            title={selectedApplication ? selectedApplication.fullName : "Selecione uma solicitacao"}
+            badge={<Badge variant={selectedApplication?.status.isFinal ? "neutral" : "brand"}>Painel da adesão</Badge>}
+            title={selectedApplication ? selectedApplication.fullName : "Selecione uma solicitação"}
             description={
               selectedApplication
-                ? "Atualize o funil, registre notas internas e conclua a decisao final quando a adesao estiver pronta."
-                : "Escolha uma solicitacao na lista para abrir a triagem completa."
+                ? "Atualize o funil, registre notas internas e conclua a decisão final quando a adesão estiver pronta."
+                : "Escolha uma solicitação na lista para abrir a triagem completa."
             }
           >
             {selectedApplication ? (
@@ -641,7 +640,7 @@ export default function AdesoesPage() {
 
                 <form onSubmit={handleSaveWorkflow} style={{ display: "grid", gap: "12px" }}>
                   <label style={{ display: "grid", gap: "6px" }}>
-                    <span>Status intermediario</span>
+                    <span>Status intermediário</span>
                     <Select
                       value={selectedStatusId}
                       onChange={(event) => setSelectedStatusId(event.target.value)}
@@ -670,7 +669,7 @@ export default function AdesoesPage() {
                 </form>
 
                 <form onSubmit={handleCreateStatus} style={{ display: "grid", gap: "10px" }}>
-                  <span style={{ fontWeight: 700 }}>Novo status intermediario</span>
+                  <span style={{ fontWeight: 700 }}>Novo status intermediário</span>
                   <Input
                     value={customStatusLabel}
                     onChange={(event) => setCustomStatusLabel(event.target.value)}
@@ -683,10 +682,10 @@ export default function AdesoesPage() {
 
                 {!selectedApplication.status.isFinal ? (
                   <>
-                    <Card tone="panel" title="Aprovar adesao" subtitle="Cria a conta do membro e envia a senha temporaria por e-mail quando disponivel.">
+                    <Card tone="panel" title="Aprovar adesão" subtitle="Cria a conta do membro e envia a senha temporária por e-mail quando disponível.">
                       <div style={{ display: "grid", gap: "10px" }}>
                         <label style={{ display: "grid", gap: "6px" }}>
-                          <span>Validade inicial da associacao</span>
+                          <span>Validade inicial da associação</span>
                           <Input
                             type="datetime-local"
                             value={membershipExpiresAt}
@@ -700,7 +699,7 @@ export default function AdesoesPage() {
                       </div>
                     </Card>
 
-                    <Card tone="panel" title="Recusar adesao" subtitle="A justificativa fica registrada na trilha administrativa da solicitacao.">
+                    <Card tone="panel" title="Recusar adesão" subtitle="A justificativa fica registrada na trilha administrativa da solicitação.">
                       <div style={{ display: "grid", gap: "10px" }}>
                         <Textarea
                           value={rejectReason}
@@ -715,7 +714,7 @@ export default function AdesoesPage() {
                           onClick={() => void handleReject()}
                           disabled={saving || rejectReason.trim().length < 3}
                         >
-                          Recusar solicitacao
+                          Recusar solicitação
                         </Button>
                       </div>
                     </Card>
@@ -723,11 +722,11 @@ export default function AdesoesPage() {
                 ) : (
                   <Card
                     tone={selectedApplication.status.code === "approved" ? "panel" : "ghost"}
-                    title="Decisao final registrada"
+                    title="Decisão final registrada"
                     subtitle={
                       selectedApplication.status.code === "approved"
-                        ? "A conta do membro ja foi provisionada e o primeiro acesso fica a cargo do proprio usuario."
-                        : "A solicitacao foi encerrada e a justificativa fica preservada para auditoria interna."
+                        ? "A conta do membro já foi provisionada e o primeiro acesso fica a cargo do próprio usuário."
+                        : "A solicitação foi encerrada e a justificativa fica preservada para auditoria interna."
                     }
                   >
                     {selectedApplication.rejectionReason ? (
@@ -740,7 +739,7 @@ export default function AdesoesPage() {
               </div>
             ) : (
               <EmptyState
-                title="Nenhuma solicitacao selecionada"
+                title="Nenhuma solicitação selecionada"
                 description="Escolha um item da fila para registrar andamento, aprovar ou recusar."
                 icon={<UserRoundSearch size={18} />}
               />

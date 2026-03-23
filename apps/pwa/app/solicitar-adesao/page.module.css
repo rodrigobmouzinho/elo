@@ -43,15 +43,13 @@
 }
 
 .topBar {
-  display: grid;
-  grid-template-columns: 2rem 1fr 2rem;
+  display: flex;
   align-items: center;
   gap: 1rem;
   padding: 1rem 1rem 0;
 }
 
-.backButton,
-.topSpacer {
+.backButton {
   width: 2rem;
   height: 2rem;
   border-radius: 999px;
@@ -85,7 +83,7 @@
 }
 
 .brandMark {
-  justify-self: center;
+  margin-inline: auto;
   width: auto;
   height: auto;
   filter: brightness(0) invert(0.92);
@@ -153,7 +151,7 @@
 .row {
   display: grid;
   gap: 0.75rem;
-  grid-template-columns: minmax(0, 1fr) 5.2rem;
+  grid-template-columns: 5.4rem minmax(0, 1fr);
 }
 
 .fieldGroup {
@@ -192,8 +190,18 @@
 }
 
 .input::placeholder,
+.textarea::placeholder,
+.select:invalid {
+  color: rgba(255, 255, 255, 0.28);
+}
+
+.input::placeholder,
 .textarea::placeholder {
-  color: rgba(255, 255, 255, 0.36);
+  opacity: 1;
+}
+
+.selectPlaceholder {
+  color: rgba(255, 255, 255, 0.28);
 }
 
 .input:hover:enabled,

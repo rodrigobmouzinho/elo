@@ -12,13 +12,13 @@ export async function POST(request: Request) {
   try {
     payload = await parseJson<unknown>(request);
   } catch {
-    return fail("Payload invalido", 400);
+    return fail("Payload inválido", 400);
   }
 
   const parsed = firstAccessPasswordSchema.safeParse(payload);
 
   if (!parsed.success) {
-    return fail(parsed.error.issues[0]?.message ?? "Payload invalido", 422);
+    return fail(parsed.error.issues[0]?.message ?? "Payload inválido", 422);
   }
 
   try {
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   } catch (error) {
     const message = (error as Error).message;
 
-    if (message.includes("Membro nao encontrado")) {
+    if (message.includes("Membro não encontrado")) {
       return fail(message, 404);
     }
 

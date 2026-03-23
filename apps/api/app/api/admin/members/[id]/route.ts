@@ -1,6 +1,11 @@
 import { memberSchema } from "@elo/core";
 import { z } from "zod";
 import { requireAuth } from "../../../../../lib/auth";
+import {
+  assertBrazilCityBelongsToState,
+  BrazilLocationsServiceError,
+  BrazilLocationValidationError
+} from "../../../../../lib/brazil-locations";
 import { fail, ok, parseJson } from "../../../../../lib/http";
 import { setMemberActive, updateMember } from "../../../../../lib/repositories";
 
@@ -53,6 +58,10 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   try {
+    if (parsed.data.city !== undefined && parsed.data.state !== undefined) {
+      await assertBrazilCityBelongsToState(parsed.data.state, parsed.data.city);
+    }
+
     const updated = await updateMember(id, parsed.data);
 
     if (!updated) {
@@ -61,6 +70,14 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     return ok(updated);
   } catch (error) {
+    if (error instanceof BrazilLocationValidationError) {
+      return fail(error.message, 422);
+    }
+
+    if (error instanceof BrazilLocationsServiceError) {
+      return fail(error.message, 503);
+    }
+
     return mapMemberError(error, "Falha ao atualizar membro");
   }
 }

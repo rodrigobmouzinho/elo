@@ -5,6 +5,13 @@ import {
   PROJECT_DOCUMENT_MAX_FILES,
   PROJECT_GALLERY_MAX_FILES
 } from "./constants";
+import {
+  formatBrazilianPhoneInput,
+  isBrazilStateCode,
+  isValidBrazilianMobile,
+  isValidBrazilianPhone,
+  normalizeBrazilianPhone
+} from "./brazil";
 
 function isHttpUrl(value: string) {
   try {
@@ -52,13 +59,56 @@ const eventImageSchema = z
     message: "URL de arquivo deve ser valida, data URL ou caminho local iniciado com /"
   });
 
+export const brazilStateSchema = z
+  .string()
+  .trim()
+  .transform((value) => value.toUpperCase())
+  .refine((value) => isBrazilStateCode(value), {
+    message: "Selecione uma UF válida"
+  });
+
+export const brazilCitySchema = z
+  .string()
+  .trim()
+  .min(2, "Selecione uma cidade")
+  .max(80, "Selecione uma cidade válida");
+
+export const brazilPhoneSchema = z
+  .string()
+  .trim()
+  .transform((value) => normalizeBrazilianPhone(value))
+  .refine((value) => isValidBrazilianPhone(value), {
+    message: `Informe um celular válido, como ${formatBrazilianPhoneInput("11912345678")}`
+  });
+
+export const brazilWhatsappSchema = z
+  .string()
+  .trim()
+  .transform((value) => normalizeBrazilianPhone(value))
+  .refine((value) => isValidBrazilianMobile(value), {
+    message: `Informe um WhatsApp válido, como ${formatBrazilianPhoneInput("11912345678")}`
+  });
+
+const optionalTrimmedString = <T extends z.ZodTypeAny>(schema: T) =>
+  z.preprocess(
+    (value) => {
+      if (typeof value !== "string") {
+        return value;
+      }
+
+      const trimmed = value.trim();
+      return trimmed.length === 0 ? undefined : trimmed;
+    },
+    schema.optional()
+  );
+
 export const memberSchema = z.object({
   fullName: z.string().min(3),
   email: z.email(),
-  phone: z.string().min(8),
-  whatsapp: z.string().min(8),
-  city: z.string().min(2),
-  state: z.string().min(2).max(2),
+  phone: brazilPhoneSchema,
+  whatsapp: brazilWhatsappSchema,
+  city: brazilCitySchema,
+  state: brazilStateSchema,
   area: z.string().min(2).max(40),
   bio: z.string().max(500).optional(),
   specialty: z.string().max(120).optional(),
@@ -68,10 +118,10 @@ export const memberSchema = z.object({
 export const memberApplicationSchema = z.object({
   fullName: z.string().trim().min(3).max(120),
   email: z.email(),
-  phone: z.string().trim().min(8).max(24).optional(),
-  whatsapp: z.string().trim().min(8).max(24),
-  city: z.string().trim().min(2).max(80),
-  state: z.string().trim().min(2).max(2),
+  phone: optionalTrimmedString(brazilPhoneSchema),
+  whatsapp: brazilWhatsappSchema,
+  city: brazilCitySchema,
+  state: brazilStateSchema,
   area: z.string().trim().min(2).max(40),
   bio: z.string().trim().max(500).optional(),
   specialty: z.string().trim().max(120).optional(),

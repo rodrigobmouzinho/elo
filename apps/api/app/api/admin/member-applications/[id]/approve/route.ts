@@ -16,13 +16,13 @@ export async function POST(request: Request, context: RouteContext) {
   try {
     payload = await parseJson<unknown>(request);
   } catch {
-    return fail("Payload invalido", 400);
+    return fail("Payload inválido", 400);
   }
 
   const parsed = memberApplicationApproveSchema.safeParse(payload);
 
   if (!parsed.success) {
-    return fail(parsed.error.issues[0]?.message ?? "Payload invalido", 422);
+    return fail(parsed.error.issues[0]?.message ?? "Payload inválido", 422);
   }
 
   try {
@@ -37,14 +37,14 @@ export async function POST(request: Request, context: RouteContext) {
   } catch (error) {
     const message = (error as Error).message;
 
-    if (message.includes("Solicitacao nao encontrada")) {
+    if (message.includes("Solicitação não encontrada")) {
       return fail(message, 404);
     }
 
-    if (message.includes("Solicitacao ja finalizada")) {
+    if (message.includes("Solicitação já finalizada")) {
       return fail(message, 422);
     }
 
-    return fail(`Falha ao aprovar solicitacao: ${message}`, 500);
+    return fail(`Falha ao aprovar solicitação: ${message}`, 500);
   }
 }

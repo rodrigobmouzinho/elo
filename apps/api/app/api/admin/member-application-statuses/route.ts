@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     const statuses = await listMemberApplicationStatuses();
     return ok(statuses);
   } catch (error) {
-    return fail(`Falha ao listar status de adesao: ${(error as Error).message}`, 500);
+    return fail(`Falha ao listar status de adesão: ${(error as Error).message}`, 500);
   }
 }
 
@@ -27,13 +27,13 @@ export async function POST(request: Request) {
   try {
     payload = await parseJson<unknown>(request);
   } catch {
-    return fail("Payload invalido", 400);
+    return fail("Payload inválido", 400);
   }
 
   const parsed = memberApplicationStatusCreateSchema.safeParse(payload);
 
   if (!parsed.success) {
-    return fail(parsed.error.issues[0]?.message ?? "Payload invalido", 422);
+    return fail(parsed.error.issues[0]?.message ?? "Payload inválido", 422);
   }
 
   try {
@@ -42,10 +42,10 @@ export async function POST(request: Request) {
   } catch (error) {
     const message = (error as Error).message;
 
-    if (message.includes("Ja existe")) {
+    if (message.includes("Já existe")) {
       return fail(message, 409);
     }
 
-    return fail(`Falha ao criar status de adesao: ${message}`, 500);
+    return fail(`Falha ao criar status de adesão: ${message}`, 500);
   }
 }

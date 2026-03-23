@@ -1,5 +1,6 @@
 "use client";
 
+import { formatBrazilianPhoneInput, isValidBrazilianMobile } from "@elo/core";
 import {
   Alert,
   Badge,
@@ -16,9 +17,10 @@ import {
   SidePanelForm,
   Textarea
 } from "@elo/ui";
+import { useBrazilLocations } from "@elo/ui";
 import type { AlertVariant, BadgeVariant } from "@elo/ui";
 import { MapPin, MessageCircleMore, ShieldCheck, UserRoundCheck, UserRoundX } from "lucide-react";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { type CSSProperties, FormEvent, useEffect, useMemo, useState } from "react";
 import { AdminShell } from "../../components/admin-shell";
 import { apiRequest } from "../../lib/auth-client";
 
@@ -73,12 +75,23 @@ const initialForm: MemberForm = {
   membershipExpiresAt: defaultMembershipExpiration()
 };
 
+const darkFieldStyle = {
+  "--elo-control-bg": "#2a2a2a",
+  "--elo-control-bg-hover": "#34343a",
+  "--elo-control-bg-active": "#3b3b42",
+  "--elo-control-bg-disabled": "#212126",
+  "--elo-control-border": "rgba(203, 190, 255, 0.16)",
+  "--elo-control-border-focus": "rgba(203, 190, 255, 0.58)",
+  "--elo-text-primary": "#ffffff",
+  "--elo-text-muted": "rgba(202, 195, 215, 0.62)"
+} as CSSProperties;
+
 function toMemberForm(member: Member): MemberForm {
   return {
     fullName: member.fullName,
     email: member.email,
-    phone: member.phone,
-    whatsapp: member.whatsapp,
+    phone: formatBrazilianPhoneInput(member.phone),
+    whatsapp: formatBrazilianPhoneInput(member.whatsapp),
     city: member.city,
     state: member.state,
     area: member.area,
@@ -91,7 +104,7 @@ function toMemberForm(member: Member): MemberForm {
 function normalizeApiError(raw: string) {
   const normalized = raw.trim().toLowerCase();
 
-  if (normalized.includes("network") || normalized.includes("conexao")) {
+  if (normalized.includes("network") || normalized.includes("conexao") || normalized.includes("conexão")) {
     return "Não foi possível conectar ao servidor. Tente novamente em instantes.";
   }
 
@@ -140,6 +153,17 @@ export default function MembersPage() {
   const [statusFilter, setStatusFilter] = useState<MemberStatusFilter>("all");
   const [search, setSearch] = useState("");
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
+  const {
+    states,
+    cities,
+    loadingStates,
+    loadingCities,
+    statesError,
+    citiesError
+  } = useBrazilLocations({
+    selectedState: form.state,
+    selectedCity: form.city
+  });
 
   const isEditing = Boolean(editingMemberId);
 
@@ -264,6 +288,16 @@ export default function MembersPage() {
     setFeedback(null);
 
     try {
+      if (!isValidBrazilianMobile(form.whatsapp)) {
+        setFeedback({
+          title: "WhatsApp inválido",
+          description: "Informe um número de celular válido no padrão brasileiro.",
+          variant: "danger"
+        });
+        setSaving(false);
+        return;
+      }
+
       const payload = {
         fullName: form.fullName.trim(),
         email: form.email.trim().toLowerCase(),
@@ -678,6 +712,9 @@ export default function MembersPage() {
                         <Badge variant={hasWhatsapp(member) ? "success" : "neutral"}>
                           {hasWhatsapp(member) ? "WhatsApp ativo" : "Sem WhatsApp"}
                         </Badge>
+                        {hasWhatsapp(member) ? (
+                          <Badge variant="info">{formatBrazilianPhoneInput(member.whatsapp)}</Badge>
+                        ) : null}
                       </div>
                     </div>
                   )
@@ -758,6 +795,12 @@ export default function MembersPage() {
             </div>
 
             <form onSubmit={handleSubmit} style={{ display: "grid", gap: "12px" }}>
+              {statesError || citiesError ? (
+                <Alert variant="warning" title="Localização indisponível">
+                  {statesError ?? citiesError}
+                </Alert>
+              ) : null}
+
               <label style={{ display: "grid", gap: "6px" }}>
                 <span>Nome completo</span>
                 <Input
@@ -765,6 +808,7 @@ export default function MembersPage() {
                   onChange={(event) => setForm((prev) => ({ ...prev, fullName: event.target.value }))}
                   minLength={3}
                   required
+                  style={darkFieldStyle}
                 />
               </label>
 
@@ -776,6 +820,7 @@ export default function MembersPage() {
                   onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
                   required
                   disabled={isEditing}
+                  style={darkFieldStyle}
                 />
               </label>
 
@@ -784,39 +829,83 @@ export default function MembersPage() {
                   <span>Celular</span>
                   <Input
                     value={form.phone}
-                    onChange={(event) => setForm((prev) => ({ ...prev, phone: event.target.value }))}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        phone: formatBrazilianPhoneInput(event.target.value)
+                      }))
+                    }
                     required
+                    inputMode="numeric"
+                    style={darkFieldStyle}
                   />
                 </label>
                 <label style={{ display: "grid", gap: "6px" }}>
                   <span>WhatsApp</span>
                   <Input
                     value={form.whatsapp}
-                    onChange={(event) => setForm((prev) => ({ ...prev, whatsapp: event.target.value }))}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        whatsapp: formatBrazilianPhoneInput(event.target.value)
+                      }))
+                    }
                     required
+                    inputMode="numeric"
+                    style={darkFieldStyle}
                   />
                 </label>
               </div>
 
-              <div style={{ display: "grid", gap: "10px", gridTemplateColumns: "minmax(0, 1fr) 88px" }}>
-                <label style={{ display: "grid", gap: "6px" }}>
-                  <span>Cidade</span>
-                  <Input
-                    value={form.city}
-                    onChange={(event) => setForm((prev) => ({ ...prev, city: event.target.value }))}
-                    required
-                  />
-                </label>
+              <div style={{ display: "grid", gap: "10px", gridTemplateColumns: "88px minmax(0, 1fr)" }}>
                 <label style={{ display: "grid", gap: "6px" }}>
                   <span>UF</span>
-                  <Input
+                  <Select
                     value={form.state}
                     onChange={(event) =>
-                      setForm((prev) => ({ ...prev, state: event.target.value.replace(/\s/g, "").toUpperCase() }))
+                      setForm((prev) => ({
+                        ...prev,
+                        state: event.target.value,
+                        city: ""
+                      }))
                     }
-                    maxLength={2}
                     required
-                  />
+                    disabled={loadingStates}
+                    style={darkFieldStyle}
+                  >
+                    <option value="" disabled>
+                      {loadingStates ? "Carregando..." : "Selecione a UF"}
+                    </option>
+                    {states.map((currentState) => (
+                      <option key={currentState.code} value={currentState.code}>
+                        {currentState.code}
+                      </option>
+                    ))}
+                  </Select>
+                </label>
+                <label style={{ display: "grid", gap: "6px" }}>
+                  <span>Cidade</span>
+                  <Select
+                    value={form.city}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        city: event.target.value
+                      }))
+                    }
+                    required
+                    disabled={!form.state || loadingCities || Boolean(citiesError)}
+                    style={darkFieldStyle}
+                  >
+                    <option value="" disabled>
+                      {!form.state ? "Selecione a UF primeiro" : loadingCities ? "Carregando..." : "Selecione a cidade"}
+                    </option>
+                    {cities.map((currentCity) => (
+                      <option key={currentCity.name} value={currentCity.name}>
+                        {currentCity.name}
+                      </option>
+                    ))}
+                  </Select>
                 </label>
               </div>
 
@@ -826,6 +915,7 @@ export default function MembersPage() {
                   value={form.area}
                   onChange={(event) => setForm((prev) => ({ ...prev, area: event.target.value }))}
                   required
+                  style={darkFieldStyle}
                 />
               </label>
 
@@ -837,6 +927,7 @@ export default function MembersPage() {
                     value={form.membershipExpiresAt}
                     onChange={(event) => setForm((prev) => ({ ...prev, membershipExpiresAt: event.target.value }))}
                     required
+                    style={darkFieldStyle}
                   />
                 </label>
               ) : null}
@@ -846,6 +937,7 @@ export default function MembersPage() {
                 <Input
                   value={form.specialty}
                   onChange={(event) => setForm((prev) => ({ ...prev, specialty: event.target.value }))}
+                  style={darkFieldStyle}
                 />
               </label>
 
@@ -854,7 +946,7 @@ export default function MembersPage() {
                 <Textarea
                   value={form.bio}
                   onChange={(event) => setForm((prev) => ({ ...prev, bio: event.target.value }))}
-                  style={{ minHeight: "120px" }}
+                  style={{ ...darkFieldStyle, minHeight: "120px" }}
                 />
               </label>
 

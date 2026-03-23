@@ -1,7 +1,8 @@
 "use client";
 
-import { Check, Menu, UserCircle2 } from "lucide-react";
+import { ArrowLeft, Check } from "lucide-react";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import styles from "./page.module.css";
@@ -28,13 +29,17 @@ export default function SolicitacaoEnviadaPage() {
 
       <div className={styles.appShell}>
         <header className={styles.topBar}>
-          <button className={styles.topIcon} type="button" aria-label="Abrir menu" disabled>
-            <Menu size={17} />
-          </button>
-          <span className={styles.brand}>ELO</span>
-          <span className={styles.topAvatar} aria-hidden="true">
-            <UserCircle2 size={20} />
-          </span>
+          <Link className={styles.backButton} href="/login" aria-label="Voltar para o login">
+            <ArrowLeft size={18} />
+          </Link>
+          <Image
+            src="/brand/elo-wordmark.png"
+            alt="Elo Networking"
+            width={96}
+            height={54}
+            priority
+            className={styles.brandMark}
+          />
         </header>
 
         <section className={styles.content}>
@@ -46,10 +51,10 @@ export default function SolicitacaoEnviadaPage() {
           </div>
 
           <div className={styles.copyBlock}>
-            <h1 className={styles.headline}>Solicitacao enviada!</h1>
+            <h1 className={styles.headline}>Solicitação enviada!</h1>
             <p className={styles.copy}>
               Seus dados foram enviados aos administradores. Em breve, entraremos em contato via{" "}
-              <strong>WhatsApp</strong> para concluir sua adesao a comunidade Elo.
+              <strong>WhatsApp</strong> para concluir sua adesão à comunidade Elo.
             </p>
           </div>
 
@@ -59,7 +64,7 @@ export default function SolicitacaoEnviadaPage() {
           </button>
 
           <Link className={styles.secondaryAction} href="/login">
-            Voltar para o inicio
+            Voltar para o início
           </Link>
         </section>
       </div>

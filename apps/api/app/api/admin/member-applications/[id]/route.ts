@@ -19,12 +19,12 @@ export async function GET(request: Request, context: RouteContext) {
     const application = await getMemberApplicationById(id);
 
     if (!application) {
-      return fail("Solicitacao nao encontrada", 404);
+      return fail("Solicitação não encontrada", 404);
     }
 
     return ok(application);
   } catch (error) {
-    return fail(`Falha ao carregar solicitacao: ${(error as Error).message}`, 500);
+    return fail(`Falha ao carregar solicitação: ${(error as Error).message}`, 500);
   }
 }
 
@@ -37,13 +37,13 @@ export async function PATCH(request: Request, context: RouteContext) {
   try {
     payload = await parseJson<unknown>(request);
   } catch {
-    return fail("Payload invalido", 400);
+    return fail("Payload inválido", 400);
   }
 
   const parsed = memberApplicationUpdateSchema.safeParse(payload);
 
   if (!parsed.success) {
-    return fail(parsed.error.issues[0]?.message ?? "Payload invalido", 422);
+    return fail(parsed.error.issues[0]?.message ?? "Payload inválido", 422);
   }
 
   try {
@@ -54,18 +54,18 @@ export async function PATCH(request: Request, context: RouteContext) {
   } catch (error) {
     const message = (error as Error).message;
 
-    if (message.includes("Solicitacao nao encontrada")) {
+    if (message.includes("Solicitação não encontrada")) {
       return fail(message, 404);
     }
 
     if (
-      message.includes("Status informado nao encontrado") ||
-      message.includes("Use as acoes finais") ||
-      message.includes("Solicitacoes finalizadas")
+      message.includes("Status informado não encontrado") ||
+      message.includes("Use as ações finais") ||
+      message.includes("Solicitações finalizadas")
     ) {
       return fail(message, 422);
     }
 
-    return fail(`Falha ao atualizar solicitacao: ${message}`, 500);
+    return fail(`Falha ao atualizar solicitação: ${message}`, 500);
   }
 }

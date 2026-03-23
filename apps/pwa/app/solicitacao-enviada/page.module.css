@@ -40,8 +40,7 @@
 }
 
 .topBar {
-  display: grid;
-  grid-template-columns: 2rem 1fr 2rem;
+  display: flex;
   align-items: center;
   gap: 1rem;
   padding: 1rem 1.25rem 0.85rem;
@@ -49,8 +48,7 @@
   backdrop-filter: blur(24px);
 }
 
-.topIcon,
-.topAvatar {
+.backButton {
   width: 2rem;
   height: 2rem;
   border-radius: 999px;
@@ -58,14 +56,29 @@
   place-items: center;
   color: rgba(255, 255, 255, 0.78);
   background: rgba(255, 255, 255, 0.06);
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.brand {
-  justify-self: center;
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.18em;
+.backButton:hover,
+.backButton:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(139, 92, 246, 0.32);
+}
+
+.backButton:hover {
+  transform: translateX(-1px);
+}
+
+.backButton:focus-visible {
+  outline: none;
+}
+
+.brandMark {
+  width: auto;
+  height: auto;
+  margin-inline: auto;
+  filter: brightness(0) invert(0.92);
+  opacity: 0.94;
 }
 
 .content {

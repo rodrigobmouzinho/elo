@@ -22,22 +22,26 @@ describe("core schemas", () => {
     const payload = {
       fullName: "Maria Silva",
       email: "maria@elo.com",
-      phone: "83911112222",
-      whatsapp: "83911112222",
+      phone: "+55 (83) 91111-2222",
+      whatsapp: "(83) 91111-2222",
       city: "Joao Pessoa",
       state: "PB",
       area: "tecnologia",
       membershipExpiresAt: "2027-03-14T12:00:00.000Z"
     };
 
-    expect(memberSchema.safeParse(payload).success).toBe(true);
+    const parsed = memberSchema.safeParse(payload);
+
+    expect(parsed.success).toBe(true);
+    expect(parsed.success && parsed.data.phone).toBe("83911112222");
+    expect(parsed.success && parsed.data.whatsapp).toBe("83911112222");
   });
 
   it("validates member application payload", () => {
     const payload = {
       fullName: "Rodrigo Mouzinho",
       email: "rodrigo@elo.com",
-      whatsapp: "83999887766",
+      whatsapp: "+55 (83) 99988-7766",
       city: "Joao Pessoa",
       state: "PB",
       area: "Tecnologia",
@@ -45,7 +49,23 @@ describe("core schemas", () => {
       bio: "Construo produtos e comunidades com foco em conexao de negocio."
     };
 
-    expect(memberApplicationSchema.safeParse(payload).success).toBe(true);
+    const parsed = memberApplicationSchema.safeParse(payload);
+
+    expect(parsed.success).toBe(true);
+    expect(parsed.success && parsed.data.whatsapp).toBe("83999887766");
+  });
+
+  it("rejects invalid WhatsApp payload", () => {
+    const payload = {
+      fullName: "Rodrigo Mouzinho",
+      email: "rodrigo@elo.com",
+      whatsapp: "(83) 3333-4444",
+      city: "Joao Pessoa",
+      state: "PB",
+      area: "Tecnologia"
+    };
+
+    expect(memberApplicationSchema.safeParse(payload).success).toBe(false);
   });
 
   it("enforces strong password policy on first access", () => {

@@ -130,7 +130,7 @@ export default function LoginPage() {
             <LogoWordmark size="md" />
             <div style={{ display: "grid", gap: "12px", maxWidth: "560px" }}>
               <Badge variant="brand" style={{ justifySelf: "start" }}>
-                Admin workspace
+                Espaço administrativo
               </Badge>
               <h1 style={{ margin: 0, fontSize: "clamp(2.4rem, 5vw, 4.4rem)", lineHeight: 0.95 }}>
                 Decisão rápida para operação, receita e comunidade.
@@ -207,9 +207,11 @@ export default function LoginPage() {
               <Badge variant="info" style={{ justifySelf: "start" }}>
                 Acesso administrativo
               </Badge>
-              <h2 style={{ margin: 0, fontSize: "clamp(1.8rem, 3vw, 2.5rem)", lineHeight: 0.96 }}>Entrar no command center</h2>
+              <h2 style={{ margin: 0, fontSize: "clamp(1.8rem, 3vw, 2.5rem)", lineHeight: 0.96 }}>
+                Entrar no centro de controle
+              </h2>
               <p style={{ margin: 0, color: "var(--elo-text-secondary, #374151)", maxWidth: "34ch" }}>
-                Use o seu e-mail administrativo para abrir o workspace de controle da comunidade.
+                Use o seu e-mail administrativo para abrir o painel de controle da comunidade.
               </p>
             </div>
             <LogoMark size="md" />

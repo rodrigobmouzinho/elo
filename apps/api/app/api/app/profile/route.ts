@@ -1,12 +1,21 @@
 import { z } from "zod";
 import { requireAuth, resolveMemberIdByAuthUser } from "../../../../lib/auth";
+import {
+  brazilCitySchema,
+  brazilStateSchema
+} from "@elo/core";
+import {
+  assertBrazilCityBelongsToState,
+  BrazilLocationsServiceError,
+  BrazilLocationValidationError
+} from "../../../../lib/brazil-locations";
 import { fail, ok, parseJson } from "../../../../lib/http";
 import { getProfile, patchProfile } from "../../../../lib/repositories";
 
 const profilePatchSchema = z.object({
   fullName: z.string().min(3).optional(),
-  city: z.string().min(2).optional(),
-  state: z.string().min(2).max(2).optional(),
+  city: brazilCitySchema.optional(),
+  state: brazilStateSchema.optional(),
   area: z.string().min(2).max(40).optional(),
   bio: z.string().max(500).optional(),
   specialty: z.string().max(120).optional(),
@@ -49,9 +58,21 @@ export async function PATCH(request: Request) {
       return fail("Usuário autenticado sem vínculo de membro", 403);
     }
 
+    if (parsed.data.city !== undefined && parsed.data.state !== undefined) {
+      await assertBrazilCityBelongsToState(parsed.data.state, parsed.data.city);
+    }
+
     const profile = await patchProfile(memberId, parsed.data);
     return ok(profile);
   } catch (error) {
+    if (error instanceof BrazilLocationValidationError) {
+      return fail(error.message, 422);
+    }
+
+    if (error instanceof BrazilLocationsServiceError) {
+      return fail(error.message, 503);
+    }
+
     return fail(`Falha ao atualizar perfil: ${(error as Error).message}`, 500);
   }
 }

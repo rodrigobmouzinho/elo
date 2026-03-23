@@ -1,4 +1,9 @@
 import { memberSchema } from "@elo/core";
+import {
+  assertBrazilCityBelongsToState,
+  BrazilLocationsServiceError,
+  BrazilLocationValidationError
+} from "../../../../lib/brazil-locations";
 import { requireAuth } from "../../../../lib/auth";
 import { fail, ok, parseJson } from "../../../../lib/http";
 import { createMember, listMembers } from "../../../../lib/repositories";
@@ -46,6 +51,20 @@ export async function POST(request: Request) {
 
   if (!parsed.success) {
     return fail(parsed.error.issues[0]?.message ?? "Payload inválido", 422);
+  }
+
+  try {
+    await assertBrazilCityBelongsToState(parsed.data.state, parsed.data.city);
+  } catch (error) {
+    if (error instanceof BrazilLocationValidationError) {
+      return fail(error.message, 422);
+    }
+
+    if (error instanceof BrazilLocationsServiceError) {
+      return fail(error.message, 503);
+    }
+
+    return fail(`Falha ao validar cidade e UF: ${(error as Error).message}`, 500);
   }
 
   try {

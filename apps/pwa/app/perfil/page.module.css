@@ -394,6 +394,11 @@
   color: rgba(147, 142, 160, 0.76);
 }
 
+.fieldControl option {
+  background: #2a2a2a;
+  color: #ffffff;
+}
+
 .fieldControl:focus-visible,
 .storyInput:focus-visible {
   outline: none;
@@ -439,6 +444,14 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.7rem;
+}
+
+.fieldHintError {
+  margin: 0;
+  color: #fecaca;
+  font-family: var(--member-font-body), "Inter", sans-serif;
+  font-size: 0.78rem;
+  line-height: 1.5;
 }
 
 .inlineAction {

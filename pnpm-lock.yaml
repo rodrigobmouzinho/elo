@@ -164,6 +164,9 @@ importers:
 
   packages/ui:
     dependencies:
+      '@elo/core':
+        specifier: workspace:*
+        version: link:../core
       clsx:
         specifier: ^2.1.1
         version: 2.1.1

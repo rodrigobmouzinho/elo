@@ -86,7 +86,7 @@ async function parseApiResponse<T>(response: Response, fallbackError: string): P
       return {
         ok: false,
         status: response.status,
-        error: "Nao foi possivel conectar com a API. Verifique NEXT_PUBLIC_API_URL no deploy do PWA."
+        error: "Não foi possível conectar com a API. Verifique NEXT_PUBLIC_API_URL no deploy do PWA."
       };
     }
 
@@ -108,11 +108,11 @@ async function parseApiResponse<T>(response: Response, fallbackError: string): P
   }
 
   if (payload.data === undefined) {
-    return {
-      ok: false,
-      status: response.status,
-      error: "Resposta invalida do servidor."
-    };
+      return {
+        ok: false,
+        status: response.status,
+        error: "Resposta inválida do servidor."
+      };
   }
 
   return {
@@ -139,7 +139,7 @@ export async function login(email: string, password: string) {
   const auth = parsed.data;
 
   if (auth.user.role !== "member") {
-    throw new Error("Este acesso e exclusivo para membros.");
+    throw new Error("Este acesso é exclusivo para membros.");
   }
 
   setStoredAuth(auth);
@@ -168,7 +168,7 @@ export async function requestPasswordReset(email: string) {
 export async function fetchMe() {
   const auth = getStoredAuth();
   if (!auth?.session?.accessToken) {
-    throw new Error("Sessao ausente");
+    throw new Error("Sessão ausente");
   }
 
   const response = await fetch("/backend/auth/me", {
@@ -184,7 +184,7 @@ export async function fetchMe() {
     role: "member";
     memberId: string | null;
     mustChangePassword: boolean;
-  }>(response, "Sessao invalida");
+  }>(response, "Sessão inválida");
 
   if (!parsed.ok) {
     clearStoredAuth();
@@ -193,7 +193,7 @@ export async function fetchMe() {
 
   if (parsed.data.role !== "member") {
     clearStoredAuth();
-    throw new Error("Usuario sem permissao de membro");
+    throw new Error("Usuário sem permissão de membro");
   }
 
   return parsed.data;
@@ -210,7 +210,7 @@ export async function submitMemberApplication(payload: MemberApplicationPayload)
 
   const parsed = await parseApiResponse<{ id: string }>(
     response,
-    "Falha ao enviar solicitacao"
+    "Falha ao enviar solicitação"
   );
 
   if (!parsed.ok) {
@@ -224,7 +224,7 @@ export async function submitFirstAccessPassword(password: string) {
   const auth = getStoredAuth();
 
   if (!auth?.session?.accessToken) {
-    throw new Error("Voce precisa entrar com a senha temporaria antes de concluir o primeiro acesso.");
+    throw new Error("Você precisa entrar com a senha temporária antes de concluir o primeiro acesso.");
   }
 
   const response = await fetch("/backend/auth/first-access/password", {
@@ -259,7 +259,7 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}) {
   const auth = getStoredAuth();
 
   if (!auth?.session?.accessToken) {
-    throw new Error("Voce precisa estar autenticado.");
+    throw new Error("Você precisa estar autenticado.");
   }
 
   const isFormDataRequest =
@@ -278,7 +278,7 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}) {
     cache: "no-store"
   });
 
-  const parsed = await parseApiResponse<T>(response, "Falha de requisicao");
+  const parsed = await parseApiResponse<T>(response, "Falha de requisição");
 
   if (!parsed.ok) {
     if (parsed.status === 401 || parsed.status === 403) {

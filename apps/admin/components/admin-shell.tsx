@@ -9,9 +9,9 @@ import { useEffect, useState } from "react";
 import { clearStoredAuth, fetchMe, getStoredAuth } from "../lib/auth-client";
 
 const items = [
-  { href: "/", label: "Dashboard", icon: <Gauge size={16} /> },
+  { href: "/", label: "Visão geral", icon: <Gauge size={16} /> },
   { href: "/members", label: "Membros", icon: <Users2 size={16} /> },
-  { href: "/adesoes", label: "Adesoes", icon: <UserRoundPlus size={16} /> },
+  { href: "/adesoes", label: "Adesões", icon: <UserRoundPlus size={16} /> },
   { href: "/events", label: "Eventos", icon: <CalendarDays size={16} /> },
   { href: "/gamification", label: "Gamificação", icon: <Trophy size={16} /> },
   { href: "/financeiro", label: "Financeiro", icon: <CreditCard size={16} /> }
