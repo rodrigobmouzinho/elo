@@ -63,7 +63,7 @@ function normalizeApiError(raw: string) {
   const normalized = raw.trim().toLowerCase();
 
   if (normalized.includes("network") || normalized.includes("conexao")) {
-    return "Nao foi possivel conectar ao servidor. Tente novamente em instantes.";
+    return "Não foi possível conectar ao servidor. Tente novamente em instantes.";
   }
 
   return raw;
@@ -90,23 +90,23 @@ function getEventTimingState(startsAt: string) {
     return { label: "Ao vivo agora", detail: "Evento em andamento" };
   }
 
-  return { label: "Edicao concluida", detail: "Evento encerrado" };
+  return { label: "Edição concluída", detail: "Evento encerrado" };
 }
 
 function statusLabel(status: CheckoutStatusResponse | null, isPaid: boolean, statusUnavailable: boolean) {
-  if (statusUnavailable) return "Status temporariamente indisponivel";
-  if (!status) return isPaid ? "Pagamento ainda nao iniciado" : "Aguardando sua confirmacao";
-  if (status.presenceConfirmed) return "Presenca confirmada";
+  if (statusUnavailable) return "Status temporariamente indisponível";
+  if (!status) return isPaid ? "Pagamento ainda não iniciado" : "Aguardando sua confirmação";
+  if (status.presenceConfirmed) return "Presença confirmada";
   if (status.paymentStatus === "pending") return "Pagamento pendente";
   if (status.paymentStatus === "paid") return "Pagamento aprovado";
   if (status.paymentStatus === "expired") return "Pagamento expirado";
   if (status.paymentStatus === "refunded") return "Pagamento estornado";
-  return isPaid ? "Pagamento ainda nao iniciado" : "Aguardando sua confirmacao";
+  return isPaid ? "Pagamento ainda não iniciado" : "Aguardando sua confirmação";
 }
 
 function formatManualPaymentMessage(eventTitle: string, checkout: CheckoutResponse) {
   if (!checkout.manualPayment) {
-    return `Pagamento manual iniciado para ${eventTitle}. Envie o comprovante para aprovacao.`;
+    return `Pagamento manual iniciado para ${eventTitle}. Envie o comprovante para aprovação.`;
   }
 
   const keyType = checkout.manualPayment.keyType ? ` (${checkout.manualPayment.keyType})` : "";
@@ -130,7 +130,7 @@ function formatManualPaymentMessage(eventTitle: string, checkout: CheckoutRespon
 }
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en-GB", {
+  return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
     month: "short",
     year: "numeric"
@@ -138,10 +138,10 @@ function formatDate(value: string) {
 }
 
 function formatTimeWindow(value: string) {
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("pt-BR", {
     hour: "2-digit",
     minute: "2-digit",
-    hour12: true
+    hour12: false
   }).format(new Date(value));
 }
 
@@ -187,8 +187,8 @@ export default function EventDetailPage() {
   const loadEventDetails = useCallback(async () => {
     if (!eventId) {
       setFeedback({
-        title: "Evento invalido",
-        description: "Nao foi possivel identificar o evento solicitado.",
+        title: "Evento inválido",
+        description: "Não foi possível identificar o evento solicitado.",
         tone: "danger"
       });
       setLoadingEvent(false);
@@ -204,8 +204,8 @@ export default function EventDetailPage() {
       if (!targetEvent) {
         setEventItem(null);
         setFeedback({
-          title: "Evento nao encontrado",
-          description: "Este evento nao esta mais disponivel na agenda.",
+          title: "Evento não encontrado",
+          description: "Este evento não está mais disponível na agenda.",
           tone: "danger"
         });
         return;
@@ -243,7 +243,7 @@ export default function EventDetailPage() {
     setPolling(true);
     setFeedback({
       title: "Checkout iniciado",
-      description: `Aguardando confirmacao de pagamento para ${eventItem.title}.`,
+      description: `Aguardando confirmação de pagamento para ${eventItem.title}.`,
       tone: "info"
     });
 
@@ -259,7 +259,7 @@ export default function EventDetailPage() {
           setPolling(false);
           setFeedback({
             title: "Pagamento confirmado",
-            description: `Presenca validada automaticamente para ${eventItem.title}.`,
+            description: `Presença validada automaticamente para ${eventItem.title}.`,
             tone: "success"
           });
           return;
@@ -269,7 +269,7 @@ export default function EventDetailPage() {
           setPolling(false);
           setFeedback({
             title: "Pagamento expirado",
-            description: "Seu checkout expirou. Gere um novo pagamento para confirmar presenca.",
+            description: "Seu checkout expirou. Gere um novo pagamento para confirmar presença.",
             tone: "danger"
           });
           return;
@@ -279,7 +279,7 @@ export default function EventDetailPage() {
           setPolling(false);
           setFeedback({
             title: "Pagamento estornado",
-            description: "Este pagamento foi estornado. Gere um novo checkout se necessario.",
+            description: "Este pagamento foi estornado. Gere um novo checkout se necessário.",
             tone: "warning"
           });
           return;
@@ -293,7 +293,7 @@ export default function EventDetailPage() {
       setPolling(false);
       setFeedback({
         title: "Pagamento em processamento",
-        description: "O checkout ainda esta pendente. Voce pode consultar novamente em instantes.",
+        description: "O checkout ainda está pendente. Você pode consultar novamente em instantes.",
         tone: "info"
       });
     } catch (pollError) {
@@ -327,13 +327,13 @@ export default function EventDetailPage() {
       }));
 
       setFeedback({
-        title: "Presenca confirmada",
-        description: `Sua presenca no evento ${eventItem.title} foi confirmada.`,
+        title: "Presença confirmada",
+        description: `Sua presença no evento ${eventItem.title} foi confirmada.`,
         tone: "success"
       });
     } catch (confirmError) {
       setFeedback({
-        title: "Falha ao confirmar presenca",
+        title: "Falha ao confirmar presença",
         description: normalizeApiError((confirmError as Error).message),
         tone: "danger"
       });
@@ -358,8 +358,8 @@ export default function EventDetailPage() {
       if (checkout.paymentStatus === "paid") {
         await loadCheckoutStatus();
         setFeedback({
-          title: "Pagamento ja confirmado",
-          description: `Este evento ja esta pago para ${eventItem.title}.`,
+          title: "Pagamento já confirmado",
+          description: `Este evento já está pago para ${eventItem.title}.`,
           tone: "success"
         });
         return;
@@ -400,14 +400,14 @@ export default function EventDetailPage() {
       await navigator.clipboard.writeText(manualPaymentData.pixCopyPaste);
       setCopiedPixCode(true);
       setFeedback({
-        title: "Codigo PIX copiado",
-        description: "Cole o codigo no app do banco para concluir o pagamento.",
+        title: "Código PIX copiado",
+        description: "Cole o código no app do banco para concluir o pagamento.",
         tone: "success"
       });
     } catch (clipboardError) {
       setCopiedPixCode(false);
       setFeedback({
-        title: "Falha ao copiar codigo PIX",
+        title: "Falha ao copiar código PIX",
         description: normalizeApiError((clipboardError as Error).message),
         tone: "danger"
       });
@@ -419,7 +419,7 @@ export default function EventDetailPage() {
       <MemberShell>
         <section className={styles.statusCard}>
           <h2 className={styles.statusTitle}>Carregando evento</h2>
-          <p className={styles.statusText}>Preparando detalhe e jornada de confirmacao.</p>
+          <p className={styles.statusText}>Preparando detalhe e jornada de confirmação.</p>
         </section>
       </MemberShell>
     );
@@ -429,8 +429,8 @@ export default function EventDetailPage() {
     return (
       <MemberShell>
         <section className={`${styles.statusCard} ${styles.statusDanger}`}>
-          <h2 className={styles.statusTitle}>Evento indisponivel</h2>
-          <p className={styles.statusText}>Nao foi possivel carregar este evento. Retorne para a agenda e tente novamente.</p>
+          <h2 className={styles.statusTitle}>Evento indisponível</h2>
+          <p className={styles.statusText}>Não foi possível carregar este evento. Retorne para a agenda e tente novamente.</p>
         </section>
         <div className={styles.backAction}>
           <Link href="/" className={styles.backLink}>
@@ -485,7 +485,7 @@ export default function EventDetailPage() {
                   <Clock3 size={15} strokeWidth={2.1} />
                 </div>
                 <div className={styles.infoMeta}>
-                  <p className={styles.infoLabel}>Date &amp; Hour</p>
+                  <p className={styles.infoLabel}>Data e horário</p>
                   <p className={styles.infoPrimary}>{formatDate(eventItem.startsAt)}</p>
                   <p className={styles.infoSecondary}>{formatTimeWindow(eventItem.startsAt)}</p>
                 </div>
@@ -499,7 +499,7 @@ export default function EventDetailPage() {
                   <p className={styles.infoLabel}>Local</p>
                   <p className={styles.infoPrimary}>{eventItem.location}</p>
                   <p className={styles.infoSecondary}>
-                    {eventItem.onlineUrl ? "Presencial e online" : "Experiencia presencial"}
+                    {eventItem.onlineUrl ? "Presencial e online" : "Experiência presencial"}
                   </p>
                 </div>
               </article>
@@ -522,7 +522,7 @@ export default function EventDetailPage() {
         <section className={styles.section}>
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>Quem vai?</h2>
-            <span className={styles.sectionLink}>Ver Todos (250)</span>
+            <span className={styles.sectionLink}>Ver todos (250)</span>
           </div>
 
           <div className={styles.attendeeRow}>
@@ -563,30 +563,30 @@ export default function EventDetailPage() {
                   : presenceConfirmed
                     ? "Pagamento confirmado"
                     : checkoutStatus?.paymentStatus === "pending"
-                      ? "Consultar confirmacao"
-                      : "Confirmar Presenca"
+                      ? "Consultar confirmação"
+                      : "Confirmar Presença"
               : loadingAction
                 ? "Confirmando..."
                 : presenceConfirmed
-                  ? "Presenca confirmada"
-                  : "Confirmar Presenca"}
+                  ? "Presença confirmada"
+                  : "Confirmar Presença"}
           </button>
 
           <p className={styles.actionMeta}>
             {isPaid
-              ? `${formatCurrency(eventItem.priceCents ?? 0)} · status: ${currentStatusLabel}`
-              : `Vagas limitadas disponiveis · ${currentStatusLabel}`}
+              ? `${formatCurrency(eventItem.priceCents ?? 0)} • status: ${currentStatusLabel}`
+              : `Vagas limitadas disponíveis • ${currentStatusLabel}`}
           </p>
 
           <div className={styles.timelineList}>
             {[
               { label: "Evento lido", active: true },
               {
-                label: isPaid ? "Checkout gerado" : "Confirmacao iniciada",
+                label: isPaid ? "Checkout gerado" : "Confirmação iniciada",
                 active: Boolean(checkoutStatus?.paymentStatus && checkoutStatus.paymentStatus !== "none") || presenceConfirmed
               },
               {
-                label: isPaid ? "Pagamento validado" : "Presenca confirmada",
+                label: isPaid ? "Pagamento validado" : "Presença confirmada",
                 active: isPaid ? checkoutStatus?.paymentStatus === "paid" || presenceConfirmed : presenceConfirmed
               }
             ].map((step) => (
@@ -626,7 +626,7 @@ export default function EventDetailPage() {
 
             <button className={styles.secondaryButton} type="button" onClick={() => void copyPixCode()}>
               <Copy size={14} strokeWidth={2.1} />
-              {copiedPixCode ? "Codigo PIX copiado" : "Copiar codigo PIX"}
+              {copiedPixCode ? "Código PIX copiado" : "Copiar código PIX"}
             </button>
           </section>
         ) : null}

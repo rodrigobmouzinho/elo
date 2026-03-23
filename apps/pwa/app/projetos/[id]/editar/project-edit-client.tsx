@@ -87,7 +87,7 @@ export function ProjectEditClient({ projectId }: { projectId: string }) {
         const targetIdea = projects.find((project) => project.id === projectId);
 
         if (!targetIdea) {
-          throw new Error("Projeto nao encontrado.");
+          throw new Error("Projeto não encontrado.");
         }
 
         if (!active) return;
@@ -272,7 +272,7 @@ export function ProjectEditClient({ projectId }: { projectId: string }) {
       );
     } catch (selectionError) {
       setFeedback({
-        title: "Falha ao preparar documentacao",
+        title: "Falha ao preparar documentação",
         description: normalizeApiError((selectionError as Error).message),
         tone: "danger"
       });
@@ -323,7 +323,7 @@ export function ProjectEditClient({ projectId }: { projectId: string }) {
       let payload = projectPayloadFromDraft(form);
 
       if (payload.businessAreas.length === 0) {
-        throw new Error("Adicione ao menos uma area de negocio.");
+        throw new Error("Adicione ao menos uma área de negócio.");
       }
 
       if (payload.needs.length === 0) {
@@ -368,14 +368,14 @@ export function ProjectEditClient({ projectId }: { projectId: string }) {
         {loadingIdea ? (
           <section className={styles.statusCard} aria-live="polite">
             <h2 className={styles.statusTitle}>Carregando projeto</h2>
-            <p className={styles.statusText}>Preparando os dados para edicao.</p>
+            <p className={styles.statusText}>Preparando os dados para edição.</p>
           </section>
         ) : null}
 
         {!loadingIdea && !idea ? (
           <section className={styles.statusCard}>
-            <h2 className={styles.statusTitle}>Projeto nao encontrado</h2>
-            <p className={styles.statusText}>Essa oportunidade nao foi localizada para edicao.</p>
+            <h2 className={styles.statusTitle}>Projeto não encontrado</h2>
+            <p className={styles.statusText}>Essa oportunidade não foi localizada para edição.</p>
             <Link href="/projetos" className={styles.secondaryButton}>
               Voltar para projetos
             </Link>
@@ -384,8 +384,8 @@ export function ProjectEditClient({ projectId }: { projectId: string }) {
 
         {!loadingIdea && idea && !isOwner ? (
           <section className={styles.statusCard}>
-            <h2 className={styles.statusTitle}>Edicao indisponivel</h2>
-            <p className={styles.statusText}>Somente o dono do projeto pode editar essa publicacao.</p>
+            <h2 className={styles.statusTitle}>Edição indisponível</h2>
+            <p className={styles.statusText}>Somente o dono do projeto pode editar essa publicação.</p>
             <Link href={`/projetos/${idea.id}`} className={styles.secondaryButton}>
               Voltar ao projeto
             </Link>
@@ -399,13 +399,13 @@ export function ProjectEditClient({ projectId }: { projectId: string }) {
                 <div className={styles.headerAccent} aria-hidden="true" />
                 <h2 className={styles.title}>Editar Projetos &amp; Ideias</h2>
                 <p className={styles.subtitle}>
-                  Atualize tese, documentacao e galeria do projeto sem depender de URLs manuais.
+                  Atualize tese, documentação e galeria do projeto sem depender de URLs manuais.
                 </p>
               </div>
 
               <form className={styles.formStack} onSubmit={handleSubmit}>
                 <label className={styles.fieldGroup}>
-                  <span className={styles.fieldLabel}>Titulo do Projeto</span>
+                  <span className={styles.fieldLabel}>Título do Projeto</span>
                   <input
                     className={styles.fieldControl}
                     value={form.title}
@@ -435,7 +435,7 @@ export function ProjectEditClient({ projectId }: { projectId: string }) {
                 <section className={styles.sectionBlock}>
                   <div className={styles.sectionHeader}>
                     <div>
-                      <p className={styles.fieldLabel}>Areas de Negocio</p>
+                      <p className={styles.fieldLabel}>Áreas de Negócio</p>
                       <p className={styles.sectionText}>Atualize as tags principais que aparecem na leitura do detalhe.</p>
                     </div>
                     <button
@@ -445,7 +445,7 @@ export function ProjectEditClient({ projectId }: { projectId: string }) {
                       disabled={form.businessAreas.length >= 5}
                     >
                       <CirclePlus size={15} strokeWidth={2.1} />
-                      Adicionar area
+                      Adicionar área
                     </button>
                   </div>
 
@@ -462,7 +462,7 @@ export function ProjectEditClient({ projectId }: { projectId: string }) {
                           className={styles.inlineRemoveButton}
                           type="button"
                           onClick={() => removeBusinessArea(index)}
-                          aria-label={`Remover area ${index + 1}`}
+                            aria-label={`Remover área ${index + 1}`}
                         >
                           <Trash2 size={15} strokeWidth={2.1} />
                         </button>
@@ -472,7 +472,7 @@ export function ProjectEditClient({ projectId }: { projectId: string }) {
                 </section>
 
                 <label className={styles.fieldGroup}>
-                  <span className={styles.fieldLabel}>Visao do Projeto</span>
+                  <span className={styles.fieldLabel}>Visão do Projeto</span>
                   <textarea
                     className={styles.storyInput}
                     value={form.vision}
@@ -489,7 +489,7 @@ export function ProjectEditClient({ projectId }: { projectId: string }) {
                   <div className={styles.sectionHeader}>
                     <div>
                       <p className={styles.fieldLabel}>O que Precisamos</p>
-                      <p className={styles.sectionText}>Mantenha cada necessidade objetiva, clara e acionavel.</p>
+                      <p className={styles.sectionText}>Mantenha cada necessidade objetiva, clara e acionável.</p>
                     </div>
                     <button
                       className={styles.inlineAddButton}
@@ -544,9 +544,9 @@ export function ProjectEditClient({ projectId }: { projectId: string }) {
                 <section className={styles.sectionBlock}>
                   <div className={styles.sectionHeader}>
                     <div>
-                      <p className={styles.fieldLabel}>Documentacao do Projeto</p>
+                      <p className={styles.fieldLabel}>Documentação do Projeto</p>
                       <p className={styles.sectionText}>
-                        PDFs reais do projeto. Ate {PROJECT_DOCUMENT_MAX_FILES} arquivos de 10 MB cada.
+                        PDFs reais do projeto. Até {PROJECT_DOCUMENT_MAX_FILES} arquivos de 10 MB cada.
                       </p>
                     </div>
                     <label
@@ -606,7 +606,7 @@ export function ProjectEditClient({ projectId }: { projectId: string }) {
                     <div className={styles.emptyUploadState}>
                       <Upload size={16} strokeWidth={2.1} className={styles.emptyUploadIcon} />
                       <p className={styles.emptyUploadText}>
-                        Nenhum PDF selecionado ainda. A documentacao sera enviada junto com o salvar.
+                        Nenhum PDF selecionado ainda. A documentação será enviada junto com o salvamento.
                       </p>
                     </div>
                   )}
@@ -617,7 +617,7 @@ export function ProjectEditClient({ projectId }: { projectId: string }) {
                     <div>
                       <p className={styles.fieldLabel}>Galeria de Imagens e Mockups</p>
                       <p className={styles.sectionText}>
-                        Ate {PROJECT_GALLERY_MAX_FILES} imagens. O app comprime antes do envio para manter a galeria leve.
+                        Até {PROJECT_GALLERY_MAX_FILES} imagens. O app comprime antes do envio para manter a galeria leve.
                       </p>
                     </div>
                     <label
@@ -679,7 +679,7 @@ export function ProjectEditClient({ projectId }: { projectId: string }) {
                     <div className={styles.emptyUploadState}>
                       <Upload size={16} strokeWidth={2.1} className={styles.emptyUploadIcon} />
                       <p className={styles.emptyUploadText}>
-                        Nenhuma imagem selecionada ainda. O app aceita JPG, PNG e WebP e faz compressao no envio.
+                        Nenhuma imagem selecionada ainda. O app aceita JPG, PNG e WebP e faz compressão no envio.
                       </p>
                     </div>
                   )}
@@ -687,7 +687,7 @@ export function ProjectEditClient({ projectId }: { projectId: string }) {
 
                 <div className={styles.actions}>
                   <button className={styles.primaryButton} type="submit" disabled={saving}>
-                    {saving ? "Salvando..." : "Salvar alteracoes"}
+                    {saving ? "Salvando..." : "Salvar alterações"}
                   </button>
                   <Link href={`/projetos/${idea.id}`} className={styles.secondaryButton}>
                     Cancelar
@@ -700,7 +700,7 @@ export function ProjectEditClient({ projectId }: { projectId: string }) {
               <article className={styles.tipCard}>
                 <Sparkles size={16} strokeWidth={2.1} className={styles.tipIconPrimary} />
                 <p className={styles.tipText}>
-                  Atualizacoes visuais e documentacao objetiva ajudam a elevar a confianca
+                  Atualizações visuais e documentação objetiva ajudam a elevar a confiança
                   no detalhe do projeto.
                 </p>
               </article>

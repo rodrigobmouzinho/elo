@@ -197,7 +197,7 @@ export default function CadastrarIdeiaPage() {
       }));
     } catch (selectionError) {
       setFeedback({
-        title: "Falha ao preparar documentacao",
+        title: "Falha ao preparar documentação",
         description: normalizeApiError((selectionError as Error).message),
         tone: "danger"
       });
@@ -247,7 +247,7 @@ export default function CadastrarIdeiaPage() {
       let payload = projectPayloadFromDraft(form);
 
       if (payload.businessAreas.length === 0) {
-        throw new Error("Adicione ao menos uma area de negocio.");
+        throw new Error("Adicione ao menos uma área de negócio.");
       }
 
       if (payload.needs.length === 0) {
@@ -294,14 +294,14 @@ export default function CadastrarIdeiaPage() {
             <div className={styles.headerAccent} aria-hidden="true" />
             <h2 className={styles.title}>Cadastrar Projetos &amp; Ideias</h2>
             <p className={styles.subtitle}>
-              Estruture a oportunidade como ela sera vista no detalhe: tese, areas,
-              necessidades, documentacao e prova visual.
+              Estruture a oportunidade como ela será vista no detalhe: tese, áreas,
+              necessidades, documentação e prova visual.
             </p>
           </div>
 
           <form className={styles.formStack} onSubmit={handleSubmit}>
             <label className={styles.fieldGroup}>
-              <span className={styles.fieldLabel}>Titulo do Projeto</span>
+              <span className={styles.fieldLabel}>Título do Projeto</span>
               <input
                 className={styles.fieldControl}
                 placeholder="ex: Nexus IA"
@@ -317,7 +317,7 @@ export default function CadastrarIdeiaPage() {
               <span className={styles.fieldLabel}>Pitch em uma frase</span>
               <input
                 className={styles.fieldControl}
-                placeholder="A infraestrutura que conecta varejistas a operacao autonoma."
+                placeholder="A infraestrutura que conecta varejistas à operação autônoma."
                 value={form.summary}
                 onChange={(event) => setForm((current) => ({ ...current, summary: event.target.value }))}
                 minLength={3}
@@ -329,7 +329,7 @@ export default function CadastrarIdeiaPage() {
             <section className={styles.sectionBlock}>
               <div className={styles.sectionHeader}>
                 <div>
-                  <p className={styles.fieldLabel}>Areas de Negocio</p>
+                  <p className={styles.fieldLabel}>Áreas de Negócio</p>
                   <p className={styles.sectionText}>Use tags curtas como Fintech, IA, Varejo ou Healthtech.</p>
                 </div>
                 <button
@@ -339,7 +339,7 @@ export default function CadastrarIdeiaPage() {
                   disabled={form.businessAreas.length >= 5}
                 >
                   <CirclePlus size={15} strokeWidth={2.1} />
-                  Adicionar area
+                  Adicionar área
                 </button>
               </div>
 
@@ -357,7 +357,7 @@ export default function CadastrarIdeiaPage() {
                       className={styles.inlineRemoveButton}
                       type="button"
                       onClick={() => removeBusinessArea(index)}
-                      aria-label={`Remover area ${index + 1}`}
+                      aria-label={`Remover área ${index + 1}`}
                     >
                       <Trash2 size={15} strokeWidth={2.1} />
                     </button>
@@ -367,10 +367,10 @@ export default function CadastrarIdeiaPage() {
             </section>
 
             <label className={styles.fieldGroup}>
-              <span className={styles.fieldLabel}>Visao do Projeto</span>
+              <span className={styles.fieldLabel}>Visão do Projeto</span>
               <textarea
                 className={styles.storyInput}
-                placeholder="Explique a transformacao que esse projeto pretende gerar e por que ele importa agora."
+                placeholder="Explique a transformação que esse projeto pretende gerar e por que ele importa agora."
                 value={form.vision}
                 onChange={(event) => setForm((current) => ({ ...current, vision: event.target.value }))}
                 minLength={20}
@@ -415,7 +415,7 @@ export default function CadastrarIdeiaPage() {
                       <span className={styles.fieldLabel}>Perfil</span>
                       <input
                         className={styles.fieldControl}
-                        placeholder="ex: Socio comercial"
+                        placeholder="ex: Sócio comercial"
                         value={need.title}
                         onChange={(event) => updateNeed(index, "title", event.target.value)}
                         maxLength={60}
@@ -426,7 +426,7 @@ export default function CadastrarIdeiaPage() {
                       <span className={styles.fieldLabel}>Breve descritivo</span>
                       <textarea
                         className={styles.compactTextarea}
-                        placeholder="ex: Experiencia em expansao B2B e parcerias estrategicas."
+                        placeholder="ex: Experiência em expansão B2B e parcerias estratégicas."
                         value={need.description}
                         onChange={(event) => updateNeed(index, "description", event.target.value)}
                         maxLength={180}
@@ -440,9 +440,9 @@ export default function CadastrarIdeiaPage() {
             <section className={styles.sectionBlock}>
               <div className={styles.sectionHeader}>
                 <div>
-                  <p className={styles.fieldLabel}>Documentacao do Projeto</p>
+                  <p className={styles.fieldLabel}>Documentação do Projeto</p>
                   <p className={styles.sectionText}>
-                    PDFs reais do projeto. Ate {PROJECT_DOCUMENT_MAX_FILES} arquivos de 10 MB cada.
+                    PDFs reais do projeto. Até {PROJECT_DOCUMENT_MAX_FILES} arquivos de 10 MB cada.
                   </p>
                 </div>
                 <label
@@ -502,7 +502,7 @@ export default function CadastrarIdeiaPage() {
                 <div className={styles.emptyUploadState}>
                   <Upload size={16} strokeWidth={2.1} className={styles.emptyUploadIcon} />
                   <p className={styles.emptyUploadText}>
-                    Nenhum PDF selecionado ainda. A documentacao sera enviada junto com a publicacao.
+                    Nenhum PDF selecionado ainda. A documentação será enviada junto com a publicação.
                   </p>
                 </div>
               )}
@@ -513,7 +513,7 @@ export default function CadastrarIdeiaPage() {
                 <div>
                   <p className={styles.fieldLabel}>Galeria de Imagens e Mockups</p>
                   <p className={styles.sectionText}>
-                    Ate {PROJECT_GALLERY_MAX_FILES} imagens. O app comprime antes do envio para manter a galeria leve.
+                    Até {PROJECT_GALLERY_MAX_FILES} imagens. O app comprime antes do envio para manter a galeria leve.
                   </p>
                 </div>
                 <label
@@ -575,7 +575,7 @@ export default function CadastrarIdeiaPage() {
                 <div className={styles.emptyUploadState}>
                   <Upload size={16} strokeWidth={2.1} className={styles.emptyUploadIcon} />
                   <p className={styles.emptyUploadText}>
-                    Nenhuma imagem selecionada ainda. O app aceita JPG, PNG e WebP e faz compressao no envio.
+                    Nenhuma imagem selecionada ainda. O app aceita JPG, PNG e WebP e faz compressão no envio.
                   </p>
                 </div>
               )}
@@ -597,7 +597,7 @@ export default function CadastrarIdeiaPage() {
             <Sparkles size={16} strokeWidth={2.1} className={styles.tipIconPrimary} />
             <p className={styles.tipText}>
               Imagens claras, PDFs objetivos e necessidades precisas tornam o detalhe do projeto
-              mais confiavel para novos parceiros.
+              mais confiável para novos parceiros.
             </p>
           </article>
         </section>

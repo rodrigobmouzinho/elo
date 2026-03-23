@@ -1,4 +1,4 @@
-/* eslint-disable @next/next/no-img-element */
+﻿/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import Link from "next/link";
@@ -60,8 +60,8 @@ function initialsOf(value: string) {
 function statusFlashFor(status: ProjectStatus): FeedbackState {
   if (status === "completed") {
     return {
-      title: "Projeto concluido",
-      description: "A vitrine continua disponivel, mas novas candidaturas foram encerradas.",
+      title: "Projeto concluído",
+      description: "A vitrine continua disponível, mas novas candidaturas foram encerradas.",
       tone: "success"
     };
   }
@@ -69,7 +69,7 @@ function statusFlashFor(status: ProjectStatus): FeedbackState {
   if (status === "inactive") {
     return {
       title: "Projeto arquivado",
-      description: "O projeto foi movido para inativo e saiu da vitrine publica.",
+      description: "O projeto foi movido para inativo e saiu da vitrine pública.",
       tone: "success"
     };
   }
@@ -87,7 +87,7 @@ function buildApplicationBanner(project: ProjectDetail | null) {
   if (project.status === "completed") {
     return {
       title: "Equipe formada",
-      description: "Este projeto foi concluido e nao esta aceitando novas candidaturas.",
+      description: "Este projeto foi concluído e não está aceitando novas candidaturas.",
       tone: "info" as const
     };
   }
@@ -95,15 +95,15 @@ function buildApplicationBanner(project: ProjectDetail | null) {
   if (project.status === "inactive" && project.viewerAccess.isOwner) {
     return {
       title: "Projeto inativo",
-      description: "Somente voce ainda consegue visualizar esta publicacao no app.",
+      description: "Somente você ainda consegue visualizar esta publicação no app.",
       tone: "info" as const
     };
   }
 
   if (project.myApplicationStatus === "accepted") {
     return {
-      title: "Voce esta na equipe",
-      description: "Sua candidatura foi aprovada e esta oportunidade agora faz parte do seu circulo de colaboracao.",
+      title: "Você está na equipe",
+      description: "Sua candidatura foi aprovada e esta oportunidade agora faz parte do seu círculo de colaboração.",
       tone: "success" as const
     };
   }
@@ -111,15 +111,15 @@ function buildApplicationBanner(project: ProjectDetail | null) {
   if (project.myApplicationStatus === "applied") {
     return {
       title: "Interesse enviado",
-      description: "Seu interesse ja foi registrado. Agora o dono do projeto decide os proximos passos.",
+      description: "Seu interesse já foi registrado. Agora o dono do projeto decide os próximos passos.",
       tone: "info" as const
     };
   }
 
   if (project.myApplicationStatus === "rejected") {
     return {
-      title: "Atualizacao disponivel",
-      description: "Confira o sino de notificacoes para ver a resposta privada desta candidatura.",
+      title: "Atualização disponível",
+      description: "Confira o sino de notificações para ver a resposta privada desta candidatura.",
       tone: "info" as const
     };
   }
@@ -229,7 +229,7 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
               current?.tone === "danger"
                 ? current
                 : {
-                    title: "Moderacao indisponivel no momento",
+                    title: "Moderação indisponível no momento",
                     description: normalizeApiError((applicationsError as Error).message),
                     tone: "info"
                   }
@@ -274,7 +274,7 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
     window.sessionStorage.removeItem("elo-project-updated");
     setFeedback({
       title: "Projeto atualizado",
-      description: "As alteracoes deste projeto foram salvas com sucesso.",
+      description: "As alterações deste projeto foram salvas com sucesso.",
       tone: "success"
     });
   }, [projectId]);
@@ -340,7 +340,7 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
           current?.tone === "danger"
             ? current
             : {
-                title: "Moderacao indisponivel no momento",
+                title: "Moderação indisponível no momento",
                 description: normalizeApiError((applicationsError as Error).message),
                 tone: "info"
               }
@@ -387,7 +387,7 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
     const confirmed =
       nextStatus === "inactive"
         ? window.confirm(
-            "Arquivar este projeto o remove da vitrine publica. Deseja continuar?"
+            "Arquivar este projeto o remove da vitrine pública. Deseja continuar?"
           )
         : nextStatus === "completed"
           ? window.confirm(
@@ -466,7 +466,7 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
     const reason = rejectReasons[applicationId]?.trim() ?? "";
     if (!reason) {
       setFeedback({
-        title: "Justificativa obrigatoria",
+        title: "Justificativa obrigatória",
         description: "Escreva um motivo objetivo antes de recusar a candidatura.",
         tone: "danger"
       });
@@ -681,7 +681,7 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
                   }))
                 }
                 maxLength={500}
-                placeholder="Explique de forma objetiva por que este perfil nao foi aprovado nesta fase."
+                placeholder="Explique de forma objetiva por que este perfil não foi aprovado nesta fase."
               />
             </label>
 
@@ -728,15 +728,15 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
         {loading ? (
           <section className={styles.statusCard} aria-live="polite">
             <h2 className={styles.statusTitle}>Carregando projeto</h2>
-            <p className={styles.statusText}>Preparando os detalhes desta oportunidade para voce.</p>
+            <p className={styles.statusText}>Preparando os detalhes desta oportunidade para você.</p>
           </section>
         ) : null}
 
         {!loading && !idea ? (
           <section className={styles.emptyState}>
-            <h2 className={styles.emptyTitle}>Projeto nao encontrado</h2>
+            <h2 className={styles.emptyTitle}>Projeto não encontrado</h2>
             <p className={styles.emptyText}>
-              Esta oportunidade nao esta mais disponivel ou precisa ser recarregada.
+              Esta oportunidade não está mais disponível ou precisa ser recarregada.
             </p>
             <Link href="/projetos" className={styles.backButton}>
               Voltar para projetos
@@ -805,7 +805,7 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
               <section className={styles.detailCard}>
                 <h4 className={styles.sectionTitle}>
                   <Eye size={16} strokeWidth={2.1} />
-                  Visao do Projeto
+                  Visão do Projeto
                 </h4>
                 <p className={styles.bodyText}>{idea.vision}</p>
               </section>
@@ -838,7 +838,7 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
             <section className={styles.documentationSection}>
               <h4 className={styles.galleryTitle}>
                 <FileText size={16} strokeWidth={2.1} />
-                Documentacao do Projeto
+                Documentação do Projeto
               </h4>
 
               {documentationFiles.length > 0 ? (
@@ -866,9 +866,9 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
                 </div>
               ) : (
                 <article className={styles.galleryCardPlaceholder}>
-                  <span className={styles.placeholderBadge}>Sem documentacao ainda</span>
+                  <span className={styles.placeholderBadge}>Sem documentação ainda</span>
                   <p className={styles.placeholderText}>
-                    Este projeto ainda nao publicou PDFs de apoio. A leitura segue concentrada
+                    Este projeto ainda não publicou PDFs de apoio. A leitura segue concentrada
                     na tese, nas necessidades e na galeria visual.
                   </p>
                 </article>
@@ -914,7 +914,7 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
                   <article className={styles.galleryCardPlaceholder}>
                     <span className={styles.placeholderBadge}>Sem mockups ainda</span>
                     <p className={styles.placeholderText}>
-                      Este projeto ainda nao publicou materiais visuais. A leitura principal
+                      Este projeto ainda não publicou materiais visuais. A leitura principal
                       segue concentrada na tese e nas necessidades.
                     </p>
                   </article>
@@ -934,7 +934,7 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
                 {!applicationsApiAvailable ? (
                   <p className={styles.managementHint}>
                     A listagem de interessados ainda depende da migration mais nova do Supabase.
-                    As acoes principais do projeto continuam disponiveis.
+                    As ações principais do projeto continuam disponíveis.
                   </p>
                 ) : null}
 
@@ -978,7 +978,7 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
                     </>
                   ) : (
                     <p className={styles.managementHint}>
-                      Acoes de status e moderacao ficam disponiveis assim que a versao nova do
+                      Ações de status e moderação ficam disponíveis assim que a versão nova do
                       elo-api for promovida.
                     </p>
                   )}
@@ -995,8 +995,8 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
                   </h4>
                   <p className={styles.teamText}>
                     {isOwner
-                      ? "Acompanhe pendencias, membros aprovados e o historico privado de recusas."
-                      : "Como membro aprovado, voce consegue ver a equipe atual e os interessados que ainda estao em avaliacao."}
+                      ? "Acompanhe pendências, membros aprovados e o histórico privado de recusas."
+                      : "Como membro aprovado, você consegue ver a equipe atual e os interessados que ainda estão em avaliação."}
                   </p>
                 </div>
 
@@ -1046,7 +1046,7 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
                 applications.approved.length === 0 &&
                 applications.rejected.length === 0 ? (
                   <div className={styles.emptyApplicants}>
-                    Ainda nao existem candidaturas registradas para este projeto.
+                    Ainda não existem candidaturas registradas para este projeto.
                   </div>
                 ) : null}
               </section>
@@ -1134,7 +1134,7 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
                     className={`${styles.galleryNavButton} ${styles.galleryNavNext}`}
                     type="button"
                     onClick={showNextGalleryImage}
-                    aria-label="Proxima imagem"
+                    aria-label="Próxima imagem"
                   >
                     <ChevronRight size={18} strokeWidth={2.2} />
                   </button>
@@ -1170,3 +1170,5 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
     </MemberShell>
   );
 }
+
+

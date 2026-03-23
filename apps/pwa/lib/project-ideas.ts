@@ -169,7 +169,7 @@ export function normalizeApiError(raw: string) {
   const normalized = raw.trim().toLowerCase();
 
   if (normalized.includes("network") || normalized.includes("conexao")) {
-    return "Nao foi possivel conectar ao servidor. Tente novamente em instantes.";
+    return "Não foi possível conectar ao servidor. Tente novamente em instantes.";
   }
 
   return raw;
@@ -188,27 +188,27 @@ export function excerpt(value: string, max = 120) {
 }
 
 export function projectStatusLabel(status: ProjectStatus) {
-  if (status === "completed") return "Concluido";
+  if (status === "completed") return "Concluído";
   if (status === "inactive") return "Inativo";
   return "Ativo";
 }
 
 export function projectStatusDescription(status: ProjectStatus) {
   if (status === "completed") {
-    return "Equipe formada. Novas candidaturas estao encerradas.";
+    return "Equipe formada. Novas candidaturas estão encerradas.";
   }
 
   if (status === "inactive") {
-    return "Projeto arquivado pelo dono e oculto da vitrine publica.";
+    return "Projeto arquivado pelo dono e oculto da vitrine pública.";
   }
 
   return "Aceitando novas candidaturas.";
 }
 
 export function projectApplicationLabel(status: ProjectApplicationStatus | null | undefined) {
-  if (status === "accepted") return "Voce ja faz parte da equipe";
-  if (status === "rejected") return "Sua candidatura nao foi aprovada";
-  if (status === "applied") return "Interesse ja enviado";
+  if (status === "accepted") return "Você já faz parte da equipe";
+  if (status === "rejected") return "Sua candidatura não foi aprovada";
+  if (status === "applied") return "Interesse já enviado";
   return "Tenho Interesse / Participar";
 }
 

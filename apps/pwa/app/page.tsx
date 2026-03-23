@@ -210,7 +210,7 @@ export default function HomePage() {
             </div>
             {listEvents.length > 0 ? (
               <a href="#event-list" className={styles.sectionAction}>
-                Ver Tudo
+                Ver tudo
               </a>
             ) : null}
           </div>

@@ -33,7 +33,7 @@ function normalizeApiError(raw: string) {
   const normalized = raw.trim().toLowerCase();
 
   if (normalized.includes("network") || normalized.includes("conexao")) {
-    return "Nao foi possivel conectar ao servidor. Tente novamente em instantes.";
+    return "Não foi possível conectar ao servidor. Tente novamente em instantes.";
   }
 
   return raw;
@@ -101,7 +101,7 @@ export default function MembrosPage() {
         setMembers(response);
       } catch (requestError) {
         setFeedback({
-          title: "Falha ao carregar diretorio",
+          title: "Falha ao carregar diretório",
           description: normalizeApiError((requestError as Error).message),
           tone: "danger"
         });
@@ -115,7 +115,7 @@ export default function MembrosPage() {
 
   const quickFilters = useMemo(() => {
     const frequencyByArea = members.reduce<Record<string, number>>((accumulator, member) => {
-      const key = member.area.trim() || "Sem area";
+      const key = member.area.trim() || "Sem área";
       accumulator[key] = (accumulator[key] ?? 0) + 1;
       return accumulator;
     }, {});
@@ -139,7 +139,7 @@ export default function MembrosPage() {
     const normalizedSearch = normalizeSearchValue(search.trim());
 
     return members.filter((member) => {
-      const matchesFilter = activeFilter === "Todos" || (member.area.trim() || "Sem area") === activeFilter;
+      const matchesFilter = activeFilter === "Todos" || (member.area.trim() || "Sem área") === activeFilter;
       const matchesSearch = normalizedSearch === "" || memberSearchIndex(member).includes(normalizedSearch);
 
       return matchesFilter && matchesSearch;
@@ -178,10 +178,10 @@ export default function MembrosPage() {
       }));
 
       setFeedback({
-        title: result.created ? "Elo criado com sucesso" : "Elo ja existente",
+        title: result.created ? "Elo criado com sucesso" : "Elo já existente",
         description: result.created
-          ? `${targetMember?.fullName ?? "Este membro"} agora faz parte da sua rede de conexoes.`
-          : `Voce ja possui conexao com ${targetMember?.fullName ?? "este membro"}.`,
+          ? `${targetMember?.fullName ?? "Este membro"} agora faz parte da sua rede de conexões.`
+          : `Você já possui conexão com ${targetMember?.fullName ?? "este membro"}.`,
         tone: result.created ? "success" : "info"
       });
     } catch (actionError) {
@@ -225,7 +225,7 @@ export default function MembrosPage() {
             />
           </label>
 
-          <div className={styles.filters} aria-label="Filtros rapidos por area">
+          <div className={styles.filters} aria-label="Filtros rápidos por área">
             {quickFilters.map((filter) => {
               const active = filter === activeFilter;
 
@@ -245,15 +245,15 @@ export default function MembrosPage() {
 
         {loadingMembers ? (
           <section className={styles.statusCard} aria-live="polite">
-            <h2 className={styles.statusTitle}>Atualizando diretorio</h2>
-            <p className={styles.statusText}>Carregando membros ativos para voce formar novos elos.</p>
+            <h2 className={styles.statusTitle}>Atualizando diretório</h2>
+            <p className={styles.statusText}>Carregando membros ativos para você formar novos elos.</p>
           </section>
         ) : null}
 
         {!loadingMembers && filteredMembers.length === 0 ? (
           <section className={styles.emptyState}>
             <h3 className={styles.emptyTitle}>Nenhum membro encontrado</h3>
-            <p className={styles.emptyText}>Ajuste sua busca ou troque o filtro para ampliar as conexoes disponiveis.</p>
+            <p className={styles.emptyText}>Ajuste sua busca ou troque o filtro para ampliar as conexões disponíveis.</p>
           </section>
         ) : null}
 
@@ -291,7 +291,7 @@ export default function MembrosPage() {
                     </div>
 
                     <div className={styles.memberTags}>
-                      <span className={styles.areaBadge}>{member.area || "Sem area"}</span>
+                      <span className={styles.areaBadge}>{member.area || "Sem área"}</span>
                       <span className={styles.specialty}>{member.specialty || `${member.city}/${member.state}`}</span>
                     </div>
                   </div>
@@ -326,7 +326,7 @@ export default function MembrosPage() {
           <div className={styles.insightAura} aria-hidden="true" />
           <p className={styles.insightEyebrow}>Insights de Membros</p>
           <h3 className={styles.insightTitle}>
-            Voce tem <span>{visibleMembers.length}</span> novas conexoes potenciais em {insightArea} hoje.
+            Você tem <span>{visibleMembers.length}</span> novas conexões potenciais em {insightArea} hoje.
           </h3>
           <div className={styles.insightFaces}>
             {insightMembers.map((member) =>
@@ -354,7 +354,7 @@ export default function MembrosPage() {
           </div>
           <div className={styles.insightTag}>
             <Sparkles size={14} strokeWidth={2.1} />
-            Direcao editorial do seu networking
+            Direção editorial do seu networking
           </div>
         </section>
       </div>

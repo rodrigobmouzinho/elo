@@ -81,7 +81,7 @@ export default function ProjetosPage() {
       window.sessionStorage.removeItem("elo-project-created");
       setFeedback({
         title: "Projeto publicado",
-        description: "Seu projeto ja esta disponivel para novas visualizacoes e candidaturas.",
+        description: "Seu projeto já está disponível para novas visualizações e candidaturas.",
         tone: "success"
       });
       return;
@@ -91,7 +91,7 @@ export default function ProjetosPage() {
       window.sessionStorage.removeItem("elo-project-updated");
       setFeedback({
         title: "Projeto atualizado",
-        description: "As alteracoes do seu projeto ja foram publicadas.",
+        description: "As alterações do seu projeto já foram publicadas.",
         tone: "success"
       });
     }
@@ -167,7 +167,7 @@ export default function ProjetosPage() {
           <div className={styles.ctaAura} aria-hidden="true" />
           <div className={styles.ctaContent}>
             <h3 className={styles.ctaTitle}>Construa o futuro</h3>
-            <p className={styles.ctaText}>Tem uma nova tese de negocio? Publique sua ideia e abra espaco para conexoes qualificadas.</p>
+            <p className={styles.ctaText}>Tem uma nova tese de negócio? Publique sua ideia e abra espaço para conexões qualificadas.</p>
             <Link href="/projetos/cadastrar" className={styles.primaryButton}>
               Cadastrar Projeto
               <CirclePlus size={16} strokeWidth={2.1} />
@@ -178,7 +178,7 @@ export default function ProjetosPage() {
         {loadingIdeas ? (
           <section className={styles.statusCard} aria-live="polite">
             <h2 className={styles.statusTitle}>Carregando projetos</h2>
-            <p className={styles.statusText}>Buscando ideias abertas para visualizacao e candidatura.</p>
+            <p className={styles.statusText}>Buscando ideias abertas para visualização e candidatura.</p>
           </section>
         ) : null}
 
@@ -187,8 +187,8 @@ export default function ProjetosPage() {
             <h3 className={styles.emptyTitle}>Nenhuma oportunidade encontrada</h3>
             <p className={styles.emptyText}>
               {activeFilter === "mine"
-                ? "Voce ainda nao publicou projetos com esse criterio. Publique uma nova ideia para aparecer aqui."
-                : "Ajuste a busca ou publique uma nova ideia para abrir espaco para colaboracao."}
+                ? "Você ainda não publicou projetos com esse critério. Publique uma nova ideia para aparecer aqui."
+                : "Ajuste a busca ou publique uma nova ideia para abrir espaço para colaboração."}
             </p>
           </section>
         ) : null}
