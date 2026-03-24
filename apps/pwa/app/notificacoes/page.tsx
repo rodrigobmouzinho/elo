@@ -19,7 +19,7 @@ type FeedbackState = {
 };
 
 function notificationLabel(type: ProjectNotification["type"]) {
-  return type === "project_application_accepted" ? "Aprovacao" : "Atualizacao privada";
+  return type === "project_application_accepted" ? "Aprovação" : "Atualização privada";
 }
 
 function formatDate(value: string) {
@@ -56,9 +56,9 @@ export default function NotificacoesPage() {
       setFeed(response);
     } catch (requestError) {
       setFeedback({
-        title: "Falha ao carregar notificacoes",
+        title: "Falha ao carregar notificações",
         description: isUnavailableInCurrentApi(requestError)
-          ? "A inbox nova depende da versao mais recente do elo-api. Assim que ela for promovida, o sino passa a refletir as aprovacoes e recusas."
+          ? "A nova caixa de notificações depende da versão mais recente do elo-api. Assim que ela for promovida, o sino passa a refletir as aprovações e recusas."
           : normalizeApiError((requestError as Error).message),
         tone: "danger"
       });
@@ -89,13 +89,13 @@ export default function NotificacoesPage() {
       }
 
       setFeedback({
-        title: "Notificacao atualizada",
-        description: "A notificacao foi marcada como lida.",
+        title: "Notificação atualizada",
+        description: "A notificação foi marcada como lida.",
         tone: "success"
       });
     } catch (markError) {
       setFeedback({
-        title: "Falha ao atualizar notificacao",
+        title: "Falha ao atualizar notificação",
         description: normalizeApiError((markError as Error).message),
         tone: "danger"
       });
@@ -105,7 +105,7 @@ export default function NotificacoesPage() {
   }
 
   return (
-    <MemberShell detailHeader={{ title: "Notificacoes", backHref: "/" }}>
+    <MemberShell detailHeader={{ title: "Notificações", backHref: "/", showShareButton: false }}>
       <div className={styles.page}>
         {feedback ? (
           <section
@@ -125,25 +125,25 @@ export default function NotificacoesPage() {
           <div className={styles.heroCopy}>
             <h2 className={styles.heroTitle}>Sua caixa privada</h2>
             <p className={styles.heroText}>
-              Atualizacoes sobre aprovacoes e recusas de projetos chegam aqui sem expor
+              Atualizações sobre aprovações e recusas de projetos chegam aqui sem expor
               outros membros publicamente.
             </p>
           </div>
-          <span className={styles.unreadBadge}>{feed?.unreadCount ?? 0} nao lidas</span>
+          <span className={styles.unreadBadge}>{feed?.unreadCount ?? 0} não lidas</span>
         </section>
 
         {loading ? (
           <section className={styles.statusCard} aria-live="polite">
-            <h2 className={styles.statusTitle}>Carregando notificacoes</h2>
-            <p className={styles.statusText}>Buscando as atualizacoes privadas do seu perfil.</p>
+            <h2 className={styles.statusTitle}>Carregando notificações</h2>
+            <p className={styles.statusText}>Buscando as atualizações privadas do seu perfil.</p>
           </section>
         ) : null}
 
         {!loading && (feed?.items.length ?? 0) === 0 ? (
           <section className={styles.emptyState}>
-            <h2 className={styles.emptyTitle}>Nenhuma notificacao por aqui</h2>
+            <h2 className={styles.emptyTitle}>Nenhuma notificação por aqui</h2>
             <p className={styles.emptyText}>
-              Quando houver resposta para candidaturas de projetos, ela aparecera aqui.
+              Quando houver resposta para candidaturas de projetos, ela aparecerá aqui.
             </p>
           </section>
         ) : null}

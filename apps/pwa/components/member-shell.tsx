@@ -46,6 +46,7 @@ function firstNameOf(value: string) {
 type DetailHeaderConfig = {
   title: string;
   backHref: string;
+  showShareButton?: boolean;
 };
 
 type MemberShellProps = {
@@ -169,9 +170,16 @@ export function MemberShell({ children, detailHeader, hideBottomNav = Boolean(de
                 <h1 className={styles.detailHeading}>{detailHeader.title}</h1>
               </div>
 
-              <button className={styles.detailIconButton} type="button" aria-label="Compartilhar" onClick={() => void handleShare()}>
-                <Share2 size={18} strokeWidth={2.1} />
-              </button>
+              {detailHeader.showShareButton !== false ? (
+                <button
+                  className={styles.detailIconButton}
+                  type="button"
+                  aria-label="Compartilhar"
+                  onClick={() => void handleShare()}
+                >
+                  <Share2 size={18} strokeWidth={2.1} />
+                </button>
+              ) : null}
             </div>
           </header>
         ) : (
@@ -208,7 +216,7 @@ export function MemberShell({ children, detailHeader, hideBottomNav = Boolean(de
                 <button
                   className={styles.iconButton}
                   type="button"
-                  aria-label="Encerrar sessao"
+                  aria-label="Encerrar sessão"
                   onClick={() => {
                     clearStoredAuth();
                     router.replace("/login");
