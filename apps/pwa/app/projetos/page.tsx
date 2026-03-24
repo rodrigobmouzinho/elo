@@ -197,6 +197,7 @@ export default function ProjetosPage() {
           {filteredIdeas.map((idea) => {
             const isOwner = currentMemberId !== null && idea.ownerMemberId === currentMemberId;
             const isClosed = idea.status !== "active";
+            const businessAreas = idea.businessAreas.length > 0 ? idea.businessAreas : [idea.category];
 
             return (
               <article
@@ -204,7 +205,13 @@ export default function ProjetosPage() {
                 className={`${styles.projectCard} ${idea.status === "inactive" ? styles.projectCardMuted : ""}`}
               >
                 <div className={styles.cardMeta}>
-                  <span className={styles.categoryBadge}>{idea.businessAreas[0] ?? idea.category}</span>
+                  <div className={styles.badgeRow}>
+                    {businessAreas.map((businessArea, index) => (
+                      <span key={`${idea.id}-${businessArea}-${index}`} className={styles.categoryBadge}>
+                        {businessArea}
+                      </span>
+                    ))}
+                  </div>
                   {isClosed ? (
                     <span
                       className={`${styles.stateBadge} ${
