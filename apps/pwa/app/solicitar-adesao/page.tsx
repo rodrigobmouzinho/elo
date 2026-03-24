@@ -59,7 +59,6 @@ export default function SolicitarAdesaoPage() {
   const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [state, setState] = useState("");
   const [city, setCity] = useState("");
@@ -106,7 +105,6 @@ export default function SolicitarAdesaoPage() {
       await submitMemberApplication({
         fullName: fullName.trim(),
         email: email.trim().toLowerCase(),
-        phone: phone.trim() || undefined,
         whatsapp: whatsapp.trim(),
         city: city.trim(),
         state: state.trim().toUpperCase(),
@@ -214,19 +212,6 @@ export default function SolicitarAdesaoPage() {
                 autoComplete="tel"
                 inputMode="numeric"
                 required
-                disabled={loading}
-              />
-            </label>
-
-            <label className={styles.fieldGroup}>
-              <span className={styles.fieldLabel}>Celular para contato</span>
-              <input
-                className={styles.input}
-                value={phone}
-                onChange={(event) => setPhone(formatBrazilianPhoneInput(event.target.value))}
-                placeholder="(11) 91234-5678"
-                autoComplete="tel-national"
-                inputMode="numeric"
                 disabled={loading}
               />
             </label>
