@@ -1,6 +1,9 @@
 .page {
   display: grid;
   gap: 1rem;
+  width: min(100%, 40rem);
+  max-width: 100%;
+  margin: 0 auto;
   padding-bottom: 2rem;
 }
 
@@ -452,6 +455,7 @@
 .tipGrid {
   display: grid;
   gap: 0.85rem;
+  width: 100%;
 }
 
 .tipCard {
@@ -496,12 +500,7 @@
   }
 
   .formCard {
-    max-width: 40rem;
-    margin: 0 auto;
-  }
-
-  .tipGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 100%;
   }
 
   .gridFields {
