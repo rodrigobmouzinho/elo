@@ -1,9 +1,21 @@
 .shell {
+  --shell-safe-top: env(safe-area-inset-top, 0px);
+  --shell-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --shell-gutter: 1rem;
+  --shell-max-width: 64rem;
+  --shell-detail-max-width: 32rem;
+  --shell-dock-offset: 0.75rem;
+  --shell-dock-height: 5.1rem;
+  --shell-dock-total: calc(var(--shell-safe-bottom) + var(--shell-dock-offset) + var(--shell-dock-height));
   position: relative;
+  isolation: isolate;
+  width: 100%;
   min-height: 100vh;
-  padding-bottom: 6.9rem;
+  min-height: 100dvh;
+  padding-bottom: max(calc(var(--shell-dock-total) + 0.75rem), 6.9rem);
   overflow-x: clip;
   color: #e5e2e1;
+  background-color: #131313;
   background:
     radial-gradient(56% 38% at 18% 0%, rgba(89, 50, 209, 0.18), rgba(19, 19, 19, 0) 68%),
     radial-gradient(42% 32% at 86% 8%, rgba(155, 2, 124, 0.12), rgba(19, 19, 19, 0) 74%),
@@ -11,7 +23,7 @@
 }
 
 .shellWithoutDock {
-  padding-bottom: 2rem;
+  padding-bottom: max(calc(var(--shell-safe-bottom) + 1.75rem), 2rem);
 }
 
 .auraPrimary,
@@ -45,8 +57,8 @@
   top: 0;
   z-index: 20;
   padding:
-    max(env(safe-area-inset-top), 0.9rem)
-    1rem
+    max(var(--shell-safe-top), 0.9rem)
+    var(--shell-gutter)
     0.35rem;
   background: linear-gradient(180deg, rgba(19, 19, 19, 0.96) 0%, rgba(19, 19, 19, 0.88) 72%, rgba(19, 19, 19, 0) 100%);
   backdrop-filter: blur(18px);
@@ -58,8 +70,8 @@
   top: 0;
   z-index: 24;
   padding:
-    max(env(safe-area-inset-top), 0.95rem)
-    1rem
+    max(var(--shell-safe-top), 0.95rem)
+    var(--shell-gutter)
     0.65rem;
   background: rgba(10, 10, 10, 0.82);
   backdrop-filter: blur(28px);
@@ -70,7 +82,8 @@
 .topBarInner {
   position: relative;
   z-index: 1;
-  width: min(100%, 64rem);
+  width: min(100%, var(--shell-max-width));
+  max-width: 100%;
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -81,7 +94,8 @@
 }
 
 .detailTopBarInner {
-  width: min(100%, 32rem);
+  width: min(100%, var(--shell-detail-max-width));
+  max-width: 100%;
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -273,18 +287,20 @@
 .content {
   position: relative;
   z-index: 1;
-  width: min(100%, 64rem);
+  width: min(100%, var(--shell-max-width));
+  max-width: 100%;
   margin: 0 auto;
-  padding: 0.55rem 1rem 2rem;
+  padding: 0.7rem var(--shell-gutter) max(calc(var(--shell-safe-bottom) + 2rem), 2rem);
 }
 
 .bottomDock {
   position: fixed;
   z-index: 25;
   left: 50%;
-  bottom: 0.9rem;
+  bottom: calc(var(--shell-safe-bottom) + var(--shell-dock-offset));
   transform: translateX(-50%);
-  width: min(calc(100% - 1rem), 30rem);
+  width: min(calc(100% - (var(--shell-gutter) * 2)), 30rem);
+  max-width: calc(100vw - (var(--shell-gutter) * 2));
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.4rem;
@@ -340,21 +356,21 @@
 @media (min-width: 768px) {
   .topBar {
     padding:
-      max(env(safe-area-inset-top), 1rem)
+      max(var(--shell-safe-top), 1rem)
       1.35rem
       0.5rem;
   }
 
   .detailTopBar {
     padding:
-      max(env(safe-area-inset-top), 1rem)
+      max(var(--shell-safe-top), 1rem)
       1.35rem
       0.8rem;
   }
 
   .content {
     padding-inline: 1.35rem;
-    padding-bottom: 2.6rem;
+    padding-bottom: max(calc(var(--shell-safe-bottom) + 2.6rem), 2.6rem);
   }
 
   .heading {

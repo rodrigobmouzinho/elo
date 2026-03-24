@@ -1,7 +1,10 @@
 .page {
   display: grid;
   gap: 1rem;
-  padding-bottom: 7.8rem;
+  width: min(100%, 38rem);
+  max-width: 100%;
+  margin: 0 auto;
+  padding-bottom: calc(8.4rem + env(safe-area-inset-bottom, 0px));
 }
 
 .statusCard,
@@ -65,6 +68,7 @@
   display: flex;
   align-items: center;
   gap: 0.9rem;
+  min-width: 0;
 }
 
 .avatarOrbit {
@@ -186,9 +190,7 @@
 }
 
 .heroHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  display: grid;
   gap: 0.9rem;
 }
 
@@ -200,6 +202,8 @@
   font-weight: 800;
   line-height: 1.04;
   letter-spacing: -0.06em;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .lifecycleBadge,
@@ -216,7 +220,14 @@
   font-size: 0.62rem;
   font-weight: 800;
   letter-spacing: 0.12em;
+  text-align: center;
   text-transform: uppercase;
+  max-width: 100%;
+  white-space: normal;
+}
+
+.lifecycleBadge {
+  justify-self: start;
 }
 
 .lifecycleBadgeActive {
@@ -244,6 +255,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.45rem;
+  min-width: 0;
 }
 
 .leadText {
@@ -339,6 +351,11 @@
   gap: 0.75rem;
 }
 
+.galleryHeader {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
 .galleryModalCopy {
   flex-direction: column;
   align-items: flex-start;
@@ -392,9 +409,9 @@
 }
 
 .documentationCard {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 0.9rem;
   padding: 1rem 1.05rem;
   border-radius: 1.2rem;
@@ -416,6 +433,7 @@
   font-size: 0.88rem;
   font-weight: 700;
   letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
 }
 
 .documentationMeta {
@@ -435,15 +453,17 @@
   font-size: 0.78rem;
   font-weight: 700;
   flex-shrink: 0;
+  justify-self: end;
 }
 
 .galleryTrack {
   display: flex;
   gap: 0.85rem;
   overflow-x: auto;
+  max-width: 100%;
   padding-bottom: 0.2rem;
-  margin-inline: -1rem;
-  padding-inline: 1rem;
+  padding-inline: 0.05rem;
+  scroll-padding-inline: 0.05rem;
   scrollbar-width: none;
 }
 
@@ -453,7 +473,7 @@
 
 .galleryCard,
 .galleryCardPlaceholder {
-  flex: 0 0 15rem;
+  flex: 0 0 min(15rem, calc(100vw - 3.25rem));
   min-height: 9.5rem;
 }
 
@@ -564,6 +584,12 @@
   gap: 0.75rem;
 }
 
+.groupHeader,
+.applicantActions,
+.rejectActions {
+  flex-wrap: wrap;
+}
+
 .applicantHeader,
 .applicantIdentity {
   align-items: flex-start;
@@ -663,7 +689,7 @@
   padding:
     0.9rem
     1rem
-    max(env(safe-area-inset-bottom), 1rem);
+    max(calc(env(safe-area-inset-bottom, 0px) + 1rem), 1rem);
   background: rgba(10, 10, 10, 0.88);
   backdrop-filter: blur(30px);
   -webkit-backdrop-filter: blur(30px);
@@ -698,6 +724,7 @@
 .galleryModalCard {
   position: relative;
   width: min(100%, 46rem);
+  max-height: min(calc(100dvh - 2rem), 52rem);
   display: grid;
   gap: 0.9rem;
   padding: 1rem;
@@ -741,7 +768,7 @@
 .galleryModalImage {
   display: block;
   width: 100%;
-  max-height: min(70vh, 32rem);
+  max-height: min(64dvh, 32rem);
   object-fit: contain;
   margin: 0 auto;
 }
@@ -856,9 +883,12 @@
 
 @media (min-width: 768px) {
   .page {
-    max-width: 38rem;
-    margin: 0 auto;
     padding-bottom: 8.2rem;
+  }
+
+  .heroHeader {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: flex-start;
   }
 
   .contentGrid {
@@ -876,5 +906,23 @@
 
   .galleryModalCard {
     padding: 1.2rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .heroTitle {
+    font-size: 2rem;
+  }
+
+  .documentationCard {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .documentationAction {
+    justify-self: start;
+  }
+
+  .galleryTrack {
+    padding-inline: 0;
   }
 }

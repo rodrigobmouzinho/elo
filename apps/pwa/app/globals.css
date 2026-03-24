@@ -1,5 +1,8 @@
 :root,
 [data-theme="light"] {
+  --elo-app-background: #131313;
+  --elo-app-background-top: #16131d;
+  --elo-app-background-bottom: #151315;
   --elo-color-brand-primary: #865aff;
   --elo-color-brand-primary-hover: #7b4cfc;
   --elo-color-brand-primary-active: #6e42e8;
@@ -94,20 +97,32 @@
 
 html {
   min-height: 100%;
+  background-color: var(--elo-app-background);
+  color-scheme: dark;
+  overflow-x: clip;
 }
 
 body {
   min-height: 100vh;
+  min-height: 100dvh;
   margin: 0;
-  color: var(--elo-text-primary);
+  color: #f7f2ff;
+  background-color: var(--elo-app-background);
   background:
-    radial-gradient(75% 54% at 20% 0%, rgba(134, 90, 255, 0.18), rgba(134, 90, 255, 0) 62%),
-    radial-gradient(44% 36% at 100% 0%, rgba(134, 90, 255, 0.12), rgba(134, 90, 255, 0) 70%),
-    linear-gradient(180deg, #faf7ff 0%, var(--elo-surface-canvas) 70%, #eef4ff 100%);
+    radial-gradient(72% 52% at 20% 0%, rgba(134, 90, 255, 0.18), rgba(134, 90, 255, 0) 64%),
+    radial-gradient(44% 36% at 100% 0%, rgba(155, 2, 124, 0.12), rgba(155, 2, 124, 0) 72%),
+    linear-gradient(
+      180deg,
+      var(--elo-app-background-top) 0%,
+      var(--elo-app-background) 34%,
+      var(--elo-app-background-bottom) 100%
+    );
   font-family: var(--elo-font-body);
   line-height: 1.5;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+  overscroll-behavior-y: none;
 }
 
 h1,

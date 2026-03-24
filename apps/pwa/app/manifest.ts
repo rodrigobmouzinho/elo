@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Conecte-se com empreendedores da comunidade Elo",
     start_url: "/",
     display: "standalone",
-    background_color: "#F0F5FF",
-    theme_color: "#865AFF",
+    background_color: "#131313",
+    theme_color: "#131313",
     icons: [
       {
         src: "/icon-192.png",
