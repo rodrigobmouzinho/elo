@@ -1,7 +1,11 @@
 import { memberApplicationRejectSchema } from "@elo/core";
 import { requireAuth } from "../../../../../../lib/auth";
 import { fail, ok, parseJson } from "../../../../../../lib/http";
-import { rejectMemberApplication } from "../../../../../../lib/member-applications";
+import {
+  rejectMemberApplication,
+  MemberApplicationsSchemaNotReadyError,
+  normalizeMemberApplicationsError
+} from "../../../../../../lib/member-applications";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -16,13 +20,13 @@ export async function POST(request: Request, context: RouteContext) {
   try {
     payload = await parseJson<unknown>(request);
   } catch {
-    return fail("Payload inválido", 400);
+    return fail("Payload inv\u00e1lido", 400);
   }
 
   const parsed = memberApplicationRejectSchema.safeParse(payload);
 
   if (!parsed.success) {
-    return fail(parsed.error.issues[0]?.message ?? "Payload inválido", 422);
+    return fail(parsed.error.issues[0]?.message ?? "Payload inv\u00e1lido", 422);
   }
 
   try {
@@ -35,16 +39,21 @@ export async function POST(request: Request, context: RouteContext) {
 
     return ok(application);
   } catch (error) {
-    const message = (error as Error).message;
+    const normalizedError = normalizeMemberApplicationsError(error);
+    const message = normalizedError.message;
 
-    if (message.includes("Solicitação não encontrada")) {
+    if (normalizedError instanceof MemberApplicationsSchemaNotReadyError) {
+      return fail(message, 503);
+    }
+
+    if (message.includes("Solicitacao nao encontrada")) {
       return fail(message, 404);
     }
 
-    if (message.includes("Solicitação já finalizada")) {
+    if (message.includes("Solicitacao ja finalizada")) {
       return fail(message, 422);
     }
 
-    return fail(`Falha ao recusar solicitação: ${message}`, 500);
+    return fail(`Falha ao recusar solicitacao: ${message}`, 500);
   }
 }

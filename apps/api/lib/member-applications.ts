@@ -80,6 +80,21 @@ export type ApproveMemberApplicationResult = {
   deliveryIssue?: string;
 };
 
+export const MEMBER_APPLICATIONS_SCHEMA_MIGRATION_FILE =
+  "supabase/migrations/20260322203000_member_applications.sql";
+
+const MEMBER_APPLICATIONS_SCHEMA_NOT_READY_MESSAGE =
+  `Fluxo de adesao ainda nao foi provisionado no banco. ` +
+  `Aplique a migration ${MEMBER_APPLICATIONS_SCHEMA_MIGRATION_FILE} ` +
+  "e publique novamente o elo-api.";
+
+export class MemberApplicationsSchemaNotReadyError extends Error {
+  constructor(message = MEMBER_APPLICATIONS_SCHEMA_NOT_READY_MESSAGE) {
+    super(message);
+    this.name = "MemberApplicationsSchemaNotReadyError";
+  }
+}
+
 const DEFAULT_MEMBER_APPLICATION_STATUSES = [
   {
     code: "new_request",
@@ -153,6 +168,38 @@ function slugifyStatusLabel(value: string) {
 function sanitizeOptionalString(value: string | undefined) {
   const trimmed = value?.trim() ?? "";
   return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function isMemberApplicationsSchemaMissingMessage(message: string) {
+  const normalized = message.trim().toLowerCase();
+  const missingSignal =
+    normalized.includes("could not find the table") ||
+    normalized.includes("does not exist") ||
+    normalized.includes("schema cache");
+
+  if (!missingSignal) {
+    return false;
+  }
+
+  return [
+    "member_application_statuses",
+    "member_applications",
+    "member_application_status_history",
+    "member_profiles.must_change_password",
+    "member_profiles.onboarding_application_id",
+    "must_change_password",
+    "onboarding_application_id"
+  ].some((token) => normalized.includes(token));
+}
+
+export function normalizeMemberApplicationsError(error: unknown) {
+  const originalError = error instanceof Error ? error : new Error(String(error));
+
+  if (isMemberApplicationsSchemaMissingMessage(originalError.message)) {
+    return new MemberApplicationsSchemaNotReadyError();
+  }
+
+  return originalError;
 }
 
 function normalizeMemberApplicationInput(input: MemberApplicationInput) {

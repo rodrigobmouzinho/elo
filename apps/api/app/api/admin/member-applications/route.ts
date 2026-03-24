@@ -2,7 +2,9 @@ import { requireAuth } from "../../../../lib/auth";
 import { fail, ok } from "../../../../lib/http";
 import {
   listMemberApplications,
-  listMemberApplicationStatuses
+  listMemberApplicationStatuses,
+  MemberApplicationsSchemaNotReadyError,
+  normalizeMemberApplicationsError
 } from "../../../../lib/member-applications";
 
 export async function GET(request: Request) {
@@ -20,6 +22,8 @@ export async function GET(request: Request) {
       statuses
     });
   } catch (error) {
-    return fail(`Falha ao listar solicitacoes de adesao: ${(error as Error).message}`, 500);
+    const normalizedError = normalizeMemberApplicationsError(error);
+    const status = normalizedError instanceof MemberApplicationsSchemaNotReadyError ? 503 : 500;
+    return fail(`Falha ao listar solicitacoes de adesao: ${normalizedError.message}`, status);
   }
 }

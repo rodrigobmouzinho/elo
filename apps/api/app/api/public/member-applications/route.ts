@@ -5,7 +5,11 @@ import {
   BrazilLocationValidationError
 } from "../../../../lib/brazil-locations";
 import { fail, ok, parseJson } from "../../../../lib/http";
-import { createPublicMemberApplication } from "../../../../lib/member-applications";
+import {
+  createPublicMemberApplication,
+  MemberApplicationsSchemaNotReadyError,
+  normalizeMemberApplicationsError
+} from "../../../../lib/member-applications";
 
 export async function POST(request: Request) {
   let payload: unknown;
@@ -13,13 +17,13 @@ export async function POST(request: Request) {
   try {
     payload = await parseJson<unknown>(request);
   } catch {
-    return fail("Payload inválido", 400);
+    return fail("Payload inv\u00e1lido", 400);
   }
 
   const parsed = memberApplicationSchema.safeParse(payload);
 
   if (!parsed.success) {
-    return fail(parsed.error.issues[0]?.message ?? "Payload inválido", 422);
+    return fail(parsed.error.issues[0]?.message ?? "Payload inv\u00e1lido", 422);
   }
 
   try {
@@ -40,15 +44,20 @@ export async function POST(request: Request) {
     const application = await createPublicMemberApplication(parsed.data);
     return ok(application, 201);
   } catch (error) {
-    const message = (error as Error).message;
+    const normalizedError = normalizeMemberApplicationsError(error);
+    const message = normalizedError.message;
+
+    if (normalizedError instanceof MemberApplicationsSchemaNotReadyError) {
+      return fail(message, 503);
+    }
 
     if (
-      message.includes("Já existe um membro") ||
-      message.includes("Já existe uma solicitação em andamento")
+      message.includes("Ja existe um membro") ||
+      message.includes("Ja existe uma solicitacao em andamento")
     ) {
       return fail(message, 409);
     }
 
-    return fail(`Falha ao registrar solicitação: ${message}`, 500);
+    return fail(`Falha ao registrar solicitacao: ${message}`, 500);
   }
 }

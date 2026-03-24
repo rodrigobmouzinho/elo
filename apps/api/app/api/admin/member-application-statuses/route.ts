@@ -3,7 +3,9 @@ import { requireAuth } from "../../../../lib/auth";
 import { fail, ok, parseJson } from "../../../../lib/http";
 import {
   createMemberApplicationStatus,
-  listMemberApplicationStatuses
+  listMemberApplicationStatuses,
+  MemberApplicationsSchemaNotReadyError,
+  normalizeMemberApplicationsError
 } from "../../../../lib/member-applications";
 
 export async function GET(request: Request) {
@@ -14,7 +16,9 @@ export async function GET(request: Request) {
     const statuses = await listMemberApplicationStatuses();
     return ok(statuses);
   } catch (error) {
-    return fail(`Falha ao listar status de adesão: ${(error as Error).message}`, 500);
+    const normalizedError = normalizeMemberApplicationsError(error);
+    const status = normalizedError instanceof MemberApplicationsSchemaNotReadyError ? 503 : 500;
+    return fail(`Falha ao listar status de adesao: ${normalizedError.message}`, status);
   }
 }
 
@@ -27,25 +31,30 @@ export async function POST(request: Request) {
   try {
     payload = await parseJson<unknown>(request);
   } catch {
-    return fail("Payload inválido", 400);
+    return fail("Payload inv\u00e1lido", 400);
   }
 
   const parsed = memberApplicationStatusCreateSchema.safeParse(payload);
 
   if (!parsed.success) {
-    return fail(parsed.error.issues[0]?.message ?? "Payload inválido", 422);
+    return fail(parsed.error.issues[0]?.message ?? "Payload inv\u00e1lido", 422);
   }
 
   try {
     const status = await createMemberApplicationStatus(parsed.data.label);
     return ok(status, 201);
   } catch (error) {
-    const message = (error as Error).message;
+    const normalizedError = normalizeMemberApplicationsError(error);
+    const message = normalizedError.message;
 
-    if (message.includes("Já existe")) {
+    if (normalizedError instanceof MemberApplicationsSchemaNotReadyError) {
+      return fail(message, 503);
+    }
+
+    if (message.includes("Ja existe")) {
       return fail(message, 409);
     }
 
-    return fail(`Falha ao criar status de adesão: ${message}`, 500);
+    return fail(`Falha ao criar status de adesao: ${message}`, 500);
   }
 }

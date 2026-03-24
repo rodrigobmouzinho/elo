@@ -3,6 +3,8 @@ import { requireAuth } from "../../../../../lib/auth";
 import { fail, ok, parseJson } from "../../../../../lib/http";
 import {
   getMemberApplicationById,
+  MemberApplicationsSchemaNotReadyError,
+  normalizeMemberApplicationsError,
   updateMemberApplication
 } from "../../../../../lib/member-applications";
 
@@ -19,12 +21,14 @@ export async function GET(request: Request, context: RouteContext) {
     const application = await getMemberApplicationById(id);
 
     if (!application) {
-      return fail("Solicitação não encontrada", 404);
+      return fail("Solicitacao nao encontrada", 404);
     }
 
     return ok(application);
   } catch (error) {
-    return fail(`Falha ao carregar solicitação: ${(error as Error).message}`, 500);
+    const normalizedError = normalizeMemberApplicationsError(error);
+    const status = normalizedError instanceof MemberApplicationsSchemaNotReadyError ? 503 : 500;
+    return fail(`Falha ao carregar solicitacao: ${normalizedError.message}`, status);
   }
 }
 
@@ -37,13 +41,13 @@ export async function PATCH(request: Request, context: RouteContext) {
   try {
     payload = await parseJson<unknown>(request);
   } catch {
-    return fail("Payload inválido", 400);
+    return fail("Payload inv\u00e1lido", 400);
   }
 
   const parsed = memberApplicationUpdateSchema.safeParse(payload);
 
   if (!parsed.success) {
-    return fail(parsed.error.issues[0]?.message ?? "Payload inválido", 422);
+    return fail(parsed.error.issues[0]?.message ?? "Payload inv\u00e1lido", 422);
   }
 
   try {
@@ -52,20 +56,25 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     return ok(application);
   } catch (error) {
-    const message = (error as Error).message;
+    const normalizedError = normalizeMemberApplicationsError(error);
+    const message = normalizedError.message;
 
-    if (message.includes("Solicitação não encontrada")) {
+    if (normalizedError instanceof MemberApplicationsSchemaNotReadyError) {
+      return fail(message, 503);
+    }
+
+    if (message.includes("Solicitacao nao encontrada")) {
       return fail(message, 404);
     }
 
     if (
-      message.includes("Status informado não encontrado") ||
-      message.includes("Use as ações finais") ||
-      message.includes("Solicitações finalizadas")
+      message.includes("Status informado nao encontrado") ||
+      message.includes("Use as acoes finais") ||
+      message.includes("Solicitacoes finalizadas")
     ) {
       return fail(message, 422);
     }
 
-    return fail(`Falha ao atualizar solicitação: ${message}`, 500);
+    return fail(`Falha ao atualizar solicitacao: ${message}`, 500);
   }
 }
