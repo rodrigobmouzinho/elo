@@ -57,7 +57,7 @@
 
 .brand {
   justify-self: center;
-  width: min(100%, 12.5rem);
+  width: min(100%, 15rem);
   height: auto;
   filter: brightness(0) invert(0.92);
   opacity: 0.94;
@@ -353,6 +353,10 @@
   .content {
     width: min(100%, 26.75rem);
     gap: 2.75rem;
+  }
+
+  .brand {
+    width: min(100%, 16rem);
   }
 
   .panel {
