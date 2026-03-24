@@ -1,7 +1,10 @@
 .page {
   display: grid;
   gap: 1rem;
-  padding-bottom: 6rem;
+  width: min(100%, 38rem);
+  max-width: 100%;
+  margin: 0 auto;
+  padding-bottom: 0.75rem;
 }
 
 .statusCard {
@@ -48,6 +51,7 @@
   font-weight: 800;
   letter-spacing: -0.06em;
   line-height: 0.92;
+  overflow-wrap: anywhere;
 }
 
 .searchField {
@@ -87,8 +91,15 @@
 
 .filterBar {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.6rem;
+  overflow-x: auto;
+  padding-bottom: 0.1rem;
+  scrollbar-width: none;
+}
+
+.filterBar::-webkit-scrollbar {
+  display: none;
 }
 
 .filterChip {
@@ -196,6 +207,7 @@
 .projectCard {
   display: grid;
   gap: 0.75rem;
+  min-width: 0;
   padding: 1rem;
   border-radius: 1.4rem;
   background: #1c1b1b;
@@ -207,6 +219,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.7rem;
+  flex-wrap: wrap;
 }
 
 .categoryBadge {
@@ -222,7 +235,9 @@
   font-size: 0.56rem;
   font-weight: 800;
   letter-spacing: 0.12em;
+  text-align: center;
   text-transform: uppercase;
+  max-width: 100%;
 }
 
 .cardTitle {
@@ -233,6 +248,7 @@
   font-weight: 700;
   line-height: 1.08;
   letter-spacing: -0.04em;
+  overflow-wrap: anywhere;
 }
 
 .cardPitch {
@@ -241,6 +257,7 @@
   font-family: var(--member-font-body), "Inter", sans-serif;
   font-size: 0.82rem;
   line-height: 1.58;
+  overflow-wrap: anywhere;
 }
 
 .stateBadge {
@@ -254,7 +271,9 @@
   font-size: 0.56rem;
   font-weight: 800;
   letter-spacing: 0.12em;
+  text-align: center;
   text-transform: uppercase;
+  max-width: 100%;
 }
 
 .stateBadgeCompleted {
@@ -361,5 +380,34 @@
 
   .feedGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  .page {
+    gap: 0.9rem;
+  }
+
+  .ctaCard {
+    padding: 1.2rem;
+    border-radius: 1.6rem;
+  }
+
+  .ctaContent {
+    max-width: 100%;
+  }
+
+  .ctaTitle {
+    font-size: 1.45rem;
+  }
+
+  .cardFooter {
+    justify-content: stretch;
+  }
+
+  .viewButton,
+  .editButton {
+    flex: 1 1 100%;
+    width: 100%;
   }
 }
