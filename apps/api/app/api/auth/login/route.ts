@@ -44,6 +44,7 @@ export async function POST(request: Request) {
           role: isAdmin ? "admin" : "member",
           memberId: isAdmin ? null : memberProfile?.id ?? "f9e4f3e6-95ab-4be5-b513-c1bbf5b10b3e",
           displayName: isAdmin ? "Admin Elo" : memberProfile?.fullName ?? "Membro Elo",
+          avatarUrl: isAdmin ? null : memberProfile?.avatarUrl ?? null,
           mustChangePassword: isAdmin ? false : Boolean(memberProfile?.mustChangePassword)
         }
       });
@@ -89,6 +90,7 @@ export async function POST(request: Request) {
       role: auth.auth.role,
       memberId,
       displayName: memberProfile?.fullName ?? (auth.auth.role === "admin" ? "Admin Elo" : "Membro Elo"),
+      avatarUrl: memberProfile?.avatarUrl ?? null,
       mustChangePassword: passwordState.mustChangePassword
     }
   });

@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { ShellSessionGate } from "@elo/ui";
@@ -7,7 +8,13 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { MouseEvent, ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
-import { apiRequest, clearStoredAuth, fetchMe, getStoredAuth } from "../lib/auth-client";
+import {
+  AUTH_UPDATED_EVENT,
+  apiRequest,
+  clearStoredAuth,
+  fetchMe,
+  getStoredAuth
+} from "../lib/auth-client";
 import type { ProjectNotificationsFeed } from "../lib/project-ideas";
 import styles from "./member-shell.module.css";
 
@@ -60,6 +67,7 @@ export function MemberShell({ children, detailHeader, hideBottomNav = Boolean(de
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [displayName, setDisplayName] = useState("Membro Elo");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   useEffect(() => {
@@ -70,6 +78,9 @@ export function MemberShell({ children, detailHeader, hideBottomNav = Boolean(de
       return;
     }
 
+    setDisplayName(stored.user.displayName || "Membro Elo");
+    setAvatarUrl(stored.user.avatarUrl ?? null);
+
     fetchMe()
       .then((profile) => {
         if (profile.mustChangePassword) {
@@ -77,13 +88,28 @@ export function MemberShell({ children, detailHeader, hideBottomNav = Boolean(de
           return;
         }
 
-        setDisplayName(stored.user.displayName || "Membro Elo");
+        setDisplayName(profile.displayName || stored.user.displayName || "Membro Elo");
+        setAvatarUrl(profile.avatarUrl ?? stored.user.avatarUrl ?? null);
         setReady(true);
       })
       .catch(() => {
         router.replace("/login");
       });
   }, [router]);
+
+  useEffect(() => {
+    function handleAuthUpdated() {
+      const stored = getStoredAuth();
+      setDisplayName(stored?.user.displayName || "Membro Elo");
+      setAvatarUrl(stored?.user.avatarUrl ?? null);
+    }
+
+    window.addEventListener(AUTH_UPDATED_EVENT, handleAuthUpdated);
+
+    return () => {
+      window.removeEventListener(AUTH_UPDATED_EVENT, handleAuthUpdated);
+    };
+  }, []);
 
   useEffect(() => {
     if (!ready) return;
@@ -189,7 +215,15 @@ export function MemberShell({ children, detailHeader, hideBottomNav = Boolean(de
                 <Link href="/perfil" className={styles.avatarLink} aria-label="Abrir perfil">
                   <span className={styles.avatarHalo} aria-hidden="true" />
                   <span className={styles.avatarCore}>
-                    <span className={styles.avatarText}>{memberName.slice(0, 1).toUpperCase()}</span>
+                    {avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt={displayName}
+                        className={styles.avatarImage}
+                      />
+                    ) : (
+                      <span className={styles.avatarText}>{memberName.slice(0, 1).toUpperCase()}</span>
+                    )}
                   </span>
                 </Link>
 

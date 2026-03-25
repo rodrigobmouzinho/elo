@@ -6,6 +6,7 @@ export type AuthUser = {
   role: "admin" | "member";
   memberId: string | null;
   displayName: string;
+  avatarUrl: string | null;
   mustChangePassword?: boolean;
 };
 
@@ -51,6 +52,12 @@ type ParsedResponse<T> =
     };
 
 const STORAGE_KEY = "elo_member_auth";
+export const AUTH_UPDATED_EVENT = "elo-auth-updated";
+
+function emitAuthUpdated() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(AUTH_UPDATED_EVENT));
+}
 
 function parseJson<T>(value: string | null): T | null {
   if (!value) return null;
@@ -69,11 +76,29 @@ export function getStoredAuth(): StoredAuth | null {
 export function setStoredAuth(value: StoredAuth) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
+  emitAuthUpdated();
 }
 
 export function clearStoredAuth() {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(STORAGE_KEY);
+  emitAuthUpdated();
+}
+
+export function updateStoredAuthUser(patch: Partial<AuthUser>) {
+  const current = getStoredAuth();
+  if (!current) return null;
+
+  const next: StoredAuth = {
+    ...current,
+    user: {
+      ...current.user,
+      ...patch
+    }
+  };
+
+  setStoredAuth(next);
+  return next;
 }
 
 async function parseApiResponse<T>(response: Response, fallbackError: string): Promise<ParsedResponse<T>> {
@@ -108,11 +133,11 @@ async function parseApiResponse<T>(response: Response, fallbackError: string): P
   }
 
   if (payload.data === undefined) {
-      return {
-        ok: false,
-        status: response.status,
-        error: "Resposta inválida do servidor."
-      };
+    return {
+      ok: false,
+      status: response.status,
+      error: "Resposta inválida do servidor."
+    };
   }
 
   return {
@@ -183,6 +208,8 @@ export async function fetchMe() {
     email: string;
     role: "member";
     memberId: string | null;
+    displayName: string;
+    avatarUrl: string | null;
     mustChangePassword: boolean;
   }>(response, "Sessão inválida");
 
@@ -196,6 +223,15 @@ export async function fetchMe() {
     throw new Error("Usuário sem permissão de membro");
   }
 
+  updateStoredAuthUser({
+    email: parsed.data.email,
+    role: parsed.data.role,
+    memberId: parsed.data.memberId,
+    displayName: parsed.data.displayName,
+    avatarUrl: parsed.data.avatarUrl,
+    mustChangePassword: parsed.data.mustChangePassword
+  });
+
   return parsed.data;
 }
 
@@ -208,10 +244,7 @@ export async function submitMemberApplication(payload: MemberApplicationPayload)
     body: JSON.stringify(payload)
   });
 
-  const parsed = await parseApiResponse<{ id: string }>(
-    response,
-    "Falha ao enviar solicitação"
-  );
+  const parsed = await parseApiResponse<{ id: string }>(response, "Falha ao enviar solicitação");
 
   if (!parsed.ok) {
     throw new Error(parsed.error);
@@ -262,8 +295,7 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}) {
     throw new Error("Você precisa estar autenticado.");
   }
 
-  const isFormDataRequest =
-    typeof FormData !== "undefined" && init.body instanceof FormData;
+  const isFormDataRequest = typeof FormData !== "undefined" && init.body instanceof FormData;
   const headers = new Headers(init.headers);
 
   if (!isFormDataRequest && !headers.has("content-type")) {

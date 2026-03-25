@@ -11,7 +11,7 @@ import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "re
 import { useRouter } from "next/navigation";
 import { useBrazilLocations } from "@elo/ui";
 import { MemberShell } from "../../components/member-shell";
-import { apiRequest, clearStoredAuth } from "../../lib/auth-client";
+import { apiRequest, clearStoredAuth, updateStoredAuthUser } from "../../lib/auth-client";
 import {
   formatMemberAvatarSize,
   prepareMemberAvatarUpload,
@@ -302,6 +302,10 @@ export default function PerfilPage() {
         bio: updated.bio ?? "",
         specialty: updated.specialty ?? "",
         avatarUrl: updated.avatarUrl ?? ""
+      });
+      updateStoredAuthUser({
+        displayName: updated.fullName ?? "Membro Elo",
+        avatarUrl: updated.avatarUrl ?? null
       });
       setActiveEditor(null);
       setFeedback({
