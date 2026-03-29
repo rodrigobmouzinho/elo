@@ -84,6 +84,14 @@
 
 * {
   box-sizing: border-box;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 @font-face {
@@ -100,6 +108,8 @@ html {
   background-color: var(--elo-app-background);
   color-scheme: dark;
   overflow-x: clip;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 body {
@@ -123,6 +133,8 @@ body {
   -webkit-font-smoothing: antialiased;
   overflow-x: clip;
   overscroll-behavior-y: none;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 h1,
