@@ -1,0 +1,42 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 256 256"
+  fill="none"
+>
+  <defs>
+    <radialGradient id="elo-favicon-fill" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(128 82) rotate(90) scale(126)">
+      <stop offset="0" stop-color="#C49CFF" />
+      <stop offset="0.38" stop-color="#9B63FF" />
+      <stop offset="1" stop-color="#6D2FFF" />
+    </radialGradient>
+    <filter id="elo-favicon-glow" x="8" y="8" width="240" height="240" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="18" />
+    </filter>
+  </defs>
+
+  <g filter="url(#elo-favicon-glow)" opacity="0.78">
+    <ellipse cx="128" cy="62" rx="34" ry="50" fill="#8B4DFF" />
+    <ellipse cx="128" cy="194" rx="34" ry="50" fill="#8B4DFF" />
+    <ellipse cx="62" cy="128" rx="50" ry="34" fill="#8B4DFF" />
+    <ellipse cx="194" cy="128" rx="50" ry="34" fill="#8B4DFF" />
+    <circle cx="128" cy="128" r="56" fill="#8B4DFF" />
+  </g>
+
+  <g fill="url(#elo-favicon-fill)">
+    <ellipse cx="128" cy="62" rx="34" ry="50" />
+    <ellipse cx="128" cy="194" rx="34" ry="50" />
+    <ellipse cx="62" cy="128" rx="50" ry="34" />
+    <ellipse cx="194" cy="128" rx="50" ry="34" />
+    <circle cx="128" cy="128" r="56" />
+  </g>
+
+  <circle
+    cx="128"
+    cy="128"
+    r="56"
+    fill="url(#elo-favicon-fill)"
+    stroke="#D6BCFF"
+    stroke-opacity="0.35"
+    stroke-width="2"
+  />
+</svg>
