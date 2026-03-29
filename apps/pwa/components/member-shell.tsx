@@ -13,7 +13,8 @@ import {
   apiRequest,
   clearStoredAuth,
   fetchMe,
-  getStoredAuth
+  getStoredAuth,
+  updateStoredAuthUser
 } from "../lib/auth-client";
 import type { ProjectNotificationsFeed } from "../lib/project-ideas";
 import styles from "./member-shell.module.css";
@@ -62,6 +63,11 @@ type MemberShellProps = {
   hideBottomNav?: boolean;
 };
 
+type MemberShellIdentity = {
+  fullName: string;
+  avatarUrl?: string | null;
+};
+
 export function MemberShell({ children, detailHeader, hideBottomNav = Boolean(detailHeader) }: MemberShellProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -81,6 +87,23 @@ export function MemberShell({ children, detailHeader, hideBottomNav = Boolean(de
     setDisplayName(stored.user.displayName || "Membro Elo");
     setAvatarUrl(stored.user.avatarUrl ?? null);
 
+    async function hydrateMemberIdentity() {
+      try {
+        const memberProfile = await apiRequest<MemberShellIdentity>("/app/profile");
+        const nextDisplayName = memberProfile.fullName?.trim() || "Membro Elo";
+        const nextAvatarUrl = memberProfile.avatarUrl?.trim() || null;
+
+        setDisplayName(nextDisplayName);
+        setAvatarUrl(nextAvatarUrl);
+        updateStoredAuthUser({
+          displayName: nextDisplayName,
+          avatarUrl: nextAvatarUrl
+        });
+      } catch {
+        // Keep the session identity when the profile endpoint is temporarily unavailable.
+      }
+    }
+
     fetchMe()
       .then((profile) => {
         if (profile.mustChangePassword) {
@@ -91,6 +114,7 @@ export function MemberShell({ children, detailHeader, hideBottomNav = Boolean(de
         setDisplayName(profile.displayName || stored.user.displayName || "Membro Elo");
         setAvatarUrl(profile.avatarUrl ?? stored.user.avatarUrl ?? null);
         setReady(true);
+        void hydrateMemberIdentity();
       })
       .catch(() => {
         router.replace("/login");

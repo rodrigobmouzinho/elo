@@ -148,6 +148,10 @@ export default function PerfilPage() {
           specialty: loadedProfile.specialty ?? "",
           avatarUrl: loadedProfile.avatarUrl ?? ""
         });
+        updateStoredAuthUser({
+          displayName: loadedProfile.fullName ?? "Membro Elo",
+          avatarUrl: loadedProfile.avatarUrl?.trim() || null
+        });
       } catch (requestError) {
         setFeedback({
           title: "Falha ao carregar perfil",
