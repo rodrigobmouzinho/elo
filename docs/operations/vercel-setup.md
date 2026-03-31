@@ -35,12 +35,24 @@
 - Em preview deployments da Vercel, comentarios e share link continuam sendo a superficie principal de revisao.
 - No localhost, a Toolbar aparece apenas em `NODE_ENV=development`, evitando impacto no build publicado.
 
+## Acompanhamento da refatoracao do Admin
+- O `apps/admin` usa `@vercel/toolbar` no mesmo formato do PWA para habilitar a Toolbar no localhost durante a refatoracao do backoffice.
+- Em preview deployments da Vercel, comentarios e share link continuam sendo a superficie principal de revisao das telas administrativas.
+- No localhost, a Toolbar aparece apenas em `NODE_ENV=development`, sem impacto no bundle publicado.
+
 ## Setup minimo para revisar o PWA em tempo real
 1. Criar o projeto `elo-pwa` na Vercel apontando para a raiz `apps/pwa`.
 2. Conectar o repositorio `rodrigobmouzinho/elo`.
 3. Rodar `vercel link apps/pwa` no ambiente local para vincular o diretorio ao projeto da Vercel.
 4. Subir o PWA localmente e abrir a Toolbar para comentar, compartilhar preview e acompanhar a refatoracao tela a tela.
 5. Usar o preview deployment da PR ou da `main` como base de validacao visual antes de cada merge.
+
+## Setup minimo para revisar o Admin em tempo real
+1. Criar o projeto `elo-admin` na Vercel apontando para a raiz `apps/admin`.
+2. Conectar o repositorio `rodrigobmouzinho/elo`.
+3. Rodar `vercel link apps/admin` no ambiente local para vincular o diretorio ao projeto da Vercel.
+4. Subir o admin localmente e usar a Toolbar para revisar refinamentos visuais e fluxos administrativos.
+5. Validar cada tela do admin no preview deployment antes de consolidar o redesign.
 
 ## Fluxo recomendado para a refatoracao UX/UI
 1. Refatorar uma tela do PWA por vez com base no Stitch.
