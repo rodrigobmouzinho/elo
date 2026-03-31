@@ -1,15 +1,18 @@
 .page {
-  min-height: 100vh;
+  position: fixed;
+  inset: 0;
+  height: 100dvh;
+  overflow: hidden;
   color: #e5e2e1;
   background:
     radial-gradient(44% 52% at 18% 18%, rgba(89, 50, 209, 0.28), rgba(89, 50, 209, 0) 70%),
     radial-gradient(34% 34% at 82% 78%, rgba(155, 2, 124, 0.16), rgba(155, 2, 124, 0) 78%),
     #131313;
+  overscroll-behavior: none;
 }
 
 .topbar {
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 20;
   background: rgba(19, 19, 19, 0.86);
   backdrop-filter: blur(18px);
@@ -35,6 +38,7 @@
   width: auto;
   height: 36px;
   object-fit: contain;
+  filter: brightness(0) invert(1);
 }
 
 .topnav {
@@ -66,7 +70,7 @@
 
 .shell {
   width: min(100%, 1440px);
-  min-height: calc(100vh - 140px);
+  height: calc(100dvh - 76px);
   margin: 0 auto;
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.9fr);
@@ -76,8 +80,8 @@
 .heroPanel {
   position: relative;
   overflow: hidden;
-  min-height: 760px;
-  padding: 88px 72px 96px;
+  min-height: 0;
+  padding: 84px 72px 124px;
   background:
     linear-gradient(180deg, rgba(28, 27, 27, 0.92), rgba(19, 19, 19, 0.98)),
     #1c1b1b;
@@ -109,12 +113,13 @@
 
 .heroOrbit {
   position: absolute;
-  inset: auto -18% 4% auto;
-  width: min(64vw, 760px);
-  aspect-ratio: 1.35;
-  opacity: 0.08;
-  transform: rotate(14deg);
+  inset: auto -24% -14% auto;
+  width: min(92vw, 1120px);
+  aspect-ratio: 1 / 1;
+  opacity: 0.14;
+  transform: rotate(18deg);
   background: center / contain no-repeat url("/brand/elo-mark.png");
+  filter: saturate(1.1) drop-shadow(0 0 42px rgba(89, 50, 209, 0.32));
   pointer-events: none;
 }
 
@@ -186,7 +191,7 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
-  padding-top: 28px;
+  padding-top: 22px;
 }
 
 .metricCard {
@@ -231,8 +236,8 @@
   flex-direction: column;
   justify-content: center;
   gap: 28px;
-  min-height: 760px;
-  padding: 88px 56px 112px;
+  min-height: 0;
+  padding: 84px 56px 124px;
   background: #131313;
 }
 
@@ -425,9 +430,11 @@
 }
 
 .footer {
+  position: absolute;
+  inset: auto 0 0;
   width: min(100%, 1360px);
-  margin: -74px auto 0;
-  padding: 0 28px 28px;
+  margin: 0 auto;
+  padding: 0 28px 24px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -453,28 +460,38 @@
 }
 
 @media (max-width: 1120px) {
+  .page {
+    position: relative;
+    min-height: 100dvh;
+    height: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
   .shell {
+    height: auto;
     grid-template-columns: minmax(0, 1fr);
   }
 
   .heroPanel {
     min-height: auto;
-    padding: 72px 40px 48px;
+    padding: 72px 40px 40px;
   }
 
   .heroOrbit {
-    width: 520px;
-    right: -10%;
-    bottom: 6%;
+    width: 720px;
+    right: -20%;
+    bottom: -14%;
   }
 
   .formPanel {
     min-height: auto;
-    padding: 40px 40px 104px;
+    padding: 32px 40px 112px;
   }
 
   .footer {
-    margin-top: -40px;
+    position: relative;
+    padding-bottom: 28px;
   }
 }
 
@@ -498,7 +515,7 @@
   }
 
   .heroPanel {
-    padding: 56px 22px 34px;
+    padding: 56px 22px 30px;
   }
 
   .heroTitle {
@@ -520,7 +537,7 @@
   }
 
   .formPanel {
-    padding: 22px 18px 104px;
+    padding: 24px 18px 96px;
   }
 
   .formTitle {
@@ -532,7 +549,6 @@
   }
 
   .footer {
-    margin-top: -20px;
     padding: 0 18px 22px;
     gap: 14px 18px;
   }
