@@ -16,9 +16,9 @@ export const metadata: Metadata = {
   description: "App PWA Elo Networking",
   applicationName: "Elo Networking",
   icons: {
-    icon: [{ url: "/favicon.png", sizes: "512x512", type: "image/png" }],
-    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
-    shortcut: ["/favicon.png"]
+    icon: [{ url: "/favicon.png?v=2", sizes: "512x512", type: "image/png" }],
+    apple: [{ url: "/apple-icon.png?v=2", sizes: "180x180", type: "image/png" }],
+    shortcut: ["/favicon.png?v=2"]
   },
   appleWebApp: {
     capable: true,
