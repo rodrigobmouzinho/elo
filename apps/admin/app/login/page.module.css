@@ -36,7 +36,7 @@
 
 .logoWrap :global(img) {
   width: auto;
-  height: 52px;
+  height: 68px;
   object-fit: contain;
   filter: brightness(0) invert(1);
 }
@@ -458,7 +458,7 @@
   }
 
   .logoWrap :global(img) {
-    height: 42px;
+    height: 52px;
   }
 
   .heroPanel {
