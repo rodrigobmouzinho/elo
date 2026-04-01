@@ -125,7 +125,7 @@ export default function LoginPage() {
       <header className={styles.topbar}>
         <div className={styles.topbarInner}>
           <div className={styles.logoWrap}>
-            <Image src="/brand/elo-wordmark.png" alt="Elo Networking" width={160} height={48} priority />
+            <Image src="/brand/elo-wordmark-tight.png" alt="Elo Networking" width={300} height={141} priority />
           </div>
 
           <nav className={styles.topnav} aria-label="Links institucionais">

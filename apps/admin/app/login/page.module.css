@@ -26,7 +26,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  padding: 24px 28px;
+  padding: 18px 28px;
 }
 
 .logoWrap {
@@ -36,7 +36,7 @@
 
 .logoWrap :global(img) {
   width: auto;
-  height: 108px;
+  height: 60px;
   object-fit: contain;
   filter: brightness(0) invert(1);
 }
@@ -444,11 +444,11 @@
 
 @media (max-width: 760px) {
   .topbarInner {
-    padding: 20px 18px;
+    padding: 16px 18px;
   }
 
   .logoWrap :global(img) {
-    height: 76px;
+    height: 46px;
   }
 
   .heroPanel {
