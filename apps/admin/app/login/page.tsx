@@ -2,7 +2,7 @@
 
 import type { AlertVariant } from "@elo/ui";
 import { Alert } from "@elo/ui";
-import { Eye, EyeOff, ShieldCheck, Sparkles, Workflow } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -16,24 +16,6 @@ type AuthFeedback = {
   description: string;
   variant: AlertVariant;
 };
-
-const metrics = [
-  {
-    icon: <Workflow size={18} />,
-    value: "99,9%",
-    label: "Uptime da rede"
-  },
-  {
-    icon: <ShieldCheck size={18} />,
-    value: "AES-256",
-    label: "Criptografia"
-  },
-  {
-    icon: <Sparkles size={18} />,
-    value: "24/7",
-    label: "Monitoramento"
-  }
-];
 
 function mapAuthErrorMessage(raw: string) {
   const normalized = raw.trim().toLowerCase();
@@ -176,16 +158,6 @@ export default function LoginPage() {
                 Monitore conexões, gerencie acessos e acompanhe o ritmo operacional da Elo em um painel administrativo
                 desenhado para leitura executiva.
               </p>
-            </div>
-
-            <div className={styles.metricsGrid}>
-              {metrics.map((item) => (
-                <div key={item.label} className={styles.metricCard}>
-                  <span className={styles.metricIcon}>{item.icon}</span>
-                  <strong className={styles.metricValue}>{item.value}</strong>
-                  <span className={styles.metricLabel}>{item.label}</span>
-                </div>
-              ))}
             </div>
           </div>
         </article>

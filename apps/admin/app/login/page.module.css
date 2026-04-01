@@ -36,7 +36,7 @@
 
 .logoWrap :global(img) {
   width: auto;
-  height: 36px;
+  height: 52px;
   object-fit: contain;
   filter: brightness(0) invert(1);
 }
@@ -128,7 +128,7 @@
   z-index: 1;
   max-width: 620px;
   display: grid;
-  gap: 28px;
+  gap: 24px;
 }
 
 .eyebrow {
@@ -160,6 +160,7 @@
 .heroCopy {
   display: grid;
   gap: 18px;
+  max-width: 560px;
 }
 
 .heroTitle {
@@ -185,50 +186,6 @@
   color: rgba(202, 195, 215, 0.8);
   font-size: 1.02rem;
   line-height: 1.7;
-}
-
-.metricsGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
-  padding-top: 22px;
-}
-
-.metricCard {
-  display: grid;
-  gap: 12px;
-  min-height: 148px;
-  padding: 22px 20px;
-  border-radius: 24px;
-  background: rgba(53, 53, 52, 0.42);
-  color: #e5e2e1;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-}
-
-.metricIcon {
-  width: 38px;
-  height: 38px;
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
-  background: rgba(89, 50, 209, 0.2);
-  color: #cbbeff;
-}
-
-.metricValue {
-  font-family: "Plus Jakarta Sans", var(--elo-font-body), sans-serif;
-  font-size: 1.7rem;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.metricLabel {
-  color: rgba(202, 195, 215, 0.72);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
 }
 
 .formPanel {
@@ -501,17 +458,7 @@
   }
 
   .logoWrap :global(img) {
-    height: 30px;
-  }
-
-  .topnav {
-    gap: 18px;
-  }
-
-  .topnavCurrent,
-  .topnavLink {
-    font-size: 0.7rem;
-    letter-spacing: 0.12em;
+    height: 42px;
   }
 
   .heroPanel {
@@ -525,15 +472,6 @@
 
   .heroText {
     font-size: 0.95rem;
-  }
-
-  .metricsGrid {
-    grid-template-columns: 1fr;
-    padding-top: 8px;
-  }
-
-  .metricCard {
-    min-height: 128px;
   }
 
   .formPanel {
