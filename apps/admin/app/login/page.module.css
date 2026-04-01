@@ -393,27 +393,17 @@
   margin: 0 auto;
   padding: 0 28px 24px;
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 20px;
 }
 
-.footerLink,
 .footerCopy {
   color: rgba(147, 142, 160, 0.76);
   font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-}
-
-.footerLink {
-  transition: color 140ms ease;
-}
-
-.footerLink:hover {
-  color: #cbbeff;
+  text-align: center;
 }
 
 @media (max-width: 1120px) {
@@ -488,10 +478,8 @@
 
   .footer {
     padding: 0 18px 22px;
-    gap: 14px 18px;
   }
 
-  .footerLink,
   .footerCopy {
     font-size: 0.58rem;
     letter-spacing: 0.14em;

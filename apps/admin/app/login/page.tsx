@@ -4,7 +4,6 @@ import type { AlertVariant } from "@elo/ui";
 import { Alert } from "@elo/ui";
 import { Eye, EyeOff } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
@@ -241,15 +240,6 @@ export default function LoginPage() {
       </section>
 
       <footer className={styles.footer}>
-        <Link href="/login" className={styles.footerLink}>
-          Política de privacidade
-        </Link>
-        <Link href="/login" className={styles.footerLink}>
-          Termos de serviço
-        </Link>
-        <a className={styles.footerLink} href="mailto:suporte@elonetworking.com">
-          Suporte
-        </a>
         <span className={styles.footerCopy}>© 2026 Elo Networking. Todos os direitos reservados.</span>
       </footer>
     </main>
