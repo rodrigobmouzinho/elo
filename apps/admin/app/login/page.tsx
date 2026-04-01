@@ -144,11 +144,6 @@ export default function LoginPage() {
           <div className={styles.heroOrbit} aria-hidden="true" />
 
           <div className={styles.heroContent}>
-            <div className={styles.eyebrow}>
-              <span className={styles.eyebrowDot} />
-              <span>Central de comando</span>
-            </div>
-
             <div className={styles.heroCopy}>
               <h1 className={styles.heroTitle}>
                 O futuro do <span>networking</span> gerenciado com precisão.

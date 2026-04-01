@@ -128,33 +128,7 @@
   z-index: 1;
   max-width: 620px;
   display: grid;
-  gap: 24px;
-}
-
-.eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  width: fit-content;
-  min-height: 38px;
-  padding: 0 16px;
-  border-radius: 999px;
-  background: rgba(53, 53, 52, 0.54);
-  color: #cac3d7;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-}
-
-.eyebrowDot {
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: #ffaedf;
-  box-shadow: 0 0 0 8px rgba(255, 174, 223, 0.12);
+  gap: 18px;
 }
 
 .heroCopy {
@@ -272,31 +246,34 @@
   padding: 0 18px;
   border: 0;
   border-radius: 16px;
-  background: #2a2a2a;
-  color: #e5e2e1;
+  background: #2a2a2a !important;
+  color: #e5e2e1 !important;
+  color-scheme: dark;
+  appearance: none;
+  -webkit-appearance: none;
   font-size: 0.97rem;
   transition: background-color 140ms ease, box-shadow 140ms ease;
 }
 
 .input::placeholder {
-  color: rgba(147, 142, 160, 0.58);
+  color: rgba(147, 142, 160, 0.58) !important;
 }
 
 .input:hover {
-  background: #313131;
+  background: #313131 !important;
 }
 
 .input:focus-visible {
   outline: none;
-  background: #393939;
+  background: #393939 !important;
   box-shadow: 0 0 0 1px rgba(89, 50, 209, 0.82);
 }
 
 .input:-webkit-autofill,
 .input:-webkit-autofill:hover,
 .input:-webkit-autofill:focus {
-  -webkit-text-fill-color: #e5e2e1;
-  -webkit-box-shadow: 0 0 0 1000px #2a2a2a inset;
+  -webkit-text-fill-color: #e5e2e1 !important;
+  -webkit-box-shadow: 0 0 0 1000px #2a2a2a inset !important;
   caret-color: #ffffff;
 }
 
