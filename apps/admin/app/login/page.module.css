@@ -69,11 +69,10 @@
 }
 
 .shell {
-  width: min(100%, 1440px);
+  width: 100%;
   height: calc(100dvh - 76px);
-  margin: 0 auto;
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.9fr);
+  grid-template-columns: minmax(0, 1fr) minmax(480px, 640px);
   gap: 0;
 }
 
