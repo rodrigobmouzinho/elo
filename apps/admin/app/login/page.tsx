@@ -127,13 +127,6 @@ export default function LoginPage() {
           <div className={styles.logoWrap}>
             <Image src="/brand/elo-wordmark-tight.png" alt="Elo Networking" width={300} height={141} priority />
           </div>
-
-          <nav className={styles.topnav} aria-label="Links institucionais">
-            <span className={styles.topnavCurrent}>Acesso</span>
-            <a className={styles.topnavLink} href="mailto:suporte@elonetworking.com">
-              Suporte
-            </a>
-          </nav>
         </div>
       </header>
 

@@ -24,7 +24,7 @@
   margin: 0 auto;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 24px;
   padding: 16px 28px;
 }
@@ -39,33 +39,6 @@
   height: 48px;
   object-fit: contain;
   filter: brightness(0) invert(1);
-}
-
-.topnav {
-  display: inline-flex;
-  align-items: center;
-  gap: 28px;
-}
-
-.topnavCurrent,
-.topnavLink {
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.topnavCurrent {
-  color: #cbbeff;
-}
-
-.topnavLink {
-  color: rgba(229, 226, 225, 0.6);
-  transition: color 140ms ease;
-}
-
-.topnavLink:hover {
-  color: #ffffff;
 }
 
 .shell {
