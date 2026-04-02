@@ -112,11 +112,12 @@
 
 .heroOrbit {
   position: absolute;
-  inset: auto -24% -14% auto;
-  width: min(92vw, 1120px);
+  left: 56%;
+  top: 58%;
+  width: min(84vw, 1020px);
   aspect-ratio: 1 / 1;
   opacity: 0.14;
-  transform: rotate(18deg);
+  transform: translate(-50%, -50%) rotate(18deg);
   background: center / contain no-repeat url("/brand/elo-mark.png");
   filter: saturate(1.1) drop-shadow(0 0 42px rgba(89, 50, 209, 0.32));
   pointer-events: none;
@@ -402,9 +403,9 @@
   }
 
   .heroOrbit {
+    left: 58%;
+    top: 62%;
     width: 720px;
-    right: -20%;
-    bottom: -14%;
   }
 
   .formPanel {
