@@ -215,22 +215,11 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className={styles.securityLine}>
-            <span className={styles.rule} />
-            <span className={styles.securityLabel}>Elo Security</span>
-            <span className={styles.rule} />
-          </div>
-
           {feedback ? (
             <Alert variant={feedback.variant} title={feedback.title}>
               {feedback.description}
             </Alert>
-          ) : (
-            <p className={styles.securityText}>
-              Este sistema é monitorado. Acessos não autorizados estão sujeitos a auditoria interna e penalidades
-              legais.
-            </p>
-          )}
+          ) : null}
         </article>
       </section>
 

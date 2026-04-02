@@ -335,34 +335,6 @@
   cursor: progress;
 }
 
-.securityLine {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-}
-
-.rule {
-  height: 1px;
-  flex: 1;
-  background: rgba(72, 69, 85, 0.54);
-}
-
-.securityLabel {
-  color: rgba(147, 142, 160, 0.88);
-  font-size: 0.63rem;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-}
-
-.securityText {
-  margin: 0;
-  color: rgba(202, 195, 215, 0.6);
-  font-size: 0.74rem;
-  line-height: 1.8;
-  text-align: center;
-}
-
 .footer {
   position: absolute;
   inset: auto 0 0;
