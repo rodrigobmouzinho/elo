@@ -645,7 +645,13 @@ export default function EventsPage() {
                   </Badge>
                 </div>
                 {galleryPreviewUrls.length > 0 ? (
-                  <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
+                  <div
+                    style={{
+                      display: "grid",
+                      gap: "8px",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(72px, 1fr))"
+                    }}
+                  >
                     {galleryPreviewUrls.slice(0, 3).map((imageUrl) => (
                       <div
                         key={imageUrl}
@@ -692,7 +698,13 @@ export default function EventsPage() {
                   />
                 </label>
 
-                <div style={{ display: "grid", gap: "10px", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gap: "10px",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))"
+                  }}
+                >
                   <label style={{ display: "grid", gap: "6px" }}>
                     <span>Início</span>
                     <Input
@@ -730,7 +742,13 @@ export default function EventsPage() {
                   />
                 </label>
 
-                <div style={{ display: "grid", gap: "10px", gridTemplateColumns: "minmax(0, 1fr) 120px" }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gap: "10px",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))"
+                  }}
+                >
                   <label style={{ display: "grid", gap: "6px" }}>
                     <span>Tipo de acesso</span>
                     <Select

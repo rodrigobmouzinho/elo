@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { AdminWorkspaceShell, ShellSessionGate } from "@elo/ui";
 import { CalendarDays, CreditCard, Gauge, Trophy, UserRoundPlus, Users2 } from "lucide-react";
@@ -85,3 +85,4 @@ export function AdminShell({ children }: { children: ReactNode }) {
     </ShellSessionGate>
   );
 }
+

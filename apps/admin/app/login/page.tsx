@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import type { AlertVariant } from "@elo/ui";
 import { Alert } from "@elo/ui";
@@ -222,3 +222,4 @@ export default function LoginPage() {
     </main>
   );
 }
+

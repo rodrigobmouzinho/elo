@@ -448,7 +448,13 @@ export default function GamificationPage() {
           ]}
         />
 
-        <section style={{ display: "grid", gap: "18px", gridTemplateColumns: "minmax(0, 1.45fr) minmax(320px, 0.9fr)" }}>
+        <section
+          style={{
+            display: "grid",
+            gap: "18px",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))"
+          }}
+        >
           <div style={{ display: "grid", gap: "14px", minWidth: 0 }}>
             <DataTable
               rowKey={(row) => row.id}

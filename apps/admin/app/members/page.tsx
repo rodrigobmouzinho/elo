@@ -824,7 +824,13 @@ export default function MembersPage() {
                 />
               </label>
 
-              <div style={{ display: "grid", gap: "10px", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
+              <div
+                style={{
+                  display: "grid",
+                  gap: "10px",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))"
+                }}
+              >
                 <label style={{ display: "grid", gap: "6px" }}>
                   <span>Celular</span>
                   <Input
@@ -857,7 +863,13 @@ export default function MembersPage() {
                 </label>
               </div>
 
-              <div style={{ display: "grid", gap: "10px", gridTemplateColumns: "88px minmax(0, 1fr)" }}>
+              <div
+                style={{
+                  display: "grid",
+                  gap: "10px",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 140px), 1fr))"
+                }}
+              >
                 <label style={{ display: "grid", gap: "6px" }}>
                   <span>UF</span>
                   <Select

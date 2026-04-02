@@ -386,7 +386,7 @@ export default function AdminHomePage() {
             style={{
               display: "grid",
               gap: "18px",
-              gridTemplateColumns: "minmax(0, 1.65fr) minmax(320px, 0.95fr)"
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 360px), 1fr))"
             }}
           >
             <article
@@ -610,7 +610,7 @@ export default function AdminHomePage() {
             style={{
               display: "grid",
               gap: "18px",
-              gridTemplateColumns: "minmax(0, 1.45fr) minmax(300px, 0.9fr)"
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))"
             }}
           >
             <Card

@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import { Bell, ChevronRight, LogOut } from "lucide-react";
+import { Bell, ChevronRight, LogOut, Menu, X } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { Badge } from "./form-primitives";
@@ -117,14 +117,270 @@ export function AdminWorkspaceShell({
   onLogout,
   renderNavItem
 }: AdminNavigationShellProps) {
+  const isDesktop = useMinWidth(1180);
+  const [navOpen, setNavOpen] = useState(false);
   const activeItem = navItems.find((item) => item.href === activeHref);
+  const desktopItems = navItems.filter((item) => !item.mobileOnly);
+  const mobileItems = navItems.filter((item) => !item.desktopOnly);
+
+  useEffect(() => {
+    setNavOpen(false);
+  }, [activeHref]);
+
+  if (!isDesktop) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background:
+            "radial-gradient(980px 460px at 0% 0%, rgba(134, 90, 255, 0.16), transparent 56%), radial-gradient(540px 300px at 100% 0%, rgba(17, 19, 24, 0.08), transparent 65%), linear-gradient(180deg, #F8FAFF 0%, var(--elo-surface-canvas, #F0F5FF) 100%)"
+        }}
+      >
+        <header
+          style={{
+            position: "sticky",
+            top: 0,
+            zIndex: 30,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "12px",
+            padding: "14px 16px",
+            borderBottom: "1px solid var(--elo-border-soft, rgba(17, 17, 17, 0.06))",
+            background: "rgba(248, 250, 255, 0.86)",
+            backdropFilter: "blur(20px)"
+          }}
+        >
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
+            <LogoWordmark size="sm" />
+            <div style={{ display: "grid", gap: "2px", minWidth: 0 }}>
+              <small
+                style={{
+                  color: "var(--elo-text-tertiary, #6B7280)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis"
+                }}
+              >
+                Elo Ops
+              </small>
+              <strong
+                style={{
+                  color: "var(--elo-text-primary, #111111)",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis"
+                }}
+              >
+                {activeItem?.label ?? "Painel"}
+              </strong>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+            <span
+              style={{
+                maxWidth: "140px",
+                padding: "10px 12px",
+                borderRadius: "14px",
+                border: "1px solid var(--elo-border-soft, rgba(17, 17, 17, 0.06))",
+                background: "rgba(255,255,255,0.82)",
+                color: "var(--elo-text-secondary, #374151)",
+                fontWeight: 700,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis"
+              }}
+            >
+              {displayName}
+            </span>
+            <button
+              type="button"
+              onClick={() => setNavOpen((current) => !current)}
+              aria-label={navOpen ? "Fechar navegação" : "Abrir navegação"}
+              style={{
+                width: "44px",
+                height: "44px",
+                display: "grid",
+                placeItems: "center",
+                borderRadius: "14px",
+                border: "1px solid var(--elo-border-soft, rgba(17, 17, 17, 0.06))",
+                background: "rgba(255,255,255,0.88)",
+                color: "var(--elo-text-secondary, #374151)",
+                cursor: "pointer"
+              }}
+            >
+              {navOpen ? <X size={18} /> : <Menu size={18} />}
+            </button>
+          </div>
+        </header>
+
+        {navOpen ? (
+          <>
+            <button
+              type="button"
+              aria-label="Fechar menu"
+              onClick={() => setNavOpen(false)}
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 35,
+                border: 0,
+                padding: 0,
+                background: "rgba(9, 10, 16, 0.46)"
+              }}
+            />
+            <aside
+              style={{
+                position: "fixed",
+                top: 0,
+                right: 0,
+                zIndex: 40,
+                width: "min(88vw, 360px)",
+                height: "100vh",
+                padding: "20px 16px 24px",
+                display: "grid",
+                gridTemplateRows: "auto auto 1fr auto",
+                gap: "16px",
+                color: "rgba(255, 255, 255, 0.88)",
+                background:
+                  "radial-gradient(460px 220px at 0% 0%, rgba(134, 90, 255, 0.16), transparent 52%), linear-gradient(180deg, #090A10 0%, var(--elo-rail, #0D0E14) 100%)",
+                borderLeft: "1px solid rgba(255, 255, 255, 0.08)",
+                boxShadow: "-24px 0 48px rgba(8, 9, 14, 0.32)"
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+                <LogoWordmark
+                  plated
+                  size="sm"
+                  style={{
+                    padding: "14px 16px",
+                    borderRadius: "18px",
+                    background: "linear-gradient(180deg, rgba(255,255,255,0.96), rgba(245,247,255,0.9))"
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setNavOpen(false)}
+                  aria-label="Fechar menu"
+                  style={{
+                    width: "40px",
+                    height: "40px",
+                    display: "grid",
+                    placeItems: "center",
+                    borderRadius: "12px",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    background: "rgba(255,255,255,0.04)",
+                    color: "#FFFFFF",
+                    cursor: "pointer"
+                  }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gap: "6px",
+                  padding: "14px 16px",
+                  borderRadius: "18px",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  background: "rgba(255,255,255,0.04)"
+                }}
+              >
+                <small
+                  style={{
+                    color: "rgba(255,255,255,0.5)",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase"
+                  }}
+                >
+                  Sessão
+                </small>
+                <strong style={{ fontSize: "1.04rem", color: "#FFFFFF" }}>{displayName}</strong>
+                <span style={{ color: "rgba(255,255,255,0.66)", fontSize: ".9rem", lineHeight: 1.55 }}>
+                  Operação, aprovações e ritmo da comunidade no mesmo fluxo.
+                </span>
+              </div>
+
+              <nav style={{ display: "grid", gap: "8px", alignContent: "start" }}>
+                <small
+                  style={{
+                    color: "rgba(255,255,255,0.48)",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    padding: "0 10px"
+                  }}
+                >
+                  Navegação
+                </small>
+                {mobileItems.map((item) => {
+                  const navStyle = {
+                    ...getShellNavItemStyle(activeHref === item.href, false),
+                    color: activeHref === item.href ? "#FFFFFF" : "rgba(255,255,255,0.78)",
+                    background:
+                      activeHref === item.href
+                        ? "linear-gradient(135deg, rgba(134, 90, 255, 0.24), rgba(134, 90, 255, 0.1))"
+                        : "transparent"
+                  };
+
+                  return (
+                    <div key={item.href}>
+                      {renderNavItem ? (
+                        renderNavItem({
+                          item,
+                          active: activeHref === item.href,
+                          style: navStyle,
+                          compact: false
+                        })
+                      ) : (
+                        <a href={item.href} style={navStyle}>
+                          <span>{item.label}</span>
+                        </a>
+                      )}
+                    </div>
+                  );
+                })}
+              </nav>
+
+              <button
+                type="button"
+                onClick={onLogout}
+                style={{
+                  minHeight: "46px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                  borderRadius: "14px",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  background: "rgba(255,255,255,0.03)",
+                  color: "#FFFFFF",
+                  fontWeight: 700,
+                  cursor: "pointer"
+                }}
+              >
+                <LogOut size={16} />
+                Encerrar sessão
+              </button>
+            </aside>
+          </>
+        ) : null}
+
+        <main style={{ width: "100%", maxWidth: "1120px", padding: "18px 16px 28px", margin: "0 auto" }}>{children}</main>
+      </div>
+    );
+  }
 
   return (
     <div
       style={{
         minHeight: "100vh",
         display: "grid",
-        gridTemplateColumns: "304px minmax(0, 1fr)",
+        gridTemplateColumns: "clamp(272px, 24vw, 304px) minmax(0, 1fr)",
         background:
           "radial-gradient(980px 460px at 0% 0%, rgba(134, 90, 255, 0.16), transparent 56%), radial-gradient(540px 300px at 100% 0%, rgba(17, 19, 24, 0.08), transparent 65%), linear-gradient(180deg, #F8FAFF 0%, var(--elo-surface-canvas, #F0F5FF) 100%)"
       }}
@@ -210,7 +466,7 @@ export function AdminWorkspaceShell({
           >
             Navegação
           </small>
-          {navItems.map((item) =>
+          {desktopItems.map((item) =>
             item.mobileOnly ? null : (
               <div key={item.href}>
                 {renderNavItem ? (
@@ -630,3 +886,4 @@ export function MemberAppShell({
 
 export const AdminNavigationShell = AdminWorkspaceShell;
 export const MemberNavigationShell = MemberAppShell;
+
