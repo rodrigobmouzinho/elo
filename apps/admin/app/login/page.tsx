@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import type { AlertVariant } from "@elo/ui";
 import { Alert } from "@elo/ui";
@@ -6,7 +6,7 @@ import { Eye, EyeOff } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { login, requestPasswordReset } from "../../lib/auth-client";
 import styles from "./page.module.css";
 
@@ -23,7 +23,11 @@ function mapAuthErrorMessage(raw: string) {
     return "Não foi possível conectar ao servidor. Tente novamente em instantes.";
   }
 
-  if (normalized.includes("invalid") || normalized.includes("credenciais") || normalized.includes("login")) {
+  if (
+    normalized.includes("invalid") ||
+    normalized.includes("credenciais") ||
+    normalized.includes("login")
+  ) {
     return "E-mail ou senha inválidos. Verifique os dados e tente novamente.";
   }
 
@@ -39,31 +43,6 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   const isLoading = busyAction !== null;
-
-  useEffect(() => {
-    const previousHtmlBackground = document.documentElement.style.background;
-    const previousHtmlOverflow = document.documentElement.style.overflow;
-    const previousHtmlOverscroll = document.documentElement.style.overscrollBehavior;
-    const previousBodyBackground = document.body.style.background;
-    const previousBodyOverflow = document.body.style.overflow;
-    const previousBodyOverscroll = document.body.style.overscrollBehavior;
-
-    document.documentElement.style.background = "#131313";
-    document.documentElement.style.overflow = "hidden";
-    document.documentElement.style.overscrollBehavior = "none";
-    document.body.style.background = "#131313";
-    document.body.style.overflow = "hidden";
-    document.body.style.overscrollBehavior = "none";
-
-    return () => {
-      document.documentElement.style.background = previousHtmlBackground;
-      document.documentElement.style.overflow = previousHtmlOverflow;
-      document.documentElement.style.overscrollBehavior = previousHtmlOverscroll;
-      document.body.style.background = previousBodyBackground;
-      document.body.style.overflow = previousBodyOverflow;
-      document.body.style.overscrollBehavior = previousBodyOverscroll;
-    };
-  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -125,44 +104,38 @@ export default function LoginPage() {
       <header className={styles.topbar}>
         <div className={styles.topbarInner}>
           <div className={styles.logoWrap}>
-            <Image src="/brand/elo-wordmark-tight.png" alt="Elo Networking" width={300} height={141} priority />
+            <Image
+              src="/brand/elo-mark.png"
+              alt="Elo Networking"
+              width={120}
+              height={120}
+              priority
+            />
           </div>
         </div>
       </header>
 
       <section className={styles.shell}>
         <article className={styles.heroPanel}>
-          <div className={styles.heroGlowPrimary} />
-          <div className={styles.heroGlowSecondary} />
-          <div className={styles.heroOrbit} aria-hidden="true" />
-
+          <div className={styles.heroGlow} />
           <div className={styles.heroContent}>
-            <div className={styles.heroCopy}>
-              <h1 className={styles.heroTitle}>
-                O futuro do <span>networking</span> gerenciado com precisão.
-              </h1>
-              <p className={styles.heroText}>
-                Monitore conexões, gerencie acessos e acompanhe o ritmo operacional da Elo em um painel administrativo
-                desenhado para leitura executiva.
-              </p>
-            </div>
+            <div className={styles.heroSymbol} aria-hidden="true" />
           </div>
         </article>
 
         <article className={styles.formPanel}>
           <div className={styles.formIntro}>
             <h2 className={styles.formTitle}>Acesso administrativo</h2>
-            <p className={styles.formText}>Entre com suas credenciais para gerenciar a comunidade Elo.</p>
           </div>
 
           <form onSubmit={handleSubmit} className={styles.form}>
             <label className={styles.field}>
-              <span className={styles.label}>E-mail do usuário</span>
+              <span className={styles.label}>E-mail</span>
               <input
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 className={styles.input}
-                placeholder="nome@elo.com"
+                placeholder="admin@elo.com"
                 type="email"
                 autoComplete="email"
                 required
@@ -187,7 +160,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   className={styles.input}
-                  placeholder="Digite sua senha"
+                  placeholder="••••••••"
                   type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   required
@@ -204,7 +177,7 @@ export default function LoginPage() {
             </label>
 
             <button type="submit" className={styles.primaryButton} disabled={isLoading}>
-              {busyAction === "login" ? "Entrando..." : "Entrar no painel"}
+              {busyAction === "login" ? "Entrando..." : "Entrar"}
             </button>
           </form>
 
@@ -217,9 +190,8 @@ export default function LoginPage() {
       </section>
 
       <footer className={styles.footer}>
-        <span className={styles.footerCopy}>© 2026 Elo Networking. Todos os direitos reservados.</span>
+        <span className={styles.footerCopy}>© 2026 Elo Networking</span>
       </footer>
     </main>
   );
 }
-
