@@ -20,7 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const shouldInjectToolbar = process.env.NODE_ENV === "development";
 
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" data-theme="dark">
       <body className={anekLatin.variable}>
         {children}
         {shouldInjectToolbar ? <VercelToolbar /> : null}
