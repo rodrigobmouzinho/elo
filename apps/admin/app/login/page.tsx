@@ -3,7 +3,6 @@
 import type { AlertVariant } from "@elo/ui";
 import { Alert } from "@elo/ui";
 import { Eye, EyeOff } from "lucide-react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
 import { useState } from "react";
@@ -101,20 +100,6 @@ export default function LoginPage() {
 
   return (
     <main className={styles.page}>
-      <header className={styles.topbar}>
-        <div className={styles.topbarInner}>
-          <div className={styles.logoWrap}>
-            <Image
-              src="/brand/elo-mark.png"
-              alt="Elo Networking"
-              width={120}
-              height={120}
-              priority
-            />
-          </div>
-        </div>
-      </header>
-
       <section className={styles.shell}>
         <article className={styles.heroPanel}>
           <div className={styles.heroGlow} />
@@ -143,18 +128,7 @@ export default function LoginPage() {
             </label>
 
             <label className={styles.field}>
-              <span className={styles.fieldHeader}>
-                <span className={styles.label}>Senha</span>
-                <button
-                  type="button"
-                  className={styles.inlineAction}
-                  onClick={handleReset}
-                  disabled={isLoading}
-                >
-                  {busyAction === "reset" ? "Enviando..." : "Esqueci minha senha"}
-                </button>
-              </span>
-
+              <span className={styles.label}>Senha</span>
               <span className={styles.passwordField}>
                 <input
                   value={password}
@@ -178,6 +152,15 @@ export default function LoginPage() {
 
             <button type="submit" className={styles.primaryButton} disabled={isLoading}>
               {busyAction === "login" ? "Entrando..." : "Entrar"}
+            </button>
+
+            <button
+              type="button"
+              className={styles.inlineAction}
+              onClick={handleReset}
+              disabled={isLoading}
+            >
+              {busyAction === "reset" ? "Enviando..." : "Esqueci minha senha"}
             </button>
           </form>
 
