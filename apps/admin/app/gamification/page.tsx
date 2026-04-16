@@ -1,22 +1,6 @@
 "use client";
 
-import {
-  Alert,
-  Badge,
-  Button,
-  DataTable,
-  EmptyState,
-  MetricStrip,
-  PageHeader,
-  PriorityStrip,
-  SidePanelForm,
-  Textarea,
-  Input,
-  Select,
-  Card
-} from "@elo/ui";
-import type { AlertVariant, BadgeVariant } from "@elo/ui";
-import { Award, CalendarClock, Medal, Sparkles, Target, Trophy, Zap } from "lucide-react";
+import type { AlertVariant } from "@elo/ui";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { AdminShell } from "../../components/admin-shell";
 import { apiRequest } from "../../lib/auth-client";
@@ -40,10 +24,7 @@ type SeasonItem = {
 type BadgeJobResponse = {
   seasonName: string | null;
   grantedCount: number;
-  grants: Array<{
-    memberName: string;
-    badgeName: string;
-  }>;
+  grants: Array<{ memberName: string; badgeName: string }>;
 };
 
 type FeedbackState = {
@@ -54,63 +35,57 @@ type FeedbackState = {
 
 const DEFAULT_SEASON_DURATION_DAYS = 180;
 
-function defaultSeasonStartAt() {
-  return new Date().toISOString().slice(0, 16);
-}
+const defaultSeasonStartAt = () => new Date().toISOString().slice(0, 16);
+const defaultSeasonEndsAt = () =>
+  new Date(Date.now() + DEFAULT_SEASON_DURATION_DAYS * 24 * 3600 * 1000).toISOString().slice(0, 16);
 
-function defaultSeasonEndsAt() {
-  return new Date(Date.now() + DEFAULT_SEASON_DURATION_DAYS * 24 * 3600 * 1000)
-    .toISOString()
-    .slice(0, 16);
-}
+const cardStyle = {
+  display: "flex",
+  flexDirection: "column" as const,
+  gap: "8px",
+  padding: "16px",
+  borderRadius: "12px",
+  background: "#1a1a1a",
+  border: "1px solid rgba(255,255,255,0.06)"
+};
 
-function formatSeasonPeriod(season: SeasonItem) {
-  return `${new Date(season.startsAt).toLocaleDateString("pt-BR")} ate ${new Date(season.endsAt).toLocaleDateString("pt-BR")}`;
-}
+const cardLabelStyle = {
+  fontSize: "0.75rem",
+  fontWeight: 600,
+  color: "rgba(255,255,255,0.5)",
+  textTransform: "uppercase" as const,
+  letterSpacing: "0.05em"
+};
+
+const cardValueStyle = {
+  fontSize: "1.5rem",
+  fontWeight: 700,
+  color: "#fff"
+};
+
+const inputStyle = {
+  width: "100%",
+  padding: "10px 12px",
+  borderRadius: "8px",
+  border: "1px solid rgba(255,255,255,0.1)",
+  background: "#252525",
+  color: "#fff",
+  fontSize: "0.875rem"
+};
 
 function normalizeApiError(raw: string) {
   const normalized = raw.trim().toLowerCase();
-
   if (normalized.includes("network") || normalized.includes("conexao")) {
-    return "Não foi possível conectar ao servidor. Tente novamente em instantes.";
+    return "Não foi possível conectar ao servidor.";
   }
-
   return raw;
 }
 
-function seasonStatusBadgeVariant(active: boolean): BadgeVariant {
-  return active ? "success" : "neutral";
-}
-
-function rankingBadgeVariant(rank: number): BadgeVariant {
-  if (rank === 1) return "brand";
-  if (rank === 2) return "info";
-  if (rank === 3) return "warning";
-  return "neutral";
-}
-
-function rankingBadgeLabel(rank: number) {
-  if (rank === 1) return "Top 1";
-  if (rank === 2) return "Top 2";
-  if (rank === 3) return "Top 3";
-  return `#${rank}`;
-}
-
-function grantsSummary(grants: Array<{ memberName: string; badgeName: string }>) {
-  if (grants.length === 0) return "Nenhum novo badge concedido.";
-
-  const preview = grants
-    .slice(0, 5)
-    .map((item) => `${item.memberName}: ${item.badgeName}`)
-    .join(" | ");
-
-  if (grants.length <= 5) return preview;
-
-  return `${preview} | +${grants.length - 5} concessão(ões)`;
+function formatSeasonPeriod(season: SeasonItem) {
+  return `${new Date(season.startsAt).toLocaleDateString("pt-BR")} até ${new Date(season.endsAt).toLocaleDateString("pt-BR")}`;
 }
 
 export default function GamificationPage() {
-  const [season, setSeason] = useState("-");
   const [ranking, setRanking] = useState<RankingEntry[]>([]);
   const [seasons, setSeasons] = useState<SeasonItem[]>([]);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
@@ -134,51 +109,42 @@ export default function GamificationPage() {
 
   const activeSeason = useMemo(() => seasons.find((item) => item.active) ?? null, [seasons]);
 
-  const dashboard = useMemo(() => {
+  const stats = useMemo(() => {
     const withBadges = ranking.filter((item) => item.medals.length > 0).length;
-    const activeCount = seasons.filter((item) => item.active).length;
-
     return {
-      seasonsTotal: seasons.length,
-      seasonsActive: activeCount,
-      rankingTotal: ranking.length,
+      totalSeasons: seasons.length,
+      activeSeasons: seasons.filter((s) => s.active).length,
+      totalRanking: ranking.length,
       withBadges,
       topPoints: ranking[0]?.points ?? 0,
-      leaderName: ranking[0]?.name ?? "A definir"
+      leaderName: ranking[0]?.name ?? "N/A"
     };
   }, [ranking, seasons]);
 
   const loadRanking = useCallback(async () => {
-    const response = await apiRequest<{ season: string; ranking: RankingEntry[] }>("/app/gamification/ranking");
-    setSeason(response.season);
+    const response = await apiRequest<{ season: string; ranking: RankingEntry[] }>(
+      "/app/gamification/ranking"
+    );
     setRanking(response.ranking);
   }, []);
 
   const loadSeasons = useCallback(async () => {
     const response = await apiRequest<SeasonItem[]>("/admin/gamification/seasons");
     setSeasons(response);
-
     setForm((prev) => {
-      if (response.some((item) => item.id === prev.seasonId)) {
-        return prev;
-      }
-
+      if (response.some((item) => item.id === prev.seasonId)) return prev;
       const currentSeason = response.find((item) => item.active) ?? response[0];
-      return {
-        ...prev,
-        seasonId: currentSeason?.id ?? ""
-      };
+      return { ...prev, seasonId: currentSeason?.id ?? "" };
     });
   }, []);
 
   const refreshGamificationData = useCallback(async () => {
     setLoadingData(true);
-
     try {
       await Promise.all([loadRanking(), loadSeasons()]);
     } catch (requestError) {
       setFeedback({
-        title: "Falha ao carregar gamificação",
+        title: "Erro",
         description: normalizeApiError((requestError as Error).message),
         variant: "danger"
       });
@@ -193,19 +159,11 @@ export default function GamificationPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
     if (!form.seasonId) {
-      setFeedback({
-        title: "Temporada obrigatória",
-        description: "Selecione uma temporada antes de lançar pontos.",
-        variant: "warning"
-      });
+      setFeedback({ title: "Erro", description: "Selecione uma temporada.", variant: "warning" });
       return;
     }
-
     setSaving(true);
-    setFeedback(null);
-
     try {
       await apiRequest("/admin/gamification/points", {
         method: "POST",
@@ -217,17 +175,12 @@ export default function GamificationPage() {
           reason: form.reason.trim()
         })
       });
-
       setForm({ memberId: "", eventId: "", seasonId: "", points: "", reason: "" });
-      setFeedback({
-        title: "Pontuação lançada",
-        description: "Registro de pontos realizado com sucesso para a temporada selecionada.",
-        variant: "success"
-      });
+      setFeedback({ title: "Sucesso", description: "Pontos lançados.", variant: "success" });
       await refreshGamificationData();
     } catch (submitError) {
       setFeedback({
-        title: "Falha ao lançar pontos",
+        title: "Erro",
         description: normalizeApiError((submitError as Error).message),
         variant: "danger"
       });
@@ -239,8 +192,6 @@ export default function GamificationPage() {
   async function handleSeasonSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSeasonSaving(true);
-    setFeedback(null);
-
     try {
       await apiRequest("/admin/gamification/seasons", {
         method: "POST",
@@ -250,21 +201,12 @@ export default function GamificationPage() {
           endsAt: new Date(seasonForm.endsAt).toISOString()
         })
       });
-
-      setSeasonForm({
-        name: "",
-        startsAt: defaultSeasonStartAt(),
-        endsAt: defaultSeasonEndsAt()
-      });
-      setFeedback({
-        title: "Temporada criada",
-        description: "Nova temporada adicionada com sucesso ao calendário de gamificação.",
-        variant: "success"
-      });
+      setSeasonForm({ name: "", startsAt: defaultSeasonStartAt(), endsAt: defaultSeasonEndsAt() });
+      setFeedback({ title: "Sucesso", description: "Temporada criada.", variant: "success" });
       await refreshGamificationData();
     } catch (submitError) {
       setFeedback({
-        title: "Falha ao criar temporada",
+        title: "Erro",
         description: normalizeApiError((submitError as Error).message),
         variant: "danger"
       });
@@ -275,28 +217,23 @@ export default function GamificationPage() {
 
   async function handleActivateSeason(seasonItem: SeasonItem) {
     if (seasonItem.active) return;
-
-    const confirmed = window.confirm(`Ativar a temporada \"${seasonItem.name}\" agora?`);
+    const confirmed = window.confirm(`Ativar "${seasonItem.name}"?`);
     if (!confirmed) return;
-
     setActivatingSeasonId(seasonItem.id);
-    setFeedback(null);
-
     try {
       await apiRequest(`/admin/gamification/seasons/${seasonItem.id}/activate`, {
         method: "POST",
         body: JSON.stringify({})
       });
-
       setFeedback({
-        title: "Temporada ativada",
-        description: `A temporada ${seasonItem.name} agora está ativa para lançamentos.`,
+        title: "Sucesso",
+        description: `Temporada ${seasonItem.name} ativada.`,
         variant: "success"
       });
       await refreshGamificationData();
     } catch (requestError) {
       setFeedback({
-        title: "Falha ao ativar temporada",
+        title: "Erro",
         description: normalizeApiError((requestError as Error).message),
         variant: "danger"
       });
@@ -306,28 +243,23 @@ export default function GamificationPage() {
   }
 
   async function handleProcessBadges() {
-    const confirmed = window.confirm("Processar badges agora com base no ranking atual?");
+    const confirmed = window.confirm("Processar badges agora?");
     if (!confirmed) return;
-
     setProcessingBadges(true);
-    setFeedback(null);
-
     try {
       const response = await apiRequest<BadgeJobResponse>("/admin/gamification/badges/process", {
         method: "POST",
         body: JSON.stringify({})
       });
-
-      const seasonLabel = response.seasonName ?? "sem temporada ativa";
       setFeedback({
-        title: "Processamento de badges concluído",
-        description: `Executado para ${seasonLabel}. Novas concessões: ${response.grantedCount}. ${grantsSummary(response.grants)}`,
+        title: "Sucesso",
+        description: `${response.grantedCount} badges concedidos.`,
         variant: "success"
       });
       await refreshGamificationData();
     } catch (requestError) {
       setFeedback({
-        title: "Falha no processamento de badges",
+        title: "Erro",
         description: normalizeApiError((requestError as Error).message),
         variant: "danger"
       });
@@ -336,396 +268,485 @@ export default function GamificationPage() {
     }
   }
 
-  const priorities = useMemo(() => {
-    const items: Array<{ title: string; description: string; tone: BadgeVariant }> = [];
-
-    if (!activeSeason) {
-      items.push({
-        title: "Ativar uma temporada",
-        description: "Sem temporada ativa, o lançamento de pontos perde contexto operacional e histórico.",
-        tone: "danger"
-      });
-    }
-
-    if (ranking.length === 0) {
-      items.push({
-        title: "Aquecer o ranking",
-        description: "Ainda não há membros ranqueados. Lance pontos dos primeiros eventos para destravar engajamento.",
-        tone: "warning"
-      });
-    }
-
-    if (dashboard.withBadges === 0 && ranking.length > 0) {
-      items.push({
-        title: "Processar badges da temporada",
-        description: "Há ranking ativo sem medalhas distribuídas. Vale consolidar reconhecimento visual agora.",
-        tone: "info"
-      });
-    }
-
-    if (items.length === 0) {
-      items.push({
-        title: "Operação de gamificação em ritmo bom",
-        description: "Temporada ativa, ranking em movimento e distribuição pronta para acompanhamento recorrente.",
-        tone: "success"
-      });
-    }
-
-    return items;
-  }, [activeSeason, dashboard.withBadges, ranking.length]);
+  if (loadingData) {
+    return (
+      <AdminShell>
+        <div
+          style={{
+            display: "grid",
+            placeItems: "center",
+            minHeight: "50vh",
+            color: "rgba(255,255,255,0.5)"
+          }}
+        >
+          Carregando...
+        </div>
+      </AdminShell>
+    );
+  }
 
   return (
     <AdminShell>
-      <div style={{ display: "grid", gap: "18px" }}>
-        <PageHeader
-          eyebrow={<Badge variant="brand">Gamificação Admin</Badge>}
-          title="Motor de reputação e reconhecimento"
-          description="A operação de gamificação precisa ser rápida para ativar temporadas, lançar pontos e processar badges sem quebrar o ritmo da comunidade."
-          actions={[
-            {
-              label: processingBadges ? "Processando badges..." : "Processar badges",
-              onClick: () => void handleProcessBadges(),
-              variant: "secondary"
-            }
-          ]}
-          meta={
-            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-              <Badge variant={activeSeason ? "success" : "warning"}>
-                {activeSeason ? `Temporada ativa: ${activeSeason.name}` : "Sem temporada ativa"}
-              </Badge>
-              <Badge variant="info">Ranking do app: {season}</Badge>
-            </div>
-          }
-        />
-
-        {feedback ? (
-          <Alert variant={feedback.variant} title={feedback.title}>
-            {feedback.description}
-          </Alert>
-        ) : null}
-
-        {loadingData ? (
-          <Alert variant="info" title="Atualizando gamificação">
-            Carregando temporadas, ranking e ações automáticas.
-          </Alert>
-        ) : null}
-
-        <PriorityStrip
-          items={priorities.map((item) => ({
-            title: item.title,
-            description: item.description,
-            tone: item.tone
-          }))}
-        />
-
-        <MetricStrip
-          items={[
-            {
-              label: "Temporadas",
-              value: dashboard.seasonsTotal.toLocaleString("pt-BR"),
-              hint: `${dashboard.seasonsActive} ativa(s)`,
-              badge: <CalendarClock size={16} />
-            },
-            {
-              label: "Membros ranqueados",
-              value: dashboard.rankingTotal.toLocaleString("pt-BR"),
-              hint: "Base atual do ranking",
-              badge: <Trophy size={16} />
-            },
-            {
-              label: "Com medalhas",
-              value: dashboard.withBadges.toLocaleString("pt-BR"),
-              hint: "Reconhecimento distribuído",
-              badge: <Medal size={16} />
-            },
-            {
-              label: "Liderança",
-              value: dashboard.topPoints.toLocaleString("pt-BR"),
-              hint: dashboard.leaderName,
-              tone: "brand",
-              badge: <Award size={16} />
-            }
-          ]}
-        />
-
-        <section
+      {feedback && (
+        <div
           style={{
-            display: "grid",
-            gap: "18px",
-            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))"
+            padding: "12px 16px",
+            borderRadius: "8px",
+            marginBottom: "16px",
+            background:
+              feedback.variant === "danger"
+                ? "rgba(239,68,68,0.1)"
+                : feedback.variant === "success"
+                  ? "rgba(34,197,94,0.1)"
+                  : "rgba(245,158,11,0.1)",
+            color:
+              feedback.variant === "danger"
+                ? "#ef4444"
+                : feedback.variant === "success"
+                  ? "#22c55e"
+                  : "#f59e0b"
           }}
         >
-          <div style={{ display: "grid", gap: "14px", minWidth: 0 }}>
-            <DataTable
-              rowKey={(row) => row.id}
-              rows={seasons}
-              emptyState={
-                <EmptyState
-                  icon={<CalendarClock size={18} />}
-                  title="Nenhuma temporada cadastrada"
-                  description="Crie a primeira temporada para liberar lançamentos, ranking vivo e badges da comunidade."
-                />
-              }
-              columns={[
-                {
-                  key: "name",
-                  header: "Temporada",
-                  sortable: true,
-                  sortValue: (row) => row.name,
-                  render: (row) => (
-                    <div style={{ display: "grid", gap: "6px" }}>
-                      <strong>{row.name}</strong>
-                      <span style={{ color: "var(--elo-text-tertiary, #6B7280)", fontSize: ".86rem" }}>
-                        {formatSeasonPeriod(row)}
-                      </span>
-                    </div>
-                  )
-                },
-                {
-                  key: "status",
-                  header: "Status",
-                  render: (row) => <Badge variant={seasonStatusBadgeVariant(row.active)}>{row.active ? "Ativa" : "Inativa"}</Badge>
-                },
-                {
-                  key: "window",
-                  header: "Janela",
-                  render: (row) => (
-                    <span style={{ color: "var(--elo-text-secondary, #374151)" }}>{formatSeasonPeriod(row)}</span>
-                  )
-                },
-                {
-                  key: "actions",
-                  header: "Ações",
-                  width: "220px",
-                  render: (row) => (
-                    <Button
-                      size="sm"
-                      onClick={() => void handleActivateSeason(row)}
-                      disabled={row.active || activatingSeasonId === row.id}
-                    >
-                      {row.active ? "Temporada ativa" : activatingSeasonId === row.id ? "Ativando..." : "Ativar"}
-                    </Button>
-                  )
-                }
-              ]}
-            />
+          <strong>{feedback.title}</strong>
+          <p style={{ margin: "4px 0 0", opacity: 0.8 }}>{feedback.description}</p>
+        </div>
+      )}
 
-            <DataTable
-              rowKey={(row) => row.memberId}
-              rows={ranking}
-              emptyState={
-                <EmptyState
-                  icon={<Target size={18} />}
-                  title="Ranking ainda vazio"
-                  description="Assim que a equipe lançar pontuação, os membros aparecerão aqui com posição, badges e liderança da temporada."
-                />
-              }
-              columns={[
-                {
-                  key: "rank",
-                  header: "Posição",
-                  sortable: true,
-                  sortValue: (row) => row.rank,
-                  render: (row) => <Badge variant={rankingBadgeVariant(row.rank)}>{rankingBadgeLabel(row.rank)}</Badge>
-                },
-                {
-                  key: "name",
-                  header: "Membro",
-                  sortable: true,
-                  sortValue: (row) => row.name,
-                  render: (row) => <strong>{row.name}</strong>
-                },
-                {
-                  key: "points",
-                  header: "Pontos",
-                  align: "right",
-                  sortable: true,
-                  sortValue: (row) => row.points,
-                  render: (row) => (
-                    <span style={{ fontFamily: "var(--elo-font-mono)", fontWeight: 700 }}>
-                      {row.points.toLocaleString("pt-BR")}
-                    </span>
-                  )
-                },
-                {
-                  key: "medals",
-                  header: "Badges",
-                  render: (row) => (
-                    <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                      {row.medals.length > 0 ? (
-                        row.medals.map((medal) => (
-                          <Badge key={`${row.memberId}-${medal}`} variant="success">
-                            {medal}
-                          </Badge>
-                        ))
-                      ) : (
-                        <Badge variant="neutral">Sem medalhas</Badge>
-                      )}
-                    </div>
-                  )
-                }
-              ]}
-            />
+      {/* Cards de métricas */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(4, 1fr)",
+          gap: "16px",
+          marginBottom: "24px"
+        }}
+      >
+        <div style={cardStyle}>
+          <span style={cardLabelStyle}>Temporadas</span>
+          <span style={cardValueStyle}>{stats.totalSeasons}</span>
+        </div>
+        <div style={cardStyle}>
+          <span style={cardLabelStyle}>Ativas</span>
+          <span
+            style={{ ...cardValueStyle, color: stats.activeSeasons > 0 ? "#22c55e" : "#f59e0b" }}
+          >
+            {stats.activeSeasons}
+          </span>
+        </div>
+        <div style={cardStyle}>
+          <span style={cardLabelStyle}>Ranking</span>
+          <span style={cardValueStyle}>{stats.totalRanking}</span>
+        </div>
+        <div style={cardStyle}>
+          <span style={cardLabelStyle}>Líder</span>
+          <span style={{ ...cardValueStyle, color: "#865aff" }}>{stats.topPoints} pts</span>
+        </div>
+      </div>
 
-            <Card
-              title="Ações automáticas"
-              subtitle="O processamento de badges fecha o ciclo de reconhecimento depois que o ranking já reflete as pontuações da temporada."
-              headerAside={<Sparkles size={16} color="var(--elo-orbit, #865AFF)" />}
-            >
-              <div style={{ display: "grid", gap: "12px" }}>
-                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                  <Badge variant={activeSeason ? "success" : "warning"}>
-                    {activeSeason ? `Ativa: ${activeSeason.name}` : "Sem temporada ativa"}
-                  </Badge>
-                  <Badge variant="info">Líder atual: {dashboard.leaderName}</Badge>
-                </div>
-                <Button type="button" onClick={() => void handleProcessBadges()} disabled={processingBadges}>
-                  {processingBadges ? "Processando badges..." : "Executar processamento agora"}
-                </Button>
+      {/* Status da temporada */}
+      <div style={{ display: "flex", gap: "12px", marginBottom: "24px", alignItems: "center" }}>
+        <span style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.7)" }}>Temporada:</span>
+        <span
+          style={{
+            padding: "6px 12px",
+            borderRadius: "8px",
+            background: activeSeason ? "rgba(34,197,94,0.15)" : "rgba(245,158,11,0.15)",
+            color: activeSeason ? "#22c55e" : "#f59e0b",
+            fontSize: "0.875rem",
+            fontWeight: 600
+          }}
+        >
+          {activeSeason ? activeSeason.name : "Nenhuma ativa"}
+        </span>
+        <button
+          onClick={() => handleProcessBadges()}
+          disabled={processingBadges}
+          style={{
+            marginLeft: "auto",
+            padding: "8px 16px",
+            borderRadius: "8px",
+            border: "1px solid rgba(255,255,255,0.1)",
+            background: "transparent",
+            color: "#fff",
+            cursor: "pointer",
+            fontSize: "0.875rem"
+          }}
+        >
+          {processingBadges ? "Processando..." : "Processar badges"}
+        </button>
+      </div>
+
+      {/* Lista + Formulários */}
+      <div style={{ display: "grid", gap: "16px", gridTemplateColumns: "1fr 380px" }}>
+        {/* Tabelas */}
+        <div style={{ display: "grid", gap: "16px" }}>
+          {/* Temporadas */}
+          <div
+            style={{
+              background: "#1a1a1a",
+              borderRadius: "12px",
+              padding: "16px",
+              border: "1px solid rgba(255,255,255,0.06)"
+            }}
+          >
+            <h4 style={{ margin: "0 0 12px", fontSize: "0.9rem", fontWeight: 600 }}>Temporadas</h4>
+            {seasons.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "20px", color: "rgba(255,255,255,0.5)" }}>
+                Nenhuma temporada
               </div>
-            </Card>
-          </div>
-
-          <div style={{ display: "grid", gap: "14px", alignContent: "start" }}>
-            <SidePanelForm
-              badge={<Badge variant="brand">Nova temporada</Badge>}
-              title="Abrir novo ciclo"
-              description="Crie janelas fechadas para manter o histórico da comunidade claro, comparável e rastreável."
-            >
-              <form onSubmit={handleSeasonSubmit} style={{ display: "grid", gap: "12px" }}>
-                <label style={{ display: "grid", gap: "6px" }}>
-                  <span style={{ fontSize: ".84rem", fontWeight: 700 }}>Nome da temporada</span>
-                  <Input
-                    placeholder="Ex.: Elo Sprint 2026"
-                    value={seasonForm.name}
-                    onChange={(event) => setSeasonForm((prev) => ({ ...prev, name: event.target.value }))}
-                    required
-                  />
-                </label>
-                <label style={{ display: "grid", gap: "6px" }}>
-                  <span style={{ fontSize: ".84rem", fontWeight: 700 }}>Início</span>
-                  <Input
-                    type="datetime-local"
-                    value={seasonForm.startsAt}
-                    onChange={(event) => setSeasonForm((prev) => ({ ...prev, startsAt: event.target.value }))}
-                    required
-                  />
-                </label>
-                <label style={{ display: "grid", gap: "6px" }}>
-                  <span style={{ fontSize: ".84rem", fontWeight: 700 }}>Fim</span>
-                  <Input
-                    type="datetime-local"
-                    value={seasonForm.endsAt}
-                    onChange={(event) => setSeasonForm((prev) => ({ ...prev, endsAt: event.target.value }))}
-                    required
-                  />
-                </label>
-                <Button type="submit" disabled={seasonSaving}>
-                  {seasonSaving ? "Criando..." : "Criar temporada"}
-                </Button>
-              </form>
-            </SidePanelForm>
-
-            <SidePanelForm
-              badge={<Badge variant="info">Lançamento manual</Badge>}
-              title="Empurrar o ranking"
-              description="Use quando um evento validado precisar refletir rapidamente no ranking e na leitura pública do app."
-            >
-              <form onSubmit={handleSubmit} style={{ display: "grid", gap: "12px" }}>
-                <label style={{ display: "grid", gap: "6px" }}>
-                  <span style={{ fontSize: ".84rem", fontWeight: 700 }}>Member ID</span>
-                  <Input
-                    placeholder="UUID do membro"
-                    value={form.memberId}
-                    onChange={(event) => setForm((prev) => ({ ...prev, memberId: event.target.value }))}
-                    required
-                  />
-                </label>
-                <label style={{ display: "grid", gap: "6px" }}>
-                  <span style={{ fontSize: ".84rem", fontWeight: 700 }}>Event ID</span>
-                  <Input
-                    placeholder="UUID do evento"
-                    value={form.eventId}
-                    onChange={(event) => setForm((prev) => ({ ...prev, eventId: event.target.value }))}
-                    required
-                  />
-                </label>
-                <label style={{ display: "grid", gap: "6px" }}>
-                  <span style={{ fontSize: ".84rem", fontWeight: 700 }}>Temporada</span>
-                  <Select
-                    value={form.seasonId}
-                    onChange={(event) => setForm((prev) => ({ ...prev, seasonId: event.target.value }))}
-                    required
-                  >
-                    {seasons.length === 0 ? (
-                      <option value="">Cadastre uma temporada primeiro</option>
-                    ) : (
-                      seasons.map((seasonItem) => (
-                        <option key={seasonItem.id} value={seasonItem.id}>
-                          {seasonItem.name}
-                          {seasonItem.active ? " (ativa)" : ""}
-                        </option>
-                      ))
-                    )}
-                  </Select>
-                </label>
-                <label style={{ display: "grid", gap: "6px" }}>
-                  <span style={{ fontSize: ".84rem", fontWeight: 700 }}>Pontos</span>
-                  <Input
-                    placeholder="Ex.: 20"
-                    type="number"
-                    min={1}
-                    value={form.points}
-                    onChange={(event) => setForm((prev) => ({ ...prev, points: event.target.value }))}
-                    required
-                  />
-                </label>
-                <label style={{ display: "grid", gap: "6px" }}>
-                  <span style={{ fontSize: ".84rem", fontWeight: 700 }}>Motivo</span>
-                  <Textarea
-                    placeholder="Descreva a justificativa do lançamento"
-                    value={form.reason}
-                    onChange={(event) => setForm((prev) => ({ ...prev, reason: event.target.value }))}
-                    required
-                    style={{ minHeight: "90px" }}
-                  />
-                </label>
-                <Button type="submit" disabled={saving}>
-                  {saving ? "Lançando..." : "Lançar pontos"}
-                </Button>
-              </form>
-            </SidePanelForm>
-
-            <Card title="Recomendação operacional" subtitle="Sequência sugerida para manter a temporada viva sem gerar ruído no ranking.">
-              <div style={{ display: "grid", gap: "10px" }}>
-                {[
-                  "1. Garanta uma temporada ativa antes de qualquer lançamento manual.",
-                  "2. Lance pontos com motivo claro para rastreabilidade posterior.",
-                  "3. Processe badges após a curva de pontuação começar a estabilizar."
-                ].map((item) => (
-                  <div key={item} style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
-                    <span
+            ) : (
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+                    <th
                       style={{
-                        width: "24px",
-                        height: "24px",
-                        display: "grid",
-                        placeItems: "center",
-                        borderRadius: "999px",
-                        background: "rgba(134, 90, 255, 0.12)",
-                        color: "var(--elo-orbit, #865AFF)",
-                        fontWeight: 800,
-                        flexShrink: 0
+                        textAlign: "left",
+                        padding: "8px",
+                        color: "rgba(255,255,255,0.5)",
+                        fontSize: "0.75rem"
                       }}
                     >
-                      <Zap size={12} />
-                    </span>
-                    <span style={{ color: "var(--elo-text-secondary, #374151)", fontSize: ".92rem" }}>{item}</span>
-                  </div>
-                ))}
-              </div>
-            </Card>
+                      Nome
+                    </th>
+                    <th
+                      style={{
+                        textAlign: "left",
+                        padding: "8px",
+                        color: "rgba(255,255,255,0.5)",
+                        fontSize: "0.75rem"
+                      }}
+                    >
+                      Período
+                    </th>
+                    <th
+                      style={{
+                        textAlign: "left",
+                        padding: "8px",
+                        color: "rgba(255,255,255,0.5)",
+                        fontSize: "0.75rem"
+                      }}
+                    >
+                      Status
+                    </th>
+                    <th
+                      style={{
+                        textAlign: "right",
+                        padding: "8px",
+                        color: "rgba(255,255,255,0.5)",
+                        fontSize: "0.75rem"
+                      }}
+                    >
+                      Ação
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {seasons.map((s) => (
+                    <tr key={s.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                      <td style={{ padding: "8px", fontWeight: 600 }}>{s.name}</td>
+                      <td
+                        style={{
+                          padding: "8px",
+                          fontSize: "0.8rem",
+                          color: "rgba(255,255,255,0.5)"
+                        }}
+                      >
+                        {formatSeasonPeriod(s)}
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <span
+                          style={{
+                            padding: "2px 8px",
+                            borderRadius: "4px",
+                            fontSize: "0.7rem",
+                            background: s.active
+                              ? "rgba(34,197,94,0.15)"
+                              : "rgba(107,114,128,0.15)",
+                            color: s.active ? "#22c55e" : "#9ca3af"
+                          }}
+                        >
+                          {s.active ? "Ativa" : "Inativa"}
+                        </span>
+                      </td>
+                      <td style={{ padding: "8px", textAlign: "right" }}>
+                        <button
+                          onClick={() => handleActivateSeason(s)}
+                          disabled={s.active || activatingSeasonId === s.id}
+                          style={{
+                            padding: "4px 10px",
+                            borderRadius: "4px",
+                            border: "1px solid rgba(255,255,255,0.1)",
+                            background: "transparent",
+                            color: "#fff",
+                            cursor: "pointer",
+                            fontSize: "0.75rem"
+                          }}
+                        >
+                          {s.active ? "Ativa" : "Ativar"}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
-        </section>
+
+          {/* Ranking */}
+          <div
+            style={{
+              background: "#1a1a1a",
+              borderRadius: "12px",
+              padding: "16px",
+              border: "1px solid rgba(255,255,255,0.06)"
+            }}
+          >
+            <h4 style={{ margin: "0 0 12px", fontSize: "0.9rem", fontWeight: 600 }}>Ranking</h4>
+            {ranking.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "20px", color: "rgba(255,255,255,0.5)" }}>
+                Nenhum membro ranqueado
+              </div>
+            ) : (
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+                    <th
+                      style={{
+                        textAlign: "left",
+                        padding: "8px",
+                        color: "rgba(255,255,255,0.5)",
+                        fontSize: "0.75rem"
+                      }}
+                    >
+                      Posição
+                    </th>
+                    <th
+                      style={{
+                        textAlign: "left",
+                        padding: "8px",
+                        color: "rgba(255,255,255,0.5)",
+                        fontSize: "0.75rem"
+                      }}
+                    >
+                      Membro
+                    </th>
+                    <th
+                      style={{
+                        textAlign: "right",
+                        padding: "8px",
+                        color: "rgba(255,255,255,0.5)",
+                        fontSize: "0.75rem"
+                      }}
+                    >
+                      Pontos
+                    </th>
+                    <th
+                      style={{
+                        textAlign: "left",
+                        padding: "8px",
+                        color: "rgba(255,255,255,0.5)",
+                        fontSize: "0.75rem"
+                      }}
+                    >
+                      Badges
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ranking.slice(0, 10).map((r) => (
+                    <tr
+                      key={r.memberId}
+                      style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+                    >
+                      <td style={{ padding: "8px" }}>
+                        <span
+                          style={{
+                            width: "28px",
+                            height: "28px",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            borderRadius: "6px",
+                            background:
+                              r.rank <= 3 ? "rgba(134,90,255,0.2)" : "rgba(107,114,128,0.2)",
+                            color: r.rank <= 3 ? "#865aff" : "#9ca3af",
+                            fontSize: "0.8rem",
+                            fontWeight: 700
+                          }}
+                        >
+                          {r.rank}
+                        </span>
+                      </td>
+                      <td style={{ padding: "8px", fontWeight: 600 }}>{r.name}</td>
+                      <td
+                        style={{
+                          padding: "8px",
+                          textAlign: "right",
+                          fontFamily: "monospace",
+                          fontWeight: 700
+                        }}
+                      >
+                        {r.points}
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        {r.medals.length > 0 ? (
+                          r.medals.map((m) => (
+                            <span
+                              key={m}
+                              style={{
+                                marginRight: "4px",
+                                padding: "2px 6px",
+                                borderRadius: "4px",
+                                fontSize: "0.65rem",
+                                background: "rgba(34,197,94,0.15)",
+                                color: "#22c55e"
+                              }}
+                            >
+                              {m}
+                            </span>
+                          ))
+                        ) : (
+                          <span style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.3)" }}>
+                            -
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+
+        {/* Formulários laterais */}
+        <div style={{ display: "grid", gap: "16px", height: "fit-content" }}>
+          {/* Criar temporada */}
+          <div
+            style={{
+              background: "#1a1a1a",
+              borderRadius: "12px",
+              padding: "16px",
+              border: "1px solid rgba(255,255,255,0.06)"
+            }}
+          >
+            <h4 style={{ margin: "0 0 12px", fontSize: "0.9rem", fontWeight: 600 }}>
+              Nova temporada
+            </h4>
+            <form onSubmit={handleSeasonSubmit} style={{ display: "grid", gap: "10px" }}>
+              <input
+                value={seasonForm.name}
+                onChange={(e) => setSeasonForm((p) => ({ ...p, name: e.target.value }))}
+                placeholder="Nome"
+                required
+                style={inputStyle}
+              />
+              <input
+                type="datetime-local"
+                value={seasonForm.startsAt}
+                onChange={(e) => setSeasonForm((p) => ({ ...p, startsAt: e.target.value }))}
+                required
+                style={inputStyle}
+              />
+              <input
+                type="datetime-local"
+                value={seasonForm.endsAt}
+                onChange={(e) => setSeasonForm((p) => ({ ...p, endsAt: e.target.value }))}
+                required
+                style={inputStyle}
+              />
+              <button
+                type="submit"
+                disabled={seasonSaving}
+                style={{
+                  padding: "10px",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: "linear-gradient(90deg, #5932d1 0%, #9b027c 100%)",
+                  color: "#fff",
+                  fontWeight: 600,
+                  cursor: "pointer"
+                }}
+              >
+                {seasonSaving ? "Criando..." : "Criar"}
+              </button>
+            </form>
+          </div>
+
+          {/* Lançar pontos */}
+          <div
+            style={{
+              background: "#1a1a1a",
+              borderRadius: "12px",
+              padding: "16px",
+              border: "1px solid rgba(255,255,255,0.06)"
+            }}
+          >
+            <h4 style={{ margin: "0 0 12px", fontSize: "0.9rem", fontWeight: 600 }}>
+              Lançar pontos
+            </h4>
+            <form onSubmit={handleSubmit} style={{ display: "grid", gap: "10px" }}>
+              <input
+                value={form.memberId}
+                onChange={(e) => setForm((p) => ({ ...p, memberId: e.target.value }))}
+                placeholder="Member ID (UUID)"
+                required
+                style={inputStyle}
+              />
+              <input
+                value={form.eventId}
+                onChange={(e) => setForm((p) => ({ ...p, eventId: e.target.value }))}
+                placeholder="Event ID (UUID)"
+                required
+                style={inputStyle}
+              />
+              <select
+                value={form.seasonId}
+                onChange={(e) => setForm((p) => ({ ...p, seasonId: e.target.value }))}
+                required
+                style={inputStyle}
+              >
+                <option value="">Selecione</option>
+                {seasons.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="number"
+                value={form.points}
+                onChange={(e) => setForm((p) => ({ ...p, points: e.target.value }))}
+                placeholder="Pontos"
+                required
+                style={inputStyle}
+              />
+              <textarea
+                value={form.reason}
+                onChange={(e) => setForm((p) => ({ ...p, reason: e.target.value }))}
+                placeholder="Motivo"
+                required
+                rows={2}
+                style={{ ...inputStyle, resize: "vertical" }}
+              />
+              <button
+                type="submit"
+                disabled={saving}
+                style={{
+                  padding: "10px",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: "linear-gradient(90deg, #5932d1 0%, #9b027c 100%)",
+                  color: "#fff",
+                  fontWeight: 600,
+                  cursor: "pointer"
+                }}
+              >
+                {saving ? "Salvando..." : "Lançar"}
+              </button>
+            </form>
+          </div>
+        </div>
       </div>
     </AdminShell>
   );
