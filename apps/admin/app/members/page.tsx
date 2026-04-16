@@ -761,14 +761,21 @@ export default function MembersPage() {
                 </label>
                 <div style={{ position: "relative" }}>
                   <input
-                    type="date"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="dd/mm/aaaa"
                     value={form.membershipExpiresAt.split("T")[0]}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      let value = e.target.value.replace(/\D/g, "");
+                      if (value.length > 8) value = value.slice(0, 8);
+                      if (value.length >= 5) {
+                        value = value.slice(0, 4) + "-" + value.slice(4, 6) + "-" + value.slice(6);
+                      }
                       setForm((p) => ({
                         ...p,
-                        membershipExpiresAt: e.target.value ? `${e.target.value}T00:00:00` : ""
-                      }))
-                    }
+                        membershipExpiresAt: value ? `${value}T00:00:00` : ""
+                      }));
+                    }}
                     required
                     style={{
                       width: "100%",
@@ -777,9 +784,7 @@ export default function MembersPage() {
                       border: "1px solid rgba(255,255,255,0.1)",
                       background: "#252525",
                       color: "#fff",
-                      fontSize: "0.875rem",
-                      WebkitAppearance: "none",
-                      MozAppearance: "textfield"
+                      fontSize: "0.875rem"
                     }}
                   />
                   <svg
