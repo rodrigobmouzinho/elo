@@ -5,6 +5,10 @@ import type { AlertVariant } from "@elo/ui";
 import React, { FormEvent, useEffect, useMemo, useState } from "react";
 import { AdminShell } from "../../components/admin-shell";
 import { apiRequest } from "../../lib/auth-client";
+import {
+  formatLocalDateTimeInput,
+  toIsoFromLocalDateTimeInput
+} from "../../lib/datetime";
 
 type ApplicationsFeed = {
   items: MemberApplication[];
@@ -20,7 +24,7 @@ type FeedbackState = {
 type VisibilityFilter = "all" | "open" | "final";
 
 const defaultMembershipExpiration = () =>
-  new Date(Date.now() + 365 * 24 * 3600 * 1000).toISOString().slice(0, 16);
+  formatLocalDateTimeInput(new Date(Date.now() + 365 * 24 * 3600 * 1000));
 
 const cardStyle = {
   display: "flex",
@@ -245,7 +249,7 @@ export default function AdesoesPage() {
         {
           method: "POST",
           body: JSON.stringify({
-            membershipExpiresAt: new Date(membershipExpiresAt).toISOString(),
+            membershipExpiresAt: toIsoFromLocalDateTimeInput(membershipExpiresAt),
             internalNotes
           })
         }
@@ -314,6 +318,8 @@ export default function AdesoesPage() {
     <AdminShell>
       {feedback && (
         <div
+          role="status"
+          aria-live="polite"
           style={{
             padding: "12px 16px",
             borderRadius: "8px",
@@ -372,11 +378,16 @@ export default function AdesoesPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar..."
+          aria-label="Buscar adesões"
+          name="search"
+          autoComplete="off"
           style={{ ...inputStyle, maxWidth: "300px" }}
         />
         <select
           value={visibilityFilter}
           onChange={(e) => setVisibilityFilter(e.target.value as VisibilityFilter)}
+          aria-label="Filtrar por fluxo"
+          name="visibilityFilter"
           style={{ ...selectStyle, width: "160px" }}
         >
           <option value="all">Todos</option>
@@ -386,6 +397,8 @@ export default function AdesoesPage() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
+          aria-label="Filtrar por status"
+          name="statusFilter"
           style={{ ...selectStyle, width: "180px" }}
         >
           <option value="all">Todos status</option>
@@ -468,6 +481,14 @@ export default function AdesoesPage() {
                       background: selectedId === item.id ? "rgba(134,90,255,0.1)" : "transparent"
                     }}
                     onClick={() => setSelectedId(item.id)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setSelectedId(item.id);
+                      }
+                    }}
                   >
                     <td style={{ padding: "12px 8px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -528,6 +549,7 @@ export default function AdesoesPage() {
                     </td>
                     <td style={{ padding: "12px 8px", textAlign: "right" }}>
                       <button
+                        type="button"
                         style={{
                           padding: "6px 12px",
                           borderRadius: "6px",
@@ -585,6 +607,7 @@ export default function AdesoesPage() {
               <form onSubmit={handleSaveWorkflow} style={{ display: "grid", gap: "12px" }}>
                 <div>
                   <label
+                    htmlFor="application-status"
                     style={{
                       display: "block",
                       fontSize: "0.75rem",
@@ -595,6 +618,8 @@ export default function AdesoesPage() {
                     Status
                   </label>
                   <select
+                    id="application-status"
+                    name="statusId"
                     value={selectedStatusId}
                     onChange={(e) => setSelectedStatusId(e.target.value)}
                     disabled={selectedApplication.status.isFinal}
@@ -609,6 +634,7 @@ export default function AdesoesPage() {
                 </div>
                 <div>
                   <label
+                    htmlFor="application-internal-notes"
                     style={{
                       display: "block",
                       fontSize: "0.75rem",
@@ -619,6 +645,9 @@ export default function AdesoesPage() {
                     Notas internas
                   </label>
                   <textarea
+                    id="application-internal-notes"
+                    name="internalNotes"
+                    autoComplete="off"
                     value={internalNotes}
                     onChange={(e) => setInternalNotes(e.target.value)}
                     rows={3}
@@ -647,6 +676,7 @@ export default function AdesoesPage() {
                   <div style={{ display: "grid", gap: "12px" }}>
                     <div>
                       <label
+                        htmlFor="application-membership-expires-at"
                         style={{
                           display: "block",
                           fontSize: "0.75rem",
@@ -657,6 +687,8 @@ export default function AdesoesPage() {
                         Validade
                       </label>
                       <input
+                        id="application-membership-expires-at"
+                        name="membershipExpiresAt"
                         type="datetime-local"
                         value={membershipExpiresAt}
                         onChange={(e) => setMembershipExpiresAt(e.target.value)}
@@ -664,6 +696,7 @@ export default function AdesoesPage() {
                       />
                     </div>
                     <button
+                      type="button"
                       onClick={() => handleApprove()}
                       disabled={saving}
                       style={{
@@ -680,7 +713,21 @@ export default function AdesoesPage() {
                     </button>
                   </div>
                   <div style={{ display: "grid", gap: "12px" }}>
+                    <label
+                      htmlFor="application-reject-reason"
+                      style={{
+                        display: "block",
+                        fontSize: "0.75rem",
+                        color: "rgba(255,255,255,0.5)",
+                        marginBottom: "4px"
+                      }}
+                    >
+                      Motivo da recusa
+                    </label>
                     <textarea
+                      id="application-reject-reason"
+                      name="rejectReason"
+                      autoComplete="off"
                       value={rejectReason}
                       onChange={(e) => setRejectReason(e.target.value)}
                       placeholder="Motivo da recusa"
@@ -688,6 +735,7 @@ export default function AdesoesPage() {
                       style={{ ...inputStyle, resize: "vertical" }}
                     />
                     <button
+                      type="button"
                       onClick={() => handleReject()}
                       disabled={saving || rejectReason.trim().length < 3}
                       style={{
@@ -707,10 +755,16 @@ export default function AdesoesPage() {
               )}
 
               <form onSubmit={handleCreateStatus} style={{ display: "grid", gap: "8px" }}>
-                <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.5)" }}>
+                <label
+                  htmlFor="application-status-label"
+                  style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.5)" }}
+                >
                   Novo status
-                </div>
+                </label>
                 <input
+                  id="application-status-label"
+                  name="customStatusLabel"
+                  autoComplete="off"
                   value={customStatusLabel}
                   onChange={(e) => setCustomStatusLabel(e.target.value)}
                   placeholder="Nome do status"

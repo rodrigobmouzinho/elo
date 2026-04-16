@@ -6,6 +6,7 @@ import type { AlertVariant } from "@elo/ui";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AdminShell } from "../../components/admin-shell";
 import { apiRequest } from "../../lib/auth-client";
+import { formatLocalDateInput, toIsoFromLocalDateInput } from "../../lib/datetime";
 
 type Member = {
   id: string;
@@ -44,7 +45,7 @@ type FeedbackState = {
 type MemberStatusFilter = "all" | "active" | "inactive";
 
 const defaultMembershipExpiration = () =>
-  new Date(Date.now() + 365 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+  formatLocalDateInput(new Date(Date.now() + 365 * 24 * 3600 * 1000));
 
 const initialForm: MemberForm = {
   fullName: "",
@@ -241,10 +242,12 @@ export default function MembersPage() {
           variant: "success"
         });
       } else {
-        const membershipExpiresAt = new Date(form.membershipExpiresAt).toISOString();
         await apiRequest("/admin/members", {
           method: "POST",
-          body: JSON.stringify({ ...payload, membershipExpiresAt })
+          body: JSON.stringify({
+            ...payload,
+            membershipExpiresAt: toIsoFromLocalDateInput(form.membershipExpiresAt)
+          })
         });
         setFeedback({
           title: "Membro cadastrado",
@@ -339,6 +342,8 @@ export default function MembersPage() {
     <AdminShell>
       {feedback && (
         <div
+          role="status"
+          aria-live="polite"
           style={{
             padding: "12px 16px",
             borderRadius: "8px",
@@ -402,11 +407,16 @@ export default function MembersPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar por nome, e-mail, cidade..."
+          aria-label="Buscar membros"
+          name="search"
+          autoComplete="off"
           style={{ ...inputStyle, maxWidth: "320px" }}
         />
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as MemberStatusFilter)}
+          aria-label="Filtrar por status"
+          name="statusFilter"
           style={{ ...selectStyle, width: "140px" }}
         >
           <option value="all">Status</option>
@@ -538,6 +548,7 @@ export default function MembersPage() {
                     </td>
                     <td style={{ padding: "12px 8px", textAlign: "right" }}>
                       <button
+                        type="button"
                         onClick={() => handleEdit(member)}
                         style={{
                           marginRight: "8px",
@@ -553,6 +564,7 @@ export default function MembersPage() {
                         Editar
                       </button>
                       <button
+                        type="button"
                         onClick={() => toggleMemberActive(member)}
                         style={{
                           padding: "6px 12px",
@@ -598,6 +610,7 @@ export default function MembersPage() {
           <form onSubmit={handleSubmit} style={{ display: "grid", gap: "12px" }}>
             <div>
               <label
+                htmlFor="member-full-name"
                 style={{
                   display: "block",
                   fontSize: "0.75rem",
@@ -608,6 +621,9 @@ export default function MembersPage() {
                 Nome
               </label>
               <input
+                id="member-full-name"
+                name="fullName"
+                autoComplete="name"
                 value={form.fullName}
                 onChange={(e) => setForm((p) => ({ ...p, fullName: e.target.value }))}
                 required
@@ -616,6 +632,7 @@ export default function MembersPage() {
             </div>
             <div>
               <label
+                htmlFor="member-email"
                 style={{
                   display: "block",
                   fontSize: "0.75rem",
@@ -626,7 +643,11 @@ export default function MembersPage() {
                 E-mail
               </label>
               <input
+                id="member-email"
                 type="email"
+                name="email"
+                autoComplete="email"
+                spellCheck={false}
                 value={form.email}
                 onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
                 required
@@ -637,6 +658,7 @@ export default function MembersPage() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
               <div>
                 <label
+                  htmlFor="member-phone"
                   style={{
                     display: "block",
                     fontSize: "0.75rem",
@@ -647,6 +669,10 @@ export default function MembersPage() {
                   Celular
                 </label>
                 <input
+                  id="member-phone"
+                  name="phone"
+                  inputMode="tel"
+                  autoComplete="tel"
                   value={form.phone}
                   onChange={(e) =>
                     setForm((p) => ({ ...p, phone: formatBrazilianPhoneInput(e.target.value) }))
@@ -657,6 +683,7 @@ export default function MembersPage() {
               </div>
               <div>
                 <label
+                  htmlFor="member-whatsapp"
                   style={{
                     display: "block",
                     fontSize: "0.75rem",
@@ -667,6 +694,10 @@ export default function MembersPage() {
                   WhatsApp
                 </label>
                 <input
+                  id="member-whatsapp"
+                  name="whatsapp"
+                  inputMode="tel"
+                  autoComplete="tel"
                   value={form.whatsapp}
                   onChange={(e) =>
                     setForm((p) => ({ ...p, whatsapp: formatBrazilianPhoneInput(e.target.value) }))
@@ -679,6 +710,7 @@ export default function MembersPage() {
             <div style={{ display: "grid", gridTemplateColumns: "80px 1fr", gap: "12px" }}>
               <div>
                 <label
+                  htmlFor="member-state"
                   style={{
                     display: "block",
                     fontSize: "0.75rem",
@@ -689,6 +721,9 @@ export default function MembersPage() {
                   UF
                 </label>
                 <select
+                  id="member-state"
+                  name="state"
+                  autoComplete="address-level1"
                   value={form.state}
                   onChange={(e) => setForm((p) => ({ ...p, state: e.target.value, city: "" }))}
                   required
@@ -704,6 +739,7 @@ export default function MembersPage() {
               </div>
               <div>
                 <label
+                  htmlFor="member-city"
                   style={{
                     display: "block",
                     fontSize: "0.75rem",
@@ -714,6 +750,9 @@ export default function MembersPage() {
                   Cidade
                 </label>
                 <select
+                  id="member-city"
+                  name="city"
+                  autoComplete="address-level2"
                   value={form.city}
                   onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))}
                   required
@@ -731,6 +770,7 @@ export default function MembersPage() {
             </div>
             <div>
               <label
+                htmlFor="member-area"
                 style={{
                   display: "block",
                   fontSize: "0.75rem",
@@ -741,6 +781,9 @@ export default function MembersPage() {
                 Área
               </label>
               <input
+                id="member-area"
+                name="area"
+                autoComplete="off"
                 value={form.area}
                 onChange={(e) => setForm((p) => ({ ...p, area: e.target.value }))}
                 required
@@ -750,6 +793,7 @@ export default function MembersPage() {
             {!isEditing && (
               <div>
                 <label
+                  htmlFor="member-membership-expires-at"
                   style={{
                     display: "block",
                     fontSize: "0.75rem",
@@ -760,14 +804,12 @@ export default function MembersPage() {
                   Validade
                 </label>
                 <input
+                  id="member-membership-expires-at"
+                  name="membershipExpiresAt"
                   type="date"
-                  value={form.membershipExpiresAt.split("T")[0]}
-                  onChange={(e) =>
-                    setForm((p) => ({
-                      ...p,
-                      membershipExpiresAt: e.target.value ? `${e.target.value}T00:00:00` : ""
-                    }))
-                  }
+                  autoComplete="off"
+                  value={form.membershipExpiresAt}
+                  onChange={(e) => setForm((p) => ({ ...p, membershipExpiresAt: e.target.value }))}
                   required
                   style={{
                     width: "100%",
@@ -783,6 +825,7 @@ export default function MembersPage() {
             )}
             <div>
               <label
+                htmlFor="member-specialty"
                 style={{
                   display: "block",
                   fontSize: "0.75rem",
@@ -793,6 +836,9 @@ export default function MembersPage() {
                 Especialidade
               </label>
               <input
+                id="member-specialty"
+                name="specialty"
+                autoComplete="off"
                 value={form.specialty}
                 onChange={(e) => setForm((p) => ({ ...p, specialty: e.target.value }))}
                 style={inputStyle}
@@ -800,6 +846,7 @@ export default function MembersPage() {
             </div>
             <div>
               <label
+                htmlFor="member-bio"
                 style={{
                   display: "block",
                   fontSize: "0.75rem",
@@ -810,6 +857,9 @@ export default function MembersPage() {
                 Bio
               </label>
               <textarea
+                id="member-bio"
+                name="bio"
+                autoComplete="off"
                 value={form.bio}
                 onChange={(e) => setForm((p) => ({ ...p, bio: e.target.value }))}
                 rows={3}

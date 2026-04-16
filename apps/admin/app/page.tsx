@@ -5,7 +5,7 @@ import { AdminShell } from "../components/admin-shell";
 import { apiRequest } from "../lib/auth-client";
 
 type DashboardState = {
-  members: number;
+  activeMembers: number;
   events: number;
   membershipRevenueCents: number;
   eventRevenueCents: number;
@@ -54,7 +54,7 @@ export default function AdminHomePage() {
 
   useEffect(() => {
     Promise.allSettled([
-      apiRequest<Array<{ id: string; createdAt?: string }>>("/admin/members"),
+      apiRequest<Array<{ id: string; createdAt?: string; active: boolean }>>("/admin/members"),
       apiRequest<Array<{ id: string }>>("/admin/events"),
       apiRequest<{
         membershipRevenueCents: number;
@@ -76,6 +76,7 @@ export default function AdminHomePage() {
             };
 
       const members = membersResult.status === "fulfilled" ? membersResult.value : [];
+      const activeMembers = members.filter((member) => member.active).length;
 
       const now = new Date();
       const currentMonth = now.getMonth();
@@ -92,7 +93,7 @@ export default function AdminHomePage() {
       }
 
       setState({
-        members: members.length,
+        activeMembers,
         events: eventsResult.status === "fulfilled" ? eventsResult.value.length : 0,
         membershipRevenueCents: finance.membershipRevenueCents,
         eventRevenueCents: finance.eventRevenueCents,
@@ -162,7 +163,7 @@ export default function AdminHomePage() {
 
         <div style={cardStyle}>
           <span style={cardLabelStyle}>Membros Ativos</span>
-          <span style={cardValueStyle}>{state?.members ?? 0}</span>
+          <span style={cardValueStyle}>{state?.activeMembers ?? 0}</span>
         </div>
 
         <div style={cardStyle}>

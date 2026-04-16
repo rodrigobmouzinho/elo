@@ -79,6 +79,10 @@
   --elo-color-brand-primary-active: #7b4cfc;
 }
 
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -154,6 +158,12 @@ label {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--elo-control-border-focus);
+  outline-offset: 2px;
 }
 
 img {

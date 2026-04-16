@@ -131,7 +131,10 @@ function formatCurrency(cents: number) {
 }
 
 function formatDateTime(value: string) {
-  return new Date(value).toLocaleString("pt-BR");
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short"
+  }).format(new Date(value));
 }
 
 function normalizeApiError(raw: string) {
@@ -344,6 +347,8 @@ export default function FinancePage() {
     <AdminShell>
       {feedback && (
         <div
+          role="status"
+          aria-live="polite"
           style={{
             padding: "12px 16px",
             borderRadius: "8px",
@@ -403,6 +408,8 @@ export default function FinancePage() {
         <select
           value={dashboardPeriod}
           onChange={(e) => setDashboardPeriod(e.target.value as DashboardPeriod)}
+          aria-label="Período do dashboard"
+          name="dashboardPeriod"
           style={{ ...selectStyle, width: "140px" }}
         >
           {PERIOD_OPTIONS.map((p) => (
@@ -415,9 +422,13 @@ export default function FinancePage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar..."
+          aria-label="Buscar lançamentos"
+          name="search"
+          autoComplete="off"
           style={{ ...inputStyle, flex: 1, maxWidth: "300px" }}
         />
         <button
+          type="button"
           onClick={() => exportFinanceDashboard()}
           disabled={exporting}
           style={{
@@ -436,7 +447,9 @@ export default function FinancePage() {
       {/* Abas */}
       <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
         <button
+          type="button"
           onClick={() => setActiveView("memberships")}
+          aria-pressed={activeView === "memberships"}
           style={{
             padding: "10px 20px",
             borderRadius: "8px 8px 0 0",
@@ -449,7 +462,9 @@ export default function FinancePage() {
           Anuidades ({filteredMemberships.length})
         </button>
         <button
+          type="button"
           onClick={() => setActiveView("events")}
+          aria-pressed={activeView === "events"}
           style={{
             padding: "10px 20px",
             borderRadius: "8px 8px 0 0",
@@ -604,6 +619,7 @@ export default function FinancePage() {
                     </td>
                     <td style={{ padding: "12px", textAlign: "right" }}>
                       <button
+                        type="button"
                         onClick={() => approveMembershipPayment(m)}
                         disabled={
                           approvingMembershipId === m.membershipId ||
@@ -627,6 +643,7 @@ export default function FinancePage() {
                             : "-"}
                       </button>
                       <button
+                        type="button"
                         onClick={() => generateCharge(m)}
                         disabled={chargingId === m.membershipId}
                         style={{
@@ -760,6 +777,7 @@ export default function FinancePage() {
                   </td>
                   <td style={{ padding: "12px", textAlign: "right" }}>
                     <button
+                      type="button"
                       onClick={() => approveEventPayment(p)}
                       disabled={approvingEventPaymentId === p.paymentId || p.status !== "pending"}
                       style={{

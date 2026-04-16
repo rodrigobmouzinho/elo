@@ -5,6 +5,10 @@ import type { AlertVariant } from "@elo/ui";
 import React, { FormEvent, useEffect, useMemo, useState } from "react";
 import { AdminShell } from "../../components/admin-shell";
 import { apiRequest } from "../../lib/auth-client";
+import {
+  formatLocalDateTimeInput,
+  toIsoFromLocalDateTimeInput
+} from "../../lib/datetime";
 
 type EventListItem = {
   id: string;
@@ -57,7 +61,7 @@ type AccessFilter = "all" | EventForm["accessType"];
 const EVENT_IMAGE_FALLBACK = "/event-placeholder.svg";
 
 const defaultStartDate = () =>
-  new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString().slice(0, 16);
+  formatLocalDateTimeInput(new Date(Date.now() + 7 * 24 * 3600 * 1000));
 
 const initialForm: EventForm = {
   title: "",
@@ -122,8 +126,7 @@ const selectStyle: React.CSSProperties = {
 };
 
 function toLocalDateTime(value?: string) {
-  if (!value) return "";
-  return new Date(value).toISOString().slice(0, 16);
+  return formatLocalDateTimeInput(value);
 }
 
 function parseGalleryInput(value: string) {
@@ -226,8 +229,8 @@ export default function EventsPage() {
     const payload = {
       title: form.title.trim(),
       description: form.description.trim(),
-      startsAt: new Date(form.startsAt).toISOString(),
-      endsAt: form.endsAt ? new Date(form.endsAt).toISOString() : undefined,
+      startsAt: toIsoFromLocalDateTimeInput(form.startsAt),
+      endsAt: form.endsAt ? toIsoFromLocalDateTimeInput(form.endsAt) : undefined,
       location: form.location.trim(),
       onlineUrl: form.onlineUrl.trim() || undefined,
       accessType: form.accessType,
@@ -341,6 +344,8 @@ export default function EventsPage() {
     <AdminShell>
       {feedback && (
         <div
+          role="status"
+          aria-live="polite"
           style={{
             padding: "12px 16px",
             borderRadius: "8px",
@@ -399,11 +404,16 @@ export default function EventsPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar evento..."
+          aria-label="Buscar eventos"
+          name="search"
+          autoComplete="off"
           style={{ ...inputStyle, maxWidth: "280px" }}
         />
         <select
           value={accessFilter}
           onChange={(e) => setAccessFilter(e.target.value as AccessFilter)}
+          aria-label="Filtrar por acesso"
+          name="accessFilter"
           style={{ ...selectStyle, width: "160px" }}
         >
           <option value="all">Todos</option>
@@ -570,6 +580,7 @@ export default function EventsPage() {
                     </td>
                     <td style={{ padding: "12px 8px", textAlign: "right" }}>
                       <button
+                        type="button"
                         onClick={() => handleEdit(item.id)}
                         disabled={loadingDetailsId === item.id}
                         style={{
@@ -586,6 +597,7 @@ export default function EventsPage() {
                         {loadingDetailsId === item.id ? "..." : "Editar"}
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleDelete(item.id)}
                         disabled={removingEventId === item.id}
                         style={{
@@ -671,6 +683,7 @@ export default function EventsPage() {
           <form onSubmit={handleSubmit} style={{ display: "grid", gap: "12px" }}>
             <div>
               <label
+                htmlFor="event-title"
                 style={{
                   display: "block",
                   fontSize: "0.75rem",
@@ -681,6 +694,9 @@ export default function EventsPage() {
                 Título
               </label>
               <input
+                id="event-title"
+                name="title"
+                autoComplete="off"
                 value={form.title}
                 onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
                 required
@@ -689,6 +705,7 @@ export default function EventsPage() {
             </div>
             <div>
               <label
+                htmlFor="event-description"
                 style={{
                   display: "block",
                   fontSize: "0.75rem",
@@ -699,6 +716,9 @@ export default function EventsPage() {
                 Descrição
               </label>
               <textarea
+                id="event-description"
+                name="description"
+                autoComplete="off"
                 value={form.description}
                 onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
                 required
@@ -709,6 +729,7 @@ export default function EventsPage() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
               <div>
                 <label
+                  htmlFor="event-starts-at"
                   style={{
                     display: "block",
                     fontSize: "0.75rem",
@@ -719,7 +740,9 @@ export default function EventsPage() {
                   Início
                 </label>
                 <input
+                  id="event-starts-at"
                   type="datetime-local"
+                  name="startsAt"
                   value={form.startsAt}
                   onChange={(e) => setForm((p) => ({ ...p, startsAt: e.target.value }))}
                   required
@@ -728,6 +751,7 @@ export default function EventsPage() {
               </div>
               <div>
                 <label
+                  htmlFor="event-ends-at"
                   style={{
                     display: "block",
                     fontSize: "0.75rem",
@@ -738,7 +762,9 @@ export default function EventsPage() {
                   Fim
                 </label>
                 <input
+                  id="event-ends-at"
                   type="datetime-local"
+                  name="endsAt"
                   value={form.endsAt}
                   onChange={(e) => setForm((p) => ({ ...p, endsAt: e.target.value }))}
                   style={inputStyle}
@@ -747,6 +773,7 @@ export default function EventsPage() {
             </div>
             <div>
               <label
+                htmlFor="event-location"
                 style={{
                   display: "block",
                   fontSize: "0.75rem",
@@ -757,6 +784,9 @@ export default function EventsPage() {
                 Local
               </label>
               <input
+                id="event-location"
+                name="location"
+                autoComplete="off"
                 value={form.location}
                 onChange={(e) => setForm((p) => ({ ...p, location: e.target.value }))}
                 required
@@ -765,6 +795,7 @@ export default function EventsPage() {
             </div>
             <div>
               <label
+                htmlFor="event-online-url"
                 style={{
                   display: "block",
                   fontSize: "0.75rem",
@@ -775,6 +806,9 @@ export default function EventsPage() {
                 Link online
               </label>
               <input
+                id="event-online-url"
+                name="onlineUrl"
+                autoComplete="off"
                 value={form.onlineUrl}
                 onChange={(e) => setForm((p) => ({ ...p, onlineUrl: e.target.value }))}
                 placeholder="https://..."
@@ -784,6 +818,7 @@ export default function EventsPage() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
               <div>
                 <label
+                  htmlFor="event-access-type"
                   style={{
                     display: "block",
                     fontSize: "0.75rem",
@@ -794,6 +829,8 @@ export default function EventsPage() {
                   Acesso
                 </label>
                 <select
+                  id="event-access-type"
+                  name="accessType"
                   value={form.accessType}
                   onChange={(e) =>
                     setForm((p) => ({
@@ -810,6 +847,7 @@ export default function EventsPage() {
               </div>
               <div>
                 <label
+                  htmlFor="event-price-cents"
                   style={{
                     display: "block",
                     fontSize: "0.75rem",
@@ -820,7 +858,11 @@ export default function EventsPage() {
                   Preço (R$)
                 </label>
                 <input
+                  id="event-price-cents"
+                  name="priceCents"
                   type="number"
+                  inputMode="numeric"
+                  autoComplete="off"
                   value={form.priceCents}
                   onChange={(e) => setForm((p) => ({ ...p, priceCents: e.target.value }))}
                   disabled={!isPaidAccess}
@@ -830,6 +872,7 @@ export default function EventsPage() {
             </div>
             <div>
               <label
+                htmlFor="event-hero-image-url"
                 style={{
                   display: "block",
                   fontSize: "0.75rem",
@@ -840,6 +883,9 @@ export default function EventsPage() {
                 URL da capa
               </label>
               <input
+                id="event-hero-image-url"
+                name="heroImageUrl"
+                autoComplete="off"
                 value={form.heroImageUrl}
                 onChange={(e) => setForm((p) => ({ ...p, heroImageUrl: e.target.value }))}
                 placeholder="/uploads/..."
@@ -848,6 +894,7 @@ export default function EventsPage() {
             </div>
             <div>
               <label
+                htmlFor="event-gallery-image-urls"
                 style={{
                   display: "block",
                   fontSize: "0.75rem",
@@ -858,6 +905,9 @@ export default function EventsPage() {
                 Galeria (URLs)
               </label>
               <textarea
+                id="event-gallery-image-urls"
+                name="galleryImageUrls"
+                autoComplete="off"
                 value={form.galleryImageUrls}
                 onChange={(e) => setForm((p) => ({ ...p, galleryImageUrls: e.target.value }))}
                 rows={2}

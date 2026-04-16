@@ -4,6 +4,10 @@ import type { AlertVariant } from "@elo/ui";
 import React, { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { AdminShell } from "../../components/admin-shell";
 import { apiRequest } from "../../lib/auth-client";
+import {
+  formatLocalDateTimeInput,
+  toIsoFromLocalDateTimeInput
+} from "../../lib/datetime";
 
 type RankingEntry = {
   memberId: string;
@@ -35,9 +39,9 @@ type FeedbackState = {
 
 const DEFAULT_SEASON_DURATION_DAYS = 180;
 
-const defaultSeasonStartAt = () => new Date().toISOString().slice(0, 16);
+const defaultSeasonStartAt = () => formatLocalDateTimeInput(new Date());
 const defaultSeasonEndsAt = () =>
-  new Date(Date.now() + DEFAULT_SEASON_DURATION_DAYS * 24 * 3600 * 1000).toISOString().slice(0, 16);
+  formatLocalDateTimeInput(new Date(Date.now() + DEFAULT_SEASON_DURATION_DAYS * 24 * 3600 * 1000));
 
 const cardStyle = {
   display: "flex",
@@ -212,8 +216,8 @@ export default function GamificationPage() {
         method: "POST",
         body: JSON.stringify({
           name: seasonForm.name.trim(),
-          startsAt: new Date(seasonForm.startsAt).toISOString(),
-          endsAt: new Date(seasonForm.endsAt).toISOString()
+          startsAt: toIsoFromLocalDateTimeInput(seasonForm.startsAt),
+          endsAt: toIsoFromLocalDateTimeInput(seasonForm.endsAt)
         })
       });
       setSeasonForm({ name: "", startsAt: defaultSeasonStartAt(), endsAt: defaultSeasonEndsAt() });
@@ -304,6 +308,8 @@ export default function GamificationPage() {
     <AdminShell>
       {feedback && (
         <div
+          role="status"
+          aria-live="polite"
           style={{
             padding: "12px 16px",
             borderRadius: "8px",
@@ -354,7 +360,19 @@ export default function GamificationPage() {
         </div>
         <div style={cardStyle}>
           <span style={cardLabelStyle}>Líder</span>
-          <span style={{ ...cardValueStyle, color: "#865aff" }}>{stats.topPoints} pts</span>
+          <span
+            style={{
+              fontSize: "1.05rem",
+              fontWeight: 700,
+              color: "#fff",
+              wordBreak: "break-word"
+            }}
+          >
+            {stats.leaderName}
+          </span>
+          <span style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.55)" }}>
+            {stats.topPoints} pts
+          </span>
         </div>
       </div>
 
@@ -374,6 +392,7 @@ export default function GamificationPage() {
           {activeSeason ? activeSeason.name : "Nenhuma ativa"}
         </span>
         <button
+          type="button"
           onClick={() => handleProcessBadges()}
           disabled={processingBadges}
           style={{
@@ -485,6 +504,7 @@ export default function GamificationPage() {
                       </td>
                       <td style={{ padding: "8px", textAlign: "right" }}>
                         <button
+                          type="button"
                           onClick={() => handleActivateSeason(s)}
                           disabled={s.active || activatingSeasonId === s.id}
                           style={{
@@ -649,22 +669,47 @@ export default function GamificationPage() {
               Nova temporada
             </h4>
             <form onSubmit={handleSeasonSubmit} style={{ display: "grid", gap: "10px" }}>
+              <label
+                htmlFor="season-name"
+                style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.5)" }}
+              >
+                Nome
+              </label>
               <input
+                id="season-name"
+                name="name"
+                autoComplete="off"
                 value={seasonForm.name}
                 onChange={(e) => setSeasonForm((p) => ({ ...p, name: e.target.value }))}
                 placeholder="Nome"
                 required
                 style={inputStyle}
               />
+              <label
+                htmlFor="season-starts-at"
+                style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.5)" }}
+              >
+                Início
+              </label>
               <input
+                id="season-starts-at"
                 type="datetime-local"
+                name="startsAt"
                 value={seasonForm.startsAt}
                 onChange={(e) => setSeasonForm((p) => ({ ...p, startsAt: e.target.value }))}
                 required
                 style={inputStyle}
               />
+              <label
+                htmlFor="season-ends-at"
+                style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.5)" }}
+              >
+                Fim
+              </label>
               <input
+                id="season-ends-at"
                 type="datetime-local"
+                name="endsAt"
                 value={seasonForm.endsAt}
                 onChange={(e) => setSeasonForm((p) => ({ ...p, endsAt: e.target.value }))}
                 required
@@ -701,21 +746,47 @@ export default function GamificationPage() {
               Lançar pontos
             </h4>
             <form onSubmit={handleSubmit} style={{ display: "grid", gap: "10px" }}>
+              <label
+                htmlFor="points-member-id"
+                style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.5)" }}
+              >
+                Member ID
+              </label>
               <input
+                id="points-member-id"
+                name="memberId"
+                autoComplete="off"
                 value={form.memberId}
                 onChange={(e) => setForm((p) => ({ ...p, memberId: e.target.value }))}
                 placeholder="Member ID (UUID)"
                 required
                 style={inputStyle}
               />
+              <label
+                htmlFor="points-event-id"
+                style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.5)" }}
+              >
+                Event ID
+              </label>
               <input
+                id="points-event-id"
+                name="eventId"
+                autoComplete="off"
                 value={form.eventId}
                 onChange={(e) => setForm((p) => ({ ...p, eventId: e.target.value }))}
                 placeholder="Event ID (UUID)"
                 required
                 style={inputStyle}
               />
+              <label
+                htmlFor="points-season-id"
+                style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.5)" }}
+              >
+                Temporada
+              </label>
               <select
+                id="points-season-id"
+                name="seasonId"
                 value={form.seasonId}
                 onChange={(e) => setForm((p) => ({ ...p, seasonId: e.target.value }))}
                 required
@@ -728,15 +799,34 @@ export default function GamificationPage() {
                   </option>
                 ))}
               </select>
+              <label
+                htmlFor="points-value"
+                style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.5)" }}
+              >
+                Pontos
+              </label>
               <input
+                id="points-value"
+                name="points"
                 type="number"
+                inputMode="numeric"
+                autoComplete="off"
                 value={form.points}
                 onChange={(e) => setForm((p) => ({ ...p, points: e.target.value }))}
                 placeholder="Pontos"
                 required
                 style={inputStyle}
               />
+              <label
+                htmlFor="points-reason"
+                style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.5)" }}
+              >
+                Motivo
+              </label>
               <textarea
+                id="points-reason"
+                name="reason"
+                autoComplete="off"
                 value={form.reason}
                 onChange={(e) => setForm((p) => ({ ...p, reason: e.target.value }))}
                 placeholder="Motivo"

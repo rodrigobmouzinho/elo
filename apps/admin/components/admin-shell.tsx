@@ -72,6 +72,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   }
 
   const sidebarWidth = collapsed ? "72px" : "220px";
+  const sidebarNavId = "admin-sidebar-nav";
 
   return (
     <div
@@ -108,7 +109,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             minHeight: "56px",
             gap: collapsed ? "12px" : "0"
           }}
-        >
+          >
           <Image
             src="/brand/elo-mark.png"
             alt="Elo"
@@ -122,6 +123,10 @@ export function AdminShell({ children }: { children: ReactNode }) {
             }}
           />
           <button
+            type="button"
+            aria-label={collapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
+            aria-expanded={!collapsed}
+            aria-controls={sidebarNavId}
             onClick={() => setCollapsed(!collapsed)}
             style={{
               display: "flex",
@@ -137,11 +142,16 @@ export function AdminShell({ children }: { children: ReactNode }) {
               flexShrink: 0
             }}
           >
-            {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+            {collapsed ? (
+              <ChevronRight size={16} aria-hidden="true" />
+            ) : (
+              <ChevronLeft size={16} aria-hidden="true" />
+            )}
           </button>
         </div>
 
         <nav
+          id={sidebarNavId}
           style={{
             display: "flex",
             flexDirection: "column",
@@ -155,6 +165,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
+                aria-label={item.label}
+                aria-current={isActive ? "page" : undefined}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -169,10 +181,12 @@ export function AdminShell({ children }: { children: ReactNode }) {
                   fontWeight: 500,
                   whiteSpace: "nowrap",
                   overflow: "hidden",
-                  transition: "all 140ms ease"
+                  transition:
+                    "background-color 140ms ease, color 140ms ease, box-shadow 140ms ease, transform 140ms ease"
                 }}
               >
                 <span
+                  aria-hidden="true"
                   style={{
                     display: "grid",
                     placeItems: "center",
@@ -192,6 +206,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
         </nav>
 
         <button
+          type="button"
+          aria-label="Sair da conta"
           onClick={handleLogout}
           style={{
             display: "flex",
@@ -211,7 +227,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             overflow: "hidden"
           }}
         >
-          <LogOut size={18} />
+          <LogOut size={18} aria-hidden="true" />
           {!collapsed && <span>Sair</span>}
         </button>
       </aside>
