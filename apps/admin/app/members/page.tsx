@@ -770,7 +770,11 @@ export default function MembersPage() {
                       }))
                     }
                     required
-                    style={{ ...inputStyle, paddingRight: "36px" }}
+                    style={{
+                      ...inputStyle,
+                      paddingRight: "36px",
+                      colorScheme: "dark"
+                    }}
                   />
                   <Calendar
                     size={16}
