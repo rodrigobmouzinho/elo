@@ -1,26 +1,8 @@
 "use client";
 
 import type { MemberApplication, MemberApplicationStatus } from "@elo/core";
-import {
-  Alert,
-  Badge,
-  Button,
-  Card,
-  DataTable,
-  EmptyState,
-  FilterBar,
-  Input,
-  MetricStrip,
-  PageHeader,
-  PriorityStrip,
-  Select,
-  SidePanelForm,
-  Textarea
-} from "@elo/ui";
-import type { AlertVariant, BadgeVariant } from "@elo/ui";
-import { Clock3, Mail, MapPin, MessageCircleMore, UserRoundSearch } from "lucide-react";
-import type { FormEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
+import type { AlertVariant } from "@elo/ui";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AdminShell } from "../../components/admin-shell";
 import { apiRequest } from "../../lib/auth-client";
 
@@ -40,22 +22,46 @@ type VisibilityFilter = "all" | "open" | "final";
 const defaultMembershipExpiration = () =>
   new Date(Date.now() + 365 * 24 * 3600 * 1000).toISOString().slice(0, 16);
 
+const cardStyle = {
+  display: "flex",
+  flexDirection: "column" as const,
+  gap: "8px",
+  padding: "16px",
+  borderRadius: "12px",
+  background: "#1a1a1a",
+  border: "1px solid rgba(255,255,255,0.06)"
+};
+
+const cardLabelStyle = {
+  fontSize: "0.75rem",
+  fontWeight: 600,
+  color: "rgba(255,255,255,0.5)",
+  textTransform: "uppercase" as const,
+  letterSpacing: "0.05em"
+};
+
+const cardValueStyle = {
+  fontSize: "1.5rem",
+  fontWeight: 700,
+  color: "#fff"
+};
+
+const inputStyle = {
+  width: "100%",
+  padding: "10px 12px",
+  borderRadius: "8px",
+  border: "1px solid rgba(255,255,255,0.1)",
+  background: "#252525",
+  color: "#fff",
+  fontSize: "0.875rem"
+};
+
 function normalizeApiError(raw: string) {
   const normalized = raw.trim().toLowerCase();
-
   if (normalized.includes("conectar") || normalized.includes("network")) {
-    return "Não foi possível conectar ao servidor. Tente novamente em instantes.";
+    return "Não foi possível conectar ao servidor.";
   }
-
   return raw;
-}
-
-function applicationBadge(status: MemberApplicationStatus): { label: string; variant: BadgeVariant } {
-  if (status.code === "approved") return { label: status.label, variant: "success" };
-  if (status.code === "rejected") return { label: status.label, variant: "danger" };
-  if (status.code === "awaiting_payment") return { label: status.label, variant: "warning" };
-  if (status.code === "awaiting_whatsapp_contact") return { label: status.label, variant: "info" };
-  return { label: status.label, variant: "neutral" };
 }
 
 function initials(name: string) {
@@ -90,7 +96,6 @@ export default function AdesoesPage() {
 
   const filteredItems = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
-
     return items
       .filter((item) => {
         if (visibilityFilter === "open") return !item.status.isFinal;
@@ -100,18 +105,14 @@ export default function AdesoesPage() {
       .filter((item) => (statusFilter === "all" ? true : item.status.id === statusFilter))
       .filter((item) => {
         if (!normalizedSearch) return true;
-
-        return [
-          item.fullName,
-          item.email,
-          item.whatsapp,
-          item.city,
-          item.state,
-          item.area,
-          item.specialty ?? ""
-        ].some((value) => value.toLowerCase().includes(normalizedSearch));
+        return [item.fullName, item.email, item.whatsapp, item.city, item.state, item.area].some(
+          (v) => v?.toLowerCase().includes(normalizedSearch)
+        );
       })
-      .sort((first, second) => new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime());
+      .sort(
+        (first, second) =>
+          new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime()
+      );
   }, [items, search, statusFilter, visibilityFilter]);
 
   const activeStatuses = useMemo(
@@ -123,76 +124,29 @@ export default function AdesoesPage() {
     const open = items.filter((item) => !item.status.isFinal).length;
     const approved = items.filter((item) => item.status.code === "approved").length;
     const rejected = items.filter((item) => item.status.code === "rejected").length;
-    const awaitingWhatsapp = items.filter(
+    const awaiting = items.filter(
       (item) => item.status.code === "awaiting_whatsapp_contact"
     ).length;
-
-    return {
-      total: items.length,
-      open,
-      approved,
-      rejected,
-      awaitingWhatsapp
-    };
+    return { total: items.length, open, approved, rejected, awaiting };
   }, [items]);
 
-  const priorityItems = useMemo(
-    () => [
-      {
-        title:
-          metrics.awaitingWhatsapp > 0
-            ? `${metrics.awaitingWhatsapp} solicitação(ões) aguardando contato`
-            : "Fila de contato via WhatsApp em dia",
-        description:
-          metrics.awaitingWhatsapp > 0
-            ? "Concentre o time nas solicitações que já estão em fase de abordagem comercial."
-            : "Nenhuma solicitação depende de contato inicial neste momento.",
-        tone: metrics.awaitingWhatsapp > 0 ? ("warning" as const) : ("success" as const)
-      },
-      {
-        title:
-          metrics.open > 0
-            ? `${metrics.open} solicitação(ões) ainda em fluxo`
-            : "Não há solicitações abertas",
-        description:
-          metrics.open > 0
-            ? "Use status intermediários para refletir o funil real de curadoria e pagamentos."
-            : "A fila atual já foi totalmente decidida pelos administradores.",
-        tone: metrics.open > 0 ? ("brand" as const) : ("neutral" as const)
-      },
-      {
-        title: `${metrics.approved} aprovadas / ${metrics.rejected} recusadas`,
-        description: "As decisões finais ficam registradas para auditoria e evitam retrabalho na triagem.",
-        tone: "info" as const
-      }
-    ],
-    [metrics.approved, metrics.awaitingWhatsapp, metrics.open, metrics.rejected]
-  );
-
-  async function loadFeed() {
-    setLoading(true);
-
-    try {
-      const payload = await apiRequest<ApplicationsFeed>("/admin/member-applications");
-      setItems(payload.items);
-      setStatuses(payload.statuses);
-      setSelectedId((current) =>
-        current && payload.items.some((item) => item.id === current)
-          ? current
-          : payload.items[0]?.id ?? null
-      );
-    } catch (error) {
-      setFeedback({
-        title: "Falha ao carregar solicitações",
-        description: normalizeApiError((error as Error).message),
-        variant: "danger"
-      });
-    } finally {
-      setLoading(false);
-    }
-  }
-
   useEffect(() => {
+    async function loadFeed() {
+      try {
+        const payload = await apiRequest<ApplicationsFeed>("/admin/member-applications");
+        setItems(payload.items);
+        setStatuses(payload.statuses);
+        setSelectedId(payload.items[0]?.id ?? null);
+      } catch (error) {
+        setFeedback({
+          title: "Erro",
+          description: normalizeApiError((error as Error).message),
+          variant: "danger"
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
     void loadFeed();
   }, []);
 
@@ -204,7 +158,6 @@ export default function AdesoesPage() {
       setMembershipExpiresAt(defaultMembershipExpiration());
       return;
     }
-
     setSelectedStatusId(selectedApplication.status.id);
     setInternalNotes(selectedApplication.internalNotes ?? "");
     setRejectReason(selectedApplication.rejectionReason ?? "");
@@ -214,28 +167,25 @@ export default function AdesoesPage() {
   async function handleCreateStatus(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!customStatusLabel.trim()) return;
-
     setSaving(true);
-    setFeedback(null);
-
     try {
-      const status = await apiRequest<MemberApplicationStatus>("/admin/member-application-statuses", {
-        method: "POST",
-        body: JSON.stringify({ label: customStatusLabel.trim() })
-      });
-
-      setStatuses((current) =>
-        [...current, status].sort((first, second) => first.sortOrder - second.sortOrder)
+      const status = await apiRequest<MemberApplicationStatus>(
+        "/admin/member-application-statuses",
+        {
+          method: "POST",
+          body: JSON.stringify({ label: customStatusLabel.trim() })
+        }
       );
+      setStatuses((current) => [...current, status].sort((a, b) => a.sortOrder - b.sortOrder));
       setCustomStatusLabel("");
       setFeedback({
-        title: "Novo status criado",
-        description: `${status.label} já está disponível para o funil administrativo.`,
+        title: "Status criado",
+        description: `${status.label} adicionado.`,
         variant: "success"
       });
     } catch (error) {
       setFeedback({
-        title: "Falha ao criar status",
+        title: "Erro",
         description: normalizeApiError((error as Error).message),
         variant: "danger"
       });
@@ -247,12 +197,9 @@ export default function AdesoesPage() {
   async function handleSaveWorkflow(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selectedApplication) return;
-
     setSaving(true);
-    setFeedback(null);
-
     try {
-      await apiRequest<MemberApplication>(`/admin/member-applications/${selectedApplication.id}`, {
+      await apiRequest(`/admin/member-applications/${selectedApplication.id}`, {
         method: "PATCH",
         body: JSON.stringify({
           statusId:
@@ -260,16 +207,12 @@ export default function AdesoesPage() {
           internalNotes
         })
       });
-
-      setFeedback({
-        title: "Solicitação atualizada",
-        description: "Status intermediário e notas internas foram sincronizados com sucesso.",
-        variant: "success"
-      });
-      await loadFeed();
+      setFeedback({ title: "Atualizado", description: "Status salvo.", variant: "success" });
+      const payload = await apiRequest<ApplicationsFeed>("/admin/member-applications");
+      setItems(payload.items);
     } catch (error) {
       setFeedback({
-        title: "Falha ao atualizar solicitação",
+        title: "Erro",
         description: normalizeApiError((error as Error).message),
         variant: "danger"
       });
@@ -280,35 +223,31 @@ export default function AdesoesPage() {
 
   async function handleApprove() {
     if (!selectedApplication) return;
-
     setSaving(true);
-    setFeedback(null);
-
     try {
-      const isoExpiration = new Date(membershipExpiresAt).toISOString();
-      const result = await apiRequest<{
-        deliveryMode: "email" | "manual";
-        temporaryPassword?: string;
-      }>(`/admin/member-applications/${selectedApplication.id}/approve`, {
-        method: "POST",
-        body: JSON.stringify({
-          membershipExpiresAt: isoExpiration,
-          internalNotes
-        })
-      });
-
+      const result = await apiRequest<{ deliveryMode: string; temporaryPassword?: string }>(
+        `/admin/member-applications/${selectedApplication.id}/approve`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            membershipExpiresAt: new Date(membershipExpiresAt).toISOString(),
+            internalNotes
+          })
+        }
+      );
       setFeedback({
-        title: "Solicitação aprovada",
+        title: "Aprovado",
         description:
           result.deliveryMode === "email"
-            ? "A conta foi criada e a senha temporária foi enviada por e-mail."
-            : `A conta foi criada. Senha temporária para entrega manual: ${result.temporaryPassword ?? "indisponível"}.`,
+            ? "Conta criada, e-mail enviado."
+            : `Conta criada. Senha: ${result.temporaryPassword}`,
         variant: "success"
       });
-      await loadFeed();
+      const payload = await apiRequest<ApplicationsFeed>("/admin/member-applications");
+      setItems(payload.items);
     } catch (error) {
       setFeedback({
-        title: "Falha ao aprovar solicitação",
+        title: "Erro",
         description: normalizeApiError((error as Error).message),
         variant: "danger"
       });
@@ -319,28 +258,18 @@ export default function AdesoesPage() {
 
   async function handleReject() {
     if (!selectedApplication) return;
-
     setSaving(true);
-    setFeedback(null);
-
     try {
-      await apiRequest<MemberApplication>(`/admin/member-applications/${selectedApplication.id}/reject`, {
+      await apiRequest(`/admin/member-applications/${selectedApplication.id}/reject`, {
         method: "POST",
-        body: JSON.stringify({
-          reason: rejectReason,
-          internalNotes
-        })
+        body: JSON.stringify({ reason: rejectReason, internalNotes })
       });
-
-      setFeedback({
-        title: "Solicitação recusada",
-        description: "A decisão final foi registrada com a justificativa indicada.",
-        variant: "warning"
-      });
-      await loadFeed();
+      setFeedback({ title: "Recusado", description: "Solicitação rejeitada.", variant: "warning" });
+      const payload = await apiRequest<ApplicationsFeed>("/admin/member-applications");
+      setItems(payload.items);
     } catch (error) {
       setFeedback({
-        title: "Falha ao recusar solicitação",
+        title: "Erro",
         description: normalizeApiError((error as Error).message),
         variant: "danger"
       });
@@ -349,403 +278,452 @@ export default function AdesoesPage() {
     }
   }
 
+  if (loading) {
+    return (
+      <AdminShell>
+        <div
+          style={{
+            display: "grid",
+            placeItems: "center",
+            minHeight: "50vh",
+            color: "rgba(255,255,255,0.5)"
+          }}
+        >
+          Carregando...
+        </div>
+      </AdminShell>
+    );
+  }
+
   return (
     <AdminShell>
-      <PageHeader
-        eyebrow={<Badge variant="brand">Adesões</Badge>}
-        title="Curadoria de novas adesões"
-        description="Acompanhe a entrada de candidatos, reflita o funil real da operação e conclua aprovações com criação automática da conta do membro."
-        meta={
-          <FilterBar
-            actions={<Badge variant="neutral">{filteredItems.length.toLocaleString("pt-BR")} visível(is)</Badge>}
-          >
-            <Input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Buscar por nome, e-mail, WhatsApp, cidade ou área"
-              type="search"
-              style={{ maxWidth: "360px" }}
-            />
-            <Select
-              value={visibilityFilter}
-              onChange={(event) => setVisibilityFilter(event.target.value as VisibilityFilter)}
-              style={{ maxWidth: "180px" }}
-            >
-              <option value="all">Toda a fila</option>
-              <option value="open">Somente em fluxo</option>
-              <option value="final">Somente finalizadas</option>
-            </Select>
-            <Select
-              value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
-              style={{ maxWidth: "220px" }}
-            >
-              <option value="all">Todos os status</option>
-              {statuses.map((status) => (
-                <option key={status.id} value={status.id}>
-                  {status.label}
-                </option>
-              ))}
-            </Select>
-          </FilterBar>
-        }
-      />
-
-      {feedback ? (
-        <Alert variant={feedback.variant} title={feedback.title}>
-          {feedback.description}
-        </Alert>
-      ) : null}
-
-      {loading ? (
-        <Alert variant="info" title="Atualizando fila de adesões">
-          Carregando solicitações, status intermediários e decisões finais.
-        </Alert>
-      ) : null}
-
-      <div style={{ display: "grid", gap: "16px" }}>
-        <section
+      {feedback && (
+        <div
           style={{
-            display: "grid",
-            gap: "16px",
-            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))"
+            padding: "12px 16px",
+            borderRadius: "8px",
+            marginBottom: "16px",
+            background:
+              feedback.variant === "danger"
+                ? "rgba(239,68,68,0.1)"
+                : feedback.variant === "success"
+                  ? "rgba(34,197,94,0.1)"
+                  : "rgba(245,158,11,0.1)",
+            color:
+              feedback.variant === "danger"
+                ? "#ef4444"
+                : feedback.variant === "success"
+                  ? "#22c55e"
+                  : "#f59e0b"
           }}
         >
-          <Card
-            tone="default"
-            title="Mesa de triagem"
-            subtitle="Transforme o funil comercial e operacional em status visíveis para o time."
-          >
-            <div style={{ display: "grid", gap: "12px" }}>
-              {[
-                {
-                  label: "Solicitações abertas",
-                  value: metrics.open.toLocaleString("pt-BR"),
-                  detail: "Ainda sem decisão final"
-                },
-                {
-                  label: "Aguardando WhatsApp",
-                  value: metrics.awaitingWhatsapp.toLocaleString("pt-BR"),
-                  detail: "Etapa operacional mais sensível"
-                },
-                {
-                  label: "Decisões finais",
-                  value: `${metrics.approved}/${metrics.rejected}`,
-                  detail: "Aprovadas / recusadas"
-                }
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  style={{
-                    display: "grid",
-                    gap: "6px",
-                    padding: "12px 14px",
-                    borderRadius: "18px",
-                    background: "rgba(255,255,255,0.08)",
-                    border: "1px solid rgba(255,255,255,0.1)"
-                  }}
-                >
-                  <span style={{ fontSize: ".75rem", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                    {item.label}
-                  </span>
-                  <strong style={{ fontSize: "1.45rem" }}>{item.value}</strong>
-                  <span style={{ color: "rgba(255,255,255,0.78)", fontSize: ".9rem" }}>{item.detail}</span>
-                </div>
-              ))}
-            </div>
-          </Card>
+          <strong>{feedback.title}</strong>
+          <p style={{ margin: "4px 0 0", opacity: 0.8 }}>{feedback.description}</p>
+        </div>
+      )}
 
-          <Card
-            tone="panel"
-            title="Status do funil"
-            subtitle="Admin pode manter a linguagem operacional alinhada ao processo real."
-          >
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-              {statuses.map((status) => (
-                <Badge key={status.id} variant={applicationBadge(status).variant}>
-                  {status.label}
-                </Badge>
-              ))}
-            </div>
-          </Card>
-        </section>
+      {/* Cards de métricas */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(4, 1fr)",
+          gap: "16px",
+          marginBottom: "24px"
+        }}
+      >
+        <div style={cardStyle}>
+          <span style={cardLabelStyle}>Total de Solicitações</span>
+          <span style={cardValueStyle}>{metrics.total}</span>
+        </div>
+        <div style={cardStyle}>
+          <span style={cardLabelStyle}>Em Fluxo</span>
+          <span style={{ ...cardValueStyle, color: metrics.open > 0 ? "#f59e0b" : "#22c55e" }}>
+            {metrics.open}
+          </span>
+        </div>
+        <div style={cardStyle}>
+          <span style={cardLabelStyle}>Aprovadas</span>
+          <span style={{ ...cardValueStyle, color: "#22c55e" }}>{metrics.approved}</span>
+        </div>
+        <div style={cardStyle}>
+          <span style={cardLabelStyle}>Recusadas</span>
+          <span style={{ ...cardValueStyle, color: "#ef4444" }}>{metrics.rejected}</span>
+        </div>
+      </div>
 
-        <MetricStrip
-          items={[
-            {
-              label: "Total recebido",
-              value: metrics.total.toLocaleString("pt-BR"),
-              hint: "solicitações registradas",
-              badge: <Badge variant="brand">Entrada</Badge>,
-              tone: "brand"
-            },
-            {
-              label: "Em fluxo",
-              value: metrics.open.toLocaleString("pt-BR"),
-              hint: "sem decisão final",
-              badge: <Badge variant="warning">Ativas</Badge>,
-              tone: "warning"
-            },
-            {
-              label: "Aprovadas",
-              value: metrics.approved.toLocaleString("pt-BR"),
-              hint: "conta criada",
-              badge: <Badge variant="success">Conversao</Badge>,
-              tone: "success"
-            },
-            {
-              label: "Recusadas",
-              value: metrics.rejected.toLocaleString("pt-BR"),
-              hint: "registro finalizado",
-              badge: <Badge variant="danger">Fechadas</Badge>,
-              tone: "danger"
-            }
-          ]}
+      {/* Filtros */}
+      <div style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar..."
+          style={{ ...inputStyle, maxWidth: "300px" }}
         />
+        <select
+          value={visibilityFilter}
+          onChange={(e) => setVisibilityFilter(e.target.value as VisibilityFilter)}
+          style={{ ...inputStyle, width: "160px" }}
+        >
+          <option value="all">Todos</option>
+          <option value="open">Em fluxo</option>
+          <option value="final">Finalizados</option>
+        </select>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          style={{ ...inputStyle, width: "180px" }}
+        >
+          <option value="all">Todos status</option>
+          {statuses.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.label}
+            </option>
+          ))}
+        </select>
+      </div>
 
-        <PriorityStrip items={priorityItems} />
-
-        <section
+      {/* Lista + Painel lateral */}
+      <div style={{ display: "grid", gap: "16px", gridTemplateColumns: "1fr 380px" }}>
+        {/* Lista de solicitações */}
+        <div
           style={{
-            display: "grid",
-            gap: "16px",
-            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))"
+            background: "#1a1a1a",
+            borderRadius: "12px",
+            padding: "16px",
+            border: "1px solid rgba(255,255,255,0.06)"
           }}
         >
-          <div style={{ minWidth: 0 }}>
-            <DataTable
-              rows={filteredItems}
-              rowKey={(item) => item.id}
-              emptyState={
-                <EmptyState
-                  title="Nenhuma solicitação encontrada"
-                  description="Ajuste os filtros ou aguarde novas entradas no formulário público."
-                />
-              }
-              columns={[
-                {
-                  key: "applicant",
-                  header: "Solicitante",
-                  sortable: true,
-                  sortValue: (item) => item.fullName,
-                  render: (item) => (
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          {filteredItems.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px", color: "rgba(255,255,255,0.5)" }}>
+              Nenhuma solicitação encontrada
+            </div>
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+                  <th
+                    style={{
+                      textAlign: "left",
+                      padding: "12px 8px",
+                      color: "rgba(255,255,255,0.5)",
+                      fontSize: "0.75rem"
+                    }}
+                  >
+                    Candidato
+                  </th>
+                  <th
+                    style={{
+                      textAlign: "left",
+                      padding: "12px 8px",
+                      color: "rgba(255,255,255,0.5)",
+                      fontSize: "0.75rem"
+                    }}
+                  >
+                    Local
+                  </th>
+                  <th
+                    style={{
+                      textAlign: "left",
+                      padding: "12px 8px",
+                      color: "rgba(255,255,255,0.5)",
+                      fontSize: "0.75rem"
+                    }}
+                  >
+                    Status
+                  </th>
+                  <th
+                    style={{
+                      textAlign: "right",
+                      padding: "12px 8px",
+                      color: "rgba(255,255,255,0.5)",
+                      fontSize: "0.75rem"
+                    }}
+                  >
+                    Ação
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredItems.map((item) => (
+                  <tr
+                    key={item.id}
+                    style={{
+                      borderBottom: "1px solid rgba(255,255,255,0.06)",
+                      cursor: "pointer",
+                      background: selectedId === item.id ? "rgba(134,90,255,0.1)" : "transparent"
+                    }}
+                    onClick={() => setSelectedId(item.id)}
+                  >
+                    <td style={{ padding: "12px 8px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <span
+                          style={{
+                            width: "36px",
+                            height: "36px",
+                            display: "grid",
+                            placeItems: "center",
+                            borderRadius: "8px",
+                            background: "rgba(134,90,255,0.15)",
+                            fontWeight: 700,
+                            fontSize: "0.875rem"
+                          }}
+                        >
+                          {initials(item.fullName)}
+                        </span>
+                        <div>
+                          <div style={{ fontWeight: 600 }}>{item.fullName}</div>
+                          <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.5)" }}>
+                            {item.email}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td style={{ padding: "12px 8px" }}>
+                      <div style={{ fontSize: "0.9rem" }}>
+                        {item.city}/{item.state}
+                      </div>
+                      <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.5)" }}>
+                        {item.area}
+                      </div>
+                    </td>
+                    <td style={{ padding: "12px 8px" }}>
                       <span
                         style={{
-                          width: "42px",
-                          height: "42px",
-                          display: "grid",
-                          placeItems: "center",
-                          borderRadius: "14px",
-                          background: "rgba(134, 90, 255, 0.12)",
-                          color: "var(--elo-orbit, #865AFF)",
-                          fontWeight: 800
+                          display: "inline-block",
+                          padding: "4px 10px",
+                          borderRadius: "999px",
+                          fontSize: "0.7rem",
+                          fontWeight: 600,
+                          background:
+                            item.status.code === "approved"
+                              ? "rgba(34,197,94,0.15)"
+                              : item.status.code === "rejected"
+                                ? "rgba(239,68,68,0.15)"
+                                : "rgba(245,158,11,0.15)",
+                          color:
+                            item.status.code === "approved"
+                              ? "#22c55e"
+                              : item.status.code === "rejected"
+                                ? "#ef4444"
+                                : "#f59e0b"
                         }}
                       >
-                        {initials(item.fullName)}
+                        {item.status.label}
                       </span>
-                      <span style={{ display: "grid", gap: "4px" }}>
-                        <strong>{item.fullName}</strong>
-                        <span style={{ color: "var(--elo-text-secondary, #374151)", fontSize: ".9rem" }}>
-                          {item.email}
-                        </span>
-                      </span>
-                    </div>
-                  )
-                },
-                {
-                  key: "context",
-                  header: "Contexto",
-                  sortable: true,
-                  sortValue: (item) => `${item.city}-${item.state}-${item.area}`,
-                  render: (item) => (
-                    <div style={{ display: "grid", gap: "6px" }}>
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
-                        <MapPin size={14} />
-                        {item.city}/{item.state}
-                      </span>
-                      <span style={{ color: "var(--elo-text-secondary, #374151)", fontSize: ".92rem" }}>{item.area}</span>
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "var(--elo-text-secondary, #374151)", fontSize: ".92rem" }}>
-                        <MessageCircleMore size={14} />
-                        {item.whatsapp}
-                      </span>
-                    </div>
-                  )
-                },
-                {
-                  key: "status",
-                  header: "Status",
-                  width: "220px",
-                  sortable: true,
-                  sortValue: (item) => item.status.sortOrder,
-                  render: (item) => (
-                    <div style={{ display: "grid", gap: "8px" }}>
-                      <Badge variant={applicationBadge(item.status).variant}>{item.status.label}</Badge>
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "var(--elo-text-secondary, #374151)", fontSize: ".88rem" }}>
-                        <Clock3 size={14} />
-                        {new Date(item.updatedAt).toLocaleDateString("pt-BR")}
-                      </span>
-                    </div>
-                  )
-                },
-                {
-                  key: "actions",
-                  header: "Ações",
-                  width: "160px",
-                  align: "right",
-                  render: (item) => (
-                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                      <Button size="sm" variant="secondary" onClick={() => setSelectedId(item.id)}>
+                    </td>
+                    <td style={{ padding: "12px 8px", textAlign: "right" }}>
+                      <button
+                        style={{
+                          padding: "6px 12px",
+                          borderRadius: "6px",
+                          border: "1px solid rgba(255,255,255,0.1)",
+                          background: "transparent",
+                          color: "#fff",
+                          cursor: "pointer",
+                          fontSize: "0.8rem"
+                        }}
+                      >
                         Gerir
-                      </Button>
-                    </div>
-                  )
-                }
-              ]}
-            />
-          </div>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
 
-          <SidePanelForm
-            badge={<Badge variant={selectedApplication?.status.isFinal ? "neutral" : "brand"}>Painel da adesão</Badge>}
-            title={selectedApplication ? selectedApplication.fullName : "Selecione uma solicitação"}
-            description={
-              selectedApplication
-                ? "Atualize o funil, registre notas internas e conclua a decisão final quando a adesão estiver pronta."
-                : "Escolha uma solicitação na lista para abrir a triagem completa."
-            }
-          >
-            {selectedApplication ? (
-              <div style={{ display: "grid", gap: "14px" }}>
+        {/* Painel lateral */}
+        <div
+          style={{
+            background: "#1a1a1a",
+            borderRadius: "12px",
+            padding: "20px",
+            border: "1px solid rgba(255,255,255,0.06)",
+            height: "fit-content"
+          }}
+        >
+          {selectedApplication ? (
+            <div style={{ display: "grid", gap: "16px" }}>
+              <div>
                 <div
                   style={{
-                    display: "grid",
-                    gap: "8px",
-                    padding: "14px 16px",
-                    borderRadius: "18px",
-                    background: "rgba(134, 90, 255, 0.08)",
-                    border: "1px solid rgba(134, 90, 255, 0.14)"
+                    fontSize: "0.75rem",
+                    color: "rgba(255,255,255,0.5)",
+                    marginBottom: "4px"
                   }}
                 >
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontSize: ".78rem", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--elo-orbit, #865AFF)" }}>
-                    <Mail size={14} />
-                    Dados enviados pelo candidato
-                  </span>
-                  <strong>{selectedApplication.email}</strong>
-                  <span>{selectedApplication.whatsapp}</span>
-                  <span>
-                    {selectedApplication.city}/{selectedApplication.state} · {selectedApplication.area}
-                  </span>
-                  {selectedApplication.specialty ? <span>Talento principal: {selectedApplication.specialty}</span> : null}
+                  CANDIDATO
                 </div>
-
-                <form onSubmit={handleSaveWorkflow} style={{ display: "grid", gap: "12px" }}>
-                  <label style={{ display: "grid", gap: "6px" }}>
-                    <span>Status intermediário</span>
-                    <Select
-                      value={selectedStatusId}
-                      onChange={(event) => setSelectedStatusId(event.target.value)}
-                      disabled={selectedApplication.status.isFinal}
-                    >
-                      {activeStatuses.map((status) => (
-                        <option key={status.id} value={status.id}>
-                          {status.label}
-                        </option>
-                      ))}
-                    </Select>
-                  </label>
-
-                  <label style={{ display: "grid", gap: "6px" }}>
-                    <span>Notas internas</span>
-                    <Textarea
-                      value={internalNotes}
-                      onChange={(event) => setInternalNotes(event.target.value)}
-                      style={{ minHeight: "120px" }}
-                    />
-                  </label>
-
-                  <Button type="submit" disabled={saving}>
-                    {saving ? "Salvando..." : "Salvar andamento"}
-                  </Button>
-                </form>
-
-                <form onSubmit={handleCreateStatus} style={{ display: "grid", gap: "10px" }}>
-                  <span style={{ fontWeight: 700 }}>Novo status intermediário</span>
-                  <Input
-                    value={customStatusLabel}
-                    onChange={(event) => setCustomStatusLabel(event.target.value)}
-                    placeholder="Ex: aguardando contrato"
-                  />
-                  <Button type="submit" variant="secondary" disabled={saving || !customStatusLabel.trim()}>
-                    Criar status
-                  </Button>
-                </form>
-
-                {!selectedApplication.status.isFinal ? (
-                  <>
-                    <Card tone="panel" title="Aprovar adesão" subtitle="Cria a conta do membro e envia a senha temporária por e-mail quando disponível.">
-                      <div style={{ display: "grid", gap: "10px" }}>
-                        <label style={{ display: "grid", gap: "6px" }}>
-                          <span>Validade inicial da associação</span>
-                          <Input
-                            type="datetime-local"
-                            value={membershipExpiresAt}
-                            onChange={(event) => setMembershipExpiresAt(event.target.value)}
-                          />
-                        </label>
-
-                        <Button type="button" onClick={() => void handleApprove()} disabled={saving}>
-                          Aprovar e criar acesso
-                        </Button>
-                      </div>
-                    </Card>
-
-                    <Card tone="panel" title="Recusar adesão" subtitle="A justificativa fica registrada na trilha administrativa da solicitação.">
-                      <div style={{ display: "grid", gap: "10px" }}>
-                        <Textarea
-                          value={rejectReason}
-                          onChange={(event) => setRejectReason(event.target.value)}
-                          placeholder="Explique de forma objetiva o motivo da recusa"
-                          style={{ minHeight: "100px" }}
-                        />
-
-                        <Button
-                          type="button"
-                          variant="danger"
-                          onClick={() => void handleReject()}
-                          disabled={saving || rejectReason.trim().length < 3}
-                        >
-                          Recusar solicitação
-                        </Button>
-                      </div>
-                    </Card>
-                  </>
-                ) : (
-                  <Card
-                    tone={selectedApplication.status.code === "approved" ? "panel" : "ghost"}
-                    title="Decisão final registrada"
-                    subtitle={
-                      selectedApplication.status.code === "approved"
-                        ? "A conta do membro já foi provisionada e o primeiro acesso fica a cargo do próprio usuário."
-                        : "A solicitação foi encerrada e a justificativa fica preservada para auditoria interna."
-                    }
-                  >
-                    {selectedApplication.rejectionReason ? (
-                      <p style={{ margin: 0, color: "var(--elo-text-secondary, #374151)", lineHeight: 1.65 }}>
-                        Justificativa: {selectedApplication.rejectionReason}
-                      </p>
-                    ) : null}
-                  </Card>
-                )}
+                <div style={{ fontWeight: 600, fontSize: "1.1rem" }}>
+                  {selectedApplication.fullName}
+                </div>
+                <div style={{ fontSize: "0.9rem", color: "rgba(255,255,255,0.7)" }}>
+                  {selectedApplication.email}
+                </div>
+                <div style={{ fontSize: "0.9rem" }}>{selectedApplication.whatsapp}</div>
+                <div style={{ fontSize: "0.9rem" }}>
+                  {selectedApplication.city}/{selectedApplication.state}
+                </div>
               </div>
-            ) : (
-              <EmptyState
-                title="Nenhuma solicitação selecionada"
-                description="Escolha um item da fila para registrar andamento, aprovar ou recusar."
-                icon={<UserRoundSearch size={18} />}
-              />
-            )}
-          </SidePanelForm>
-        </section>
+
+              <form onSubmit={handleSaveWorkflow} style={{ display: "grid", gap: "12px" }}>
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "0.75rem",
+                      color: "rgba(255,255,255,0.5)",
+                      marginBottom: "4px"
+                    }}
+                  >
+                    Status
+                  </label>
+                  <select
+                    value={selectedStatusId}
+                    onChange={(e) => setSelectedStatusId(e.target.value)}
+                    disabled={selectedApplication.status.isFinal}
+                    style={inputStyle}
+                  >
+                    {activeStatuses.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "0.75rem",
+                      color: "rgba(255,255,255,0.5)",
+                      marginBottom: "4px"
+                    }}
+                  >
+                    Notas internas
+                  </label>
+                  <textarea
+                    value={internalNotes}
+                    onChange={(e) => setInternalNotes(e.target.value)}
+                    rows={3}
+                    style={{ ...inputStyle, resize: "vertical" }}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  style={{
+                    padding: "12px",
+                    borderRadius: "8px",
+                    border: "none",
+                    background: "linear-gradient(90deg, #5932d1 0%, #9b027c 100%)",
+                    color: "#fff",
+                    fontWeight: 600,
+                    cursor: "pointer"
+                  }}
+                >
+                  {saving ? "Salvando..." : "Salvar"}
+                </button>
+              </form>
+
+              {!selectedApplication.status.isFinal && (
+                <>
+                  <div style={{ display: "grid", gap: "12px" }}>
+                    <div>
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: "0.75rem",
+                          color: "rgba(255,255,255,0.5)",
+                          marginBottom: "4px"
+                        }}
+                      >
+                        Validade
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={membershipExpiresAt}
+                        onChange={(e) => setMembershipExpiresAt(e.target.value)}
+                        style={inputStyle}
+                      />
+                    </div>
+                    <button
+                      onClick={() => handleApprove()}
+                      disabled={saving}
+                      style={{
+                        padding: "12px",
+                        borderRadius: "8px",
+                        border: "none",
+                        background: "#22c55e",
+                        color: "#fff",
+                        fontWeight: 600,
+                        cursor: "pointer"
+                      }}
+                    >
+                      Aprovar
+                    </button>
+                  </div>
+                  <div style={{ display: "grid", gap: "12px" }}>
+                    <textarea
+                      value={rejectReason}
+                      onChange={(e) => setRejectReason(e.target.value)}
+                      placeholder="Motivo da recusa"
+                      rows={2}
+                      style={{ ...inputStyle, resize: "vertical" }}
+                    />
+                    <button
+                      onClick={() => handleReject()}
+                      disabled={saving || rejectReason.trim().length < 3}
+                      style={{
+                        padding: "12px",
+                        borderRadius: "8px",
+                        border: "none",
+                        background: "#ef4444",
+                        color: "#fff",
+                        fontWeight: 600,
+                        cursor: "pointer"
+                      }}
+                    >
+                      Recusar
+                    </button>
+                  </div>
+                </>
+              )}
+
+              <form onSubmit={handleCreateStatus} style={{ display: "grid", gap: "8px" }}>
+                <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.5)" }}>
+                  Novo status
+                </div>
+                <input
+                  value={customStatusLabel}
+                  onChange={(e) => setCustomStatusLabel(e.target.value)}
+                  placeholder="Nome do status"
+                  style={inputStyle}
+                />
+                <button
+                  type="submit"
+                  disabled={saving || !customStatusLabel.trim()}
+                  style={{
+                    padding: "8px",
+                    borderRadius: "6px",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    background: "transparent",
+                    color: "rgba(255,255,255,0.6)",
+                    cursor: "pointer",
+                    fontSize: "0.8rem"
+                  }}
+                >
+                  Criar status
+                </button>
+              </form>
+            </div>
+          ) : (
+            <div style={{ textAlign: "center", padding: "40px", color: "rgba(255,255,255,0.5)" }}>
+              Selecione uma solicitação
+            </div>
+          )}
+        </div>
       </div>
     </AdminShell>
   );
