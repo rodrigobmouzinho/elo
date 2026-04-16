@@ -761,21 +761,14 @@ export default function MembersPage() {
                 </label>
                 <div style={{ position: "relative" }}>
                   <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="dd/mm/aaaa"
+                    type="date"
                     value={form.membershipExpiresAt.split("T")[0]}
-                    onChange={(e) => {
-                      let value = e.target.value.replace(/\D/g, "");
-                      if (value.length > 8) value = value.slice(0, 8);
-                      if (value.length >= 5) {
-                        value = value.slice(0, 4) + "-" + value.slice(4, 6) + "-" + value.slice(6);
-                      }
+                    onChange={(e) =>
                       setForm((p) => ({
                         ...p,
-                        membershipExpiresAt: value ? `${value}T00:00:00` : ""
-                      }));
-                    }}
+                        membershipExpiresAt: e.target.value ? `${e.target.value}T00:00:00` : ""
+                      }))
+                    }
                     required
                     style={{
                       width: "100%",
@@ -784,7 +777,9 @@ export default function MembersPage() {
                       border: "1px solid rgba(255,255,255,0.1)",
                       background: "#252525",
                       color: "#fff",
-                      fontSize: "0.875rem"
+                      fontSize: "0.875rem",
+                      WebkitAppearance: "none",
+                      MozAppearance: "none"
                     }}
                   />
                   <svg
@@ -801,7 +796,14 @@ export default function MembersPage() {
                       right: "12px",
                       top: "50%",
                       transform: "translateY(-50%)",
-                      pointerEvents: "none"
+                      cursor: "pointer",
+                      pointerEvents: "auto"
+                    }}
+                    onClick={() => {
+                      const input = document.querySelector(
+                        'input[name="membershipExpiresAt"]'
+                      ) as HTMLInputElement;
+                      if (input) input.showPicker();
                     }}
                   >
                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
