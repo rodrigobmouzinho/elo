@@ -773,7 +773,8 @@ export default function MembersPage() {
                     style={{
                       ...inputStyle,
                       paddingRight: "36px",
-                      colorScheme: "dark"
+                      WebkitAppearance: "none",
+                      MozAppearance: "textfield"
                     }}
                   />
                   <Calendar
