@@ -2,7 +2,7 @@
 
 import type { MemberApplication, MemberApplicationStatus } from "@elo/core";
 import type { AlertVariant } from "@elo/ui";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import React, { FormEvent, useEffect, useMemo, useState } from "react";
 import { AdminShell } from "../../components/admin-shell";
 import { apiRequest } from "../../lib/auth-client";
 
@@ -54,6 +54,21 @@ const inputStyle = {
   background: "#252525",
   color: "#fff",
   fontSize: "0.875rem"
+};
+
+const selectStyle: React.CSSProperties = {
+  width: "100%",
+  padding: "10px 32px 10px 12px",
+  borderRadius: "8px",
+  border: "1px solid rgba(255,255,255,0.1)",
+  background: "#252525",
+  color: "#fff",
+  fontSize: "0.875rem",
+  appearance: "none" as const,
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.5)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+  backgroundRepeat: "no-repeat",
+  backgroundPosition: "right 12px center",
+  cursor: "pointer"
 };
 
 function normalizeApiError(raw: string) {
@@ -362,7 +377,7 @@ export default function AdesoesPage() {
         <select
           value={visibilityFilter}
           onChange={(e) => setVisibilityFilter(e.target.value as VisibilityFilter)}
-          style={{ ...inputStyle, width: "160px" }}
+          style={{ ...selectStyle, width: "160px" }}
         >
           <option value="all">Todos</option>
           <option value="open">Em fluxo</option>
@@ -371,7 +386,7 @@ export default function AdesoesPage() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          style={{ ...inputStyle, width: "180px" }}
+          style={{ ...selectStyle, width: "180px" }}
         >
           <option value="all">Todos status</option>
           {statuses.map((s) => (
@@ -583,7 +598,7 @@ export default function AdesoesPage() {
                     value={selectedStatusId}
                     onChange={(e) => setSelectedStatusId(e.target.value)}
                     disabled={selectedApplication.status.isFinal}
-                    style={inputStyle}
+                    style={selectStyle}
                   >
                     {activeStatuses.map((s) => (
                       <option key={s.id} value={s.id}>

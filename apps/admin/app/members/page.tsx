@@ -93,6 +93,21 @@ const inputStyle = {
   fontSize: "0.875rem"
 };
 
+const selectStyle: React.CSSProperties = {
+  width: "100%",
+  padding: "10px 32px 10px 12px",
+  borderRadius: "8px",
+  border: "1px solid rgba(255,255,255,0.1)",
+  background: "#252525",
+  color: "#fff",
+  fontSize: "0.875rem",
+  appearance: "none" as const,
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.5)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+  backgroundRepeat: "no-repeat",
+  backgroundPosition: "right 12px center",
+  cursor: "pointer"
+};
+
 function normalizeApiError(raw: string) {
   const normalized = raw.trim().toLowerCase();
   if (
@@ -392,7 +407,7 @@ export default function MembersPage() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as MemberStatusFilter)}
-          style={{ ...inputStyle, width: "160px" }}
+          style={selectStyle}
         >
           <option value="all">Todos</option>
           <option value="active">Ativos</option>
@@ -488,15 +503,15 @@ export default function MembersPage() {
                           {initials(member.fullName)}
                         </span>
                         <div>
-                          <div style={{ fontWeight: 600 }}>{member.fullName}</div>
+                          <div style={{ fontWeight: 600, color: "#fff" }}>{member.fullName}</div>
                           <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.5)" }}>
                             {member.email}
                           </div>
                         </div>
                       </div>
                     </td>
-                    <td style={{ padding: "12px 8px" }}>
-                      <div style={{ fontSize: "0.9rem" }}>
+                    <td style={{ padding: "12px 8px", color: "rgba(255,255,255,0.7)" }}>
+                      <div style={{ fontSize: "0.9rem", color: "#fff" }}>
                         {member.city}/{member.state}
                       </div>
                       <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.5)" }}>
@@ -669,7 +684,7 @@ export default function MembersPage() {
                   value={form.state}
                   onChange={(e) => setForm((p) => ({ ...p, state: e.target.value, city: "" }))}
                   required
-                  style={inputStyle}
+                  style={selectStyle}
                 >
                   <option value="">UF</option>
                   {states.map((s) => (
@@ -695,7 +710,7 @@ export default function MembersPage() {
                   onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))}
                   required
                   disabled={!form.state}
-                  style={inputStyle}
+                  style={selectStyle}
                 >
                   <option value="">Cidade</option>
                   {cities.map((c) => (

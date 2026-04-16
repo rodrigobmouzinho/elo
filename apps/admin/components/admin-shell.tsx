@@ -90,30 +90,37 @@ export function AdminShell({ children }: { children: ReactNode }) {
           background: "#131313",
           borderRight: "1px solid rgba(255,255,255,0.06)",
           transition: "width 200ms ease",
-          overflow: "hidden"
+          overflow: "hidden",
+          height: "100vh",
+          position: "fixed",
+          left: 0,
+          top: 0,
+          zIndex: 100
         }}
       >
         <div
           style={{
             display: "flex",
+            flexDirection: collapsed ? "column" : "row",
             alignItems: "center",
             justifyContent: collapsed ? "center" : "space-between",
-            marginBottom: "24px"
+            marginBottom: "24px",
+            minHeight: "56px",
+            gap: collapsed ? "12px" : "0"
           }}
         >
-          {!collapsed && (
-            <Image
-              src="/brand/elo-mark.png"
-              alt="Elo"
-              width={56}
-              height={56}
-              style={{
-                width: "56px",
-                height: "56px",
-                objectFit: "contain"
-              }}
-            />
-          )}
+          <Image
+            src="/brand/elo-mark.png"
+            alt="Elo"
+            width={56}
+            height={56}
+            style={{
+              width: collapsed ? "36px" : "56px",
+              height: collapsed ? "36px" : "56px",
+              objectFit: "contain",
+              flexShrink: 0
+            }}
+          />
           <button
             onClick={() => setCollapsed(!collapsed)}
             style={{
@@ -213,7 +220,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
         style={{
           flex: 1,
           padding: "24px",
-          overflowY: "auto"
+          overflowY: "auto",
+          marginLeft: sidebarWidth,
+          transition: "margin-left 200ms ease"
         }}
       >
         {children}
