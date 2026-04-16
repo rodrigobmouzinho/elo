@@ -1,26 +1,9 @@
 "use client";
 
 import { formatBrazilianPhoneInput, isValidBrazilianMobile } from "@elo/core";
-import {
-  Alert,
-  Badge,
-  Button,
-  Card,
-  DataTable,
-  EmptyState,
-  FilterBar,
-  Input,
-  MetricStrip,
-  PageHeader,
-  PriorityStrip,
-  Select,
-  SidePanelForm,
-  Textarea
-} from "@elo/ui";
 import { useBrazilLocations } from "@elo/ui";
-import type { AlertVariant, BadgeVariant } from "@elo/ui";
-import { MapPin, MessageCircleMore, ShieldCheck, UserRoundCheck, UserRoundX } from "lucide-react";
-import { type CSSProperties, FormEvent, useEffect, useMemo, useState } from "react";
+import type { AlertVariant } from "@elo/ui";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AdminShell } from "../../components/admin-shell";
 import { apiRequest } from "../../lib/auth-client";
 
@@ -36,6 +19,7 @@ type Member = {
   bio?: string;
   specialty?: string;
   active: boolean;
+  createdAt?: string;
 };
 
 type MemberForm = {
@@ -75,59 +59,50 @@ const initialForm: MemberForm = {
   membershipExpiresAt: defaultMembershipExpiration()
 };
 
-const darkFieldStyle = {
-  "--elo-control-bg": "#2a2a2a",
-  "--elo-control-bg-hover": "#34343a",
-  "--elo-control-bg-active": "#3b3b42",
-  "--elo-control-bg-disabled": "#212126",
-  "--elo-control-border": "rgba(203, 190, 255, 0.16)",
-  "--elo-control-border-focus": "rgba(203, 190, 255, 0.58)",
-  "--elo-text-primary": "#ffffff",
-  "--elo-text-muted": "rgba(202, 195, 215, 0.62)"
-} as CSSProperties;
+const cardStyle = {
+  display: "flex",
+  flexDirection: "column" as const,
+  gap: "8px",
+  padding: "16px",
+  borderRadius: "12px",
+  background: "#1a1a1a",
+  border: "1px solid rgba(255,255,255,0.06)"
+};
 
-function toMemberForm(member: Member): MemberForm {
-  return {
-    fullName: member.fullName,
-    email: member.email,
-    phone: formatBrazilianPhoneInput(member.phone),
-    whatsapp: formatBrazilianPhoneInput(member.whatsapp),
-    city: member.city,
-    state: member.state,
-    area: member.area,
-    bio: member.bio ?? "",
-    specialty: member.specialty ?? "",
-    membershipExpiresAt: defaultMembershipExpiration()
-  };
-}
+const cardLabelStyle = {
+  fontSize: "0.75rem",
+  fontWeight: 600,
+  color: "rgba(255,255,255,0.5)",
+  textTransform: "uppercase" as const,
+  letterSpacing: "0.05em"
+};
+
+const cardValueStyle = {
+  fontSize: "1.5rem",
+  fontWeight: 700,
+  color: "#fff"
+};
+
+const inputStyle = {
+  width: "100%",
+  padding: "10px 12px",
+  borderRadius: "8px",
+  border: "1px solid rgba(255,255,255,0.1)",
+  background: "#252525",
+  color: "#fff",
+  fontSize: "0.875rem"
+};
 
 function normalizeApiError(raw: string) {
   const normalized = raw.trim().toLowerCase();
-
-  if (normalized.includes("network") || normalized.includes("conexao") || normalized.includes("conexão")) {
+  if (
+    normalized.includes("network") ||
+    normalized.includes("conexao") ||
+    normalized.includes("conexão")
+  ) {
     return "Não foi possível conectar ao servidor. Tente novamente em instantes.";
   }
-
   return raw;
-}
-
-function profileCompleteness(member: Member): { label: string; variant: BadgeVariant; complete: boolean } {
-  const hasBio = Boolean(member.bio?.trim());
-  const hasSpecialty = Boolean(member.specialty?.trim());
-
-  if (hasBio && hasSpecialty) {
-    return { label: "Completo", variant: "success", complete: true };
-  }
-
-  if (hasBio || hasSpecialty) {
-    return { label: "Parcial", variant: "warning", complete: false };
-  }
-
-  return { label: "Essencial", variant: "info", complete: false };
-}
-
-function statusBadge(active: boolean): { label: string; variant: BadgeVariant } {
-  return active ? { label: "Ativo", variant: "success" } : { label: "Inativo", variant: "neutral" };
 }
 
 function initials(name: string) {
@@ -139,37 +114,42 @@ function initials(name: string) {
     .join("");
 }
 
-function hasWhatsapp(member: Member) {
-  return Boolean(member.whatsapp.trim());
-}
-
 export default function MembersPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [form, setForm] = useState<MemberForm>(initialForm);
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [loadingMembers, setLoadingMembers] = useState(true);
-  const [statusChangeMemberId, setStatusChangeMemberId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<MemberStatusFilter>("all");
   const [search, setSearch] = useState("");
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
-  const {
-    states,
-    cities,
-    loadingStates,
-    loadingCities,
-    statesError,
-    citiesError
-  } = useBrazilLocations({
+
+  const { states, cities } = useBrazilLocations({
     selectedState: form.state,
     selectedCity: form.city
   });
 
   const isEditing = Boolean(editingMemberId);
 
+  useEffect(() => {
+    async function loadMembers() {
+      try {
+        setMembers(await apiRequest<Member[]>("/admin/members"));
+      } catch (requestError) {
+        setFeedback({
+          title: "Falha ao carregar membros",
+          description: normalizeApiError((requestError as Error).message),
+          variant: "danger"
+        });
+      } finally {
+        setLoadingMembers(false);
+      }
+    }
+    void loadMembers();
+  }, []);
+
   const filteredMembers = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
-
     return members
       .filter((member) => {
         if (statusFilter === "active") return member.active;
@@ -178,104 +158,29 @@ export default function MembersPage() {
       })
       .filter((member) => {
         if (!normalizedSearch) return true;
-
-        return [member.fullName, member.email, member.city, member.state, member.area].some((value) =>
-          value.toLowerCase().includes(normalizedSearch)
+        return [member.fullName, member.email, member.city, member.state, member.area].some(
+          (value) => value.toLowerCase().includes(normalizedSearch)
         );
       })
-      .sort((first, second) => {
-        if (first.active !== second.active) return first.active ? -1 : 1;
-        return first.fullName.localeCompare(second.fullName, "pt-BR");
-      });
+      .sort((first, second) => first.fullName.localeCompare(second.fullName, "pt-BR"));
   }, [members, search, statusFilter]);
 
-  const dashboard = useMemo(() => {
-    const active = members.filter((member) => member.active).length;
-    const inactive = members.length - active;
-    const completeProfiles = members.filter((member) => profileCompleteness(member).complete).length;
-    const cities = new Set(members.map((member) => `${member.city.trim().toLowerCase()}-${member.state}`)).size;
-    const whatsappReady = members.filter((member) => hasWhatsapp(member)).length;
-    const areas = new Set(members.map((member) => member.area.trim().toLowerCase()).filter(Boolean)).size;
+  const stats = useMemo(() => {
+    const active = members.filter((m) => m.active).length;
+    const now = new Date();
+    const newThisMonth = members.filter((m) => {
+      if (!m.createdAt) return false;
+      const created = new Date(m.createdAt);
+      return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
+    }).length;
 
     return {
       total: members.length,
       active,
-      inactive,
-      completeProfiles,
-      cities,
-      whatsappReady,
-      areas
+      inactive: members.length - active,
+      newThisMonth
     };
   }, [members]);
-
-  const crmRadar = useMemo(() => {
-    const topCityEntry = Object.entries(
-      members.reduce<Record<string, number>>((accumulator, member) => {
-        const key = `${member.city.trim() || "Sem cidade"}/${member.state.trim() || "--"}`;
-        accumulator[key] = (accumulator[key] ?? 0) + 1;
-        return accumulator;
-      }, {})
-    ).sort((first, second) => second[1] - first[1])[0];
-
-    return {
-      inactiveShare: dashboard.total > 0 ? Math.round((dashboard.inactive / dashboard.total) * 100) : 0,
-      completionShare: dashboard.total > 0 ? Math.round((dashboard.completeProfiles / dashboard.total) * 100) : 0,
-      topCityLabel: topCityEntry?.[0] ?? "Sem praça dominante",
-      topCityCount: topCityEntry?.[1] ?? 0
-    };
-  }, [dashboard.completeProfiles, dashboard.inactive, dashboard.total, members]);
-
-  const priorityItems = useMemo(
-    () => [
-      {
-        title: dashboard.inactive > 0 ? `${dashboard.inactive} membro(s) fora da base ativa` : "Base ativa estabilizada",
-        description:
-          dashboard.inactive > 0
-            ? "Revise cadastros inativos para reduzir atrito de reentrada e limpar pendências de relacionamento."
-            : "Nenhum perfil inativo precisa de atenção imediata nesta leitura.",
-        tone: dashboard.inactive > 0 ? ("warning" as const) : ("success" as const)
-      },
-      {
-        title:
-          dashboard.completeProfiles < dashboard.total
-            ? `${dashboard.total - dashboard.completeProfiles} perfil(is) ainda sem repertório completo`
-            : "Perfis com contexto sólido",
-        description:
-          dashboard.completeProfiles < dashboard.total
-            ? "Bio e especialidade incompletas diminuem a qualidade das conexões e da curadoria da comunidade."
-            : "A base está pronta para matchmaking e leitura comercial mais precisa.",
-        tone: dashboard.completeProfiles < dashboard.total ? ("info" as const) : ("success" as const)
-      },
-      {
-        title: `${dashboard.whatsappReady.toLocaleString("pt-BR")} contato(s) com canal direto`,
-        description: `${crmRadar.topCityLabel} lidera a base com ${crmRadar.topCityCount.toLocaleString(
-          "pt-BR"
-        )} perfil(is), ajudando a orientar ações locais e ativações por praça.`,
-        tone: "brand" as const
-      }
-    ],
-    [crmRadar.topCityCount, crmRadar.topCityLabel, dashboard.completeProfiles, dashboard.inactive, dashboard.total, dashboard.whatsappReady]
-  );
-
-  async function loadMembers() {
-    setLoadingMembers(true);
-
-    try {
-      setMembers(await apiRequest<Member[]>("/admin/members"));
-    } catch (requestError) {
-      setFeedback({
-        title: "Falha ao carregar membros",
-        description: normalizeApiError((requestError as Error).message),
-        variant: "danger"
-      });
-    } finally {
-      setLoadingMembers(false);
-    }
-  }
-
-  useEffect(() => {
-    void loadMembers();
-  }, []);
 
   function resetForm() {
     setEditingMemberId(null);
@@ -291,7 +196,7 @@ export default function MembersPage() {
       if (!isValidBrazilianMobile(form.whatsapp)) {
         setFeedback({
           title: "WhatsApp inválido",
-          description: "Informe um número de celular válido no padrão brasileiro.",
+          description: "Informe um número de celular válido.",
           variant: "danger"
         });
         setSaving(false);
@@ -317,32 +222,28 @@ export default function MembersPage() {
         });
         setFeedback({
           title: "Membro atualizado",
-          description: "Cadastro atualizado com sucesso no diretório administrativo.",
+          description: "Cadastro atualizado.",
           variant: "success"
         });
       } else {
         const membershipExpiresAt = new Date(form.membershipExpiresAt).toISOString();
-
         await apiRequest("/admin/members", {
           method: "POST",
-          body: JSON.stringify({
-            ...payload,
-            membershipExpiresAt
-          })
+          body: JSON.stringify({ ...payload, membershipExpiresAt })
         });
-
         setFeedback({
           title: "Membro cadastrado",
-          description: "Novo membro adicionado com sucesso na base da comunidade.",
+          description: "Novo membro adicionado.",
           variant: "success"
         });
       }
 
       resetForm();
-      await loadMembers();
+      const updated = await apiRequest<Member[]>("/admin/members");
+      setMembers(updated);
     } catch (submitError) {
       setFeedback({
-        title: "Falha ao salvar membro",
+        title: "Falha ao salvar",
         description: normalizeApiError((submitError as Error).message),
         variant: "danger"
       });
@@ -353,20 +254,17 @@ export default function MembersPage() {
 
   function handleEdit(member: Member) {
     setEditingMemberId(member.id);
-    setFeedback({
-      title: "Modo edição ativado",
-      description: `Painel preenchido com os dados de ${member.fullName}.`,
-      variant: "info"
-    });
-    setForm(toMemberForm(member));
-  }
-
-  function cancelEdit() {
-    resetForm();
-    setFeedback({
-      title: "Edição cancelada",
-      description: "Voltamos ao modo de novo cadastro no painel lateral.",
-      variant: "info"
+    setForm({
+      fullName: member.fullName,
+      email: member.email,
+      phone: formatBrazilianPhoneInput(member.phone),
+      whatsapp: formatBrazilianPhoneInput(member.whatsapp),
+      city: member.city,
+      state: member.state,
+      area: member.area,
+      bio: member.bio ?? "",
+      specialty: member.specialty ?? "",
+      membershipExpiresAt: defaultMembershipExpiration()
     });
   }
 
@@ -375,15 +273,12 @@ export default function MembersPage() {
     const confirmed = window.confirm(`Deseja ${actionLabel} o membro "${member.fullName}"?`);
     if (!confirmed) return;
 
-    setStatusChangeMemberId(member.id);
-    setFeedback(null);
-
     try {
       if (member.active) {
         await apiRequest(`/admin/members/${member.id}`, { method: "DELETE" });
         setFeedback({
           title: "Membro inativado",
-          description: `${member.fullName} foi marcado como inativo.`,
+          description: `${member.fullName} foi inativado.`,
           variant: "warning"
         });
       } else {
@@ -393,588 +288,534 @@ export default function MembersPage() {
         });
         setFeedback({
           title: "Membro reativado",
-          description: `${member.fullName} voltou a participar da base ativa.`,
+          description: `${member.fullName} voltou à base.`,
           variant: "success"
         });
       }
-
-      await loadMembers();
+      const updated = await apiRequest<Member[]>("/admin/members");
+      setMembers(updated);
     } catch (submitError) {
       setFeedback({
         title: "Falha ao alterar status",
         description: normalizeApiError((submitError as Error).message),
         variant: "danger"
       });
-    } finally {
-      setStatusChangeMemberId(null);
     }
+  }
+
+  if (loadingMembers) {
+    return (
+      <AdminShell>
+        <div
+          style={{
+            display: "grid",
+            placeItems: "center",
+            minHeight: "50vh",
+            color: "rgba(255,255,255,0.5)"
+          }}
+        >
+          Carregando...
+        </div>
+      </AdminShell>
+    );
   }
 
   return (
     <AdminShell>
-      <PageHeader
-        eyebrow={<Badge variant="brand">Membros Admin</Badge>}
-        title="CRM operacional da comunidade"
-        description="Filtre, priorize e edite perfis sem tirar a lista de vista. O formulário vira ferramenta lateral, não o centro da tela."
-        meta={
-          <FilterBar
-            actions={
-              <Badge variant="neutral">
-                {filteredMembers.length.toLocaleString("pt-BR")} visível(is)
-              </Badge>
-            }
-          >
-            <Input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Buscar por nome, e-mail, cidade ou área"
-              type="search"
-              style={{ maxWidth: "360px" }}
-            />
-            <Select
-              value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value as MemberStatusFilter)}
-              style={{ maxWidth: "190px" }}
-            >
-              <option value="all">Todos os status</option>
-              <option value="active">Somente ativos</option>
-              <option value="inactive">Somente inativos</option>
-            </Select>
-          </FilterBar>
-        }
-      />
-
-      {feedback ? (
-        <Alert variant={feedback.variant} title={feedback.title}>
-          {feedback.description}
-        </Alert>
-      ) : null}
-
-      {loadingMembers ? (
-        <Alert variant="info" title="Atualizando base de membros">
-          Carregando perfis, status e completude para o CRM administrativo.
-        </Alert>
-      ) : null}
-
-      <div style={{ display: "grid", gap: "16px" }}>
-        <section
+      {feedback && (
+        <div
           style={{
-            display: "grid",
-            gap: "16px",
-            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))"
+            padding: "12px 16px",
+            borderRadius: "8px",
+            marginBottom: "16px",
+            background:
+              feedback.variant === "danger"
+                ? "rgba(239,68,68,0.1)"
+                : feedback.variant === "success"
+                  ? "rgba(34,197,94,0.1)"
+                  : "rgba(245,158,11,0.1)",
+            color:
+              feedback.variant === "danger"
+                ? "#ef4444"
+                : feedback.variant === "success"
+                  ? "#22c55e"
+                  : "#f59e0b"
           }}
         >
-          <article
+          <strong>{feedback.title}</strong>
+          <p style={{ margin: "4px 0 0", opacity: 0.8 }}>{feedback.description}</p>
+        </div>
+      )}
+
+      {/* Cards de métricas */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(4, 1fr)",
+          gap: "16px",
+          marginBottom: "24px"
+        }}
+      >
+        <div style={cardStyle}>
+          <span style={cardLabelStyle}>Total de Membros</span>
+          <span style={cardValueStyle}>{stats.total}</span>
+        </div>
+        <div style={cardStyle}>
+          <span style={cardLabelStyle}>Ativos</span>
+          <span style={{ ...cardValueStyle, color: "#22c55e" }}>{stats.active}</span>
+        </div>
+        <div style={cardStyle}>
+          <span style={cardLabelStyle}>Inativos</span>
+          <span
             style={{
-              display: "grid",
-              gap: "16px",
-              padding: "22px 24px",
-              borderRadius: "28px",
-              background:
-                "linear-gradient(140deg, rgba(14,16,26,0.98), rgba(32,36,52,0.94) 58%, rgba(134,90,255,0.84) 140%)",
-              color: "rgba(255,255,255,0.96)",
-              boxShadow: "0 24px 60px rgba(13, 16, 24, 0.24)"
+              ...cardValueStyle,
+              color: stats.inactive > 0 ? "#f59e0b" : "rgba(255,255,255,0.5)"
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
-              <Badge variant="brand">Mesa de relacionamento</Badge>
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  color: "rgba(234,236,255,0.78)",
-                  fontSize: ".8rem",
-                  fontWeight: 700,
-                  letterSpacing: "0.06em",
-                  textTransform: "uppercase"
-                }}
-              >
-                <ShieldCheck size={15} />
-                CRM em fluxo
-              </span>
-            </div>
+            {stats.inactive}
+          </span>
+        </div>
+        <div style={cardStyle}>
+          <span style={cardLabelStyle}>Novos do Mês</span>
+          <span style={cardValueStyle}>{stats.newThisMonth}</span>
+        </div>
+      </div>
 
-            <div style={{ display: "grid", gap: "10px", maxWidth: "60ch" }}>
-              <h2
-                style={{
-                  margin: 0,
-                  fontSize: "clamp(1.45rem, 2vw, 2rem)",
-                  lineHeight: 1.02,
-                  maxWidth: "18ch"
-                }}
-              >
-                Base ativa, cobertura local e qualidade de perfil em uma única leitura.
-              </h2>
-              <p style={{ margin: 0, color: "rgba(234,236,255,0.78)", lineHeight: 1.7 }}>
-                Esta vista agora funciona como uma mesa de CRM: você identifica praça dominante, perfis incompletos e backlog
-                de ativação antes de abrir o painel lateral.
-              </p>
-            </div>
-
-            <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
-              {[
-                {
-                  label: "Base ativa",
-                  value: dashboard.active.toLocaleString("pt-BR"),
-                  detail: `${crmRadar.inactiveShare}% da base pede reentrada`
-                },
-                {
-                  label: "Perfis prontos",
-                  value: `${crmRadar.completionShare}%`,
-                  detail: `${dashboard.completeProfiles.toLocaleString("pt-BR")} com bio e especialidade`
-                },
-                {
-                  label: "Canal direto",
-                  value: dashboard.whatsappReady.toLocaleString("pt-BR"),
-                  detail: "WhatsApp disponível para conexão"
-                }
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  style={{
-                    display: "grid",
-                    gap: "8px",
-                    padding: "14px 16px",
-                    borderRadius: "20px",
-                    background: "rgba(255,255,255,0.08)",
-                    border: "1px solid rgba(255,255,255,0.1)"
-                  }}
-                >
-                  <span style={{ fontSize: ".76rem", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(234,236,255,0.72)" }}>
-                    {item.label}
-                  </span>
-                  <strong style={{ fontSize: "1.5rem", lineHeight: 1, fontFamily: "var(--elo-font-mono)" }}>{item.value}</strong>
-                  <span style={{ color: "rgba(234,236,255,0.76)", fontSize: ".9rem" }}>{item.detail}</span>
-                </div>
-              ))}
-            </div>
-          </article>
-
-          <Card
-            tone="panel"
-            title="Radar do CRM"
-            subtitle="Leitura curta para a próxima ação do time."
-            style={{ alignSelf: "stretch" }}
-          >
-            <div style={{ display: "grid", gap: "12px" }}>
-              {[
-                {
-                  icon: <UserRoundCheck size={16} />,
-                  label: "Praça líder",
-                  value: crmRadar.topCityLabel,
-                  detail: `${crmRadar.topCityCount.toLocaleString("pt-BR")} perfis em destaque`
-                },
-                {
-                  icon: <UserRoundX size={16} />,
-                  label: "Inativos",
-                  value: dashboard.inactive.toLocaleString("pt-BR"),
-                  detail: "priorize reativação ou limpeza"
-                },
-                {
-                  icon: <MessageCircleMore size={16} />,
-                  label: "WhatsApp ativo",
-                  value: dashboard.whatsappReady.toLocaleString("pt-BR"),
-                  detail: "prontos para contato rápido"
-                },
-                {
-                  icon: <MapPin size={16} />,
-                  label: "Áreas cobertas",
-                  value: dashboard.areas.toLocaleString("pt-BR"),
-                  detail: `${dashboard.cities.toLocaleString("pt-BR")} cidade(s) representadas`
-                }
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  style={{
-                    display: "grid",
-                    gap: "6px",
-                    padding: "12px 14px",
-                    borderRadius: "18px",
-                    border: "1px solid var(--elo-border-soft, rgba(17, 17, 17, 0.06))",
-                    background: "rgba(255,255,255,0.76)"
-                  }}
-                >
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: "8px", color: "var(--elo-text-tertiary, #6B7280)", fontSize: ".78rem", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                    {item.icon}
-                    {item.label}
-                  </span>
-                  <strong style={{ fontSize: "1rem" }}>{item.value}</strong>
-                  <span style={{ color: "var(--elo-text-secondary, #374151)", fontSize: ".9rem" }}>{item.detail}</span>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </section>
-
-        <MetricStrip
-          items={[
-            {
-              label: "Base total",
-              value: dashboard.total.toLocaleString("pt-BR"),
-              hint: "membros cadastrados",
-              badge: <Badge variant="brand">CRM</Badge>,
-              tone: "brand"
-            },
-            {
-              label: "Ativos",
-              value: dashboard.active.toLocaleString("pt-BR"),
-              hint: "aptos para participação",
-              badge: <Badge variant="success">Em dia</Badge>,
-              tone: "success"
-            },
-            {
-              label: "Inativos",
-              value: dashboard.inactive.toLocaleString("pt-BR"),
-              hint: "pedem revisão",
-              badge: <Badge variant={dashboard.inactive > 0 ? "warning" : "neutral"}>Status</Badge>,
-              tone: dashboard.inactive > 0 ? "warning" : "neutral"
-            },
-            {
-              label: "Perfis completos",
-              value: dashboard.completeProfiles.toLocaleString("pt-BR"),
-              hint: "bio + especialidade",
-              badge: <Badge variant="info">Qualidade</Badge>,
-              tone: "info"
-            },
-            {
-              label: "Cidades cobertas",
-              value: dashboard.cities.toLocaleString("pt-BR"),
-              hint: "alcance geográfico",
-              badge: <Badge variant="neutral">Cobertura</Badge>,
-              tone: "neutral"
-            }
-          ]}
+      {/* Busca e filtro */}
+      <div style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar por nome, e-mail, cidade..."
+          style={{ ...inputStyle, maxWidth: "320px" }}
         />
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as MemberStatusFilter)}
+          style={{ ...inputStyle, width: "160px" }}
+        >
+          <option value="all">Todos</option>
+          <option value="active">Ativos</option>
+          <option value="inactive">Inativos</option>
+        </select>
+      </div>
 
-        <PriorityStrip items={priorityItems} />
-
-        <section
+      {/* Tabela de membros */}
+      <div style={{ display: "grid", gap: "16px", gridTemplateColumns: "1fr 360px" }}>
+        <div
           style={{
-            display: "grid",
-            gap: "16px",
-            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))"
+            background: "#1a1a1a",
+            borderRadius: "12px",
+            padding: "16px",
+            border: "1px solid rgba(255,255,255,0.06)"
           }}
         >
-          <div style={{ minWidth: 0 }}>
-            <DataTable
-              rows={filteredMembers}
-              rowKey={(member) => member.id}
-              emptyState={
-                <EmptyState
-                  title="Nenhum membro encontrado"
-                  description="Ajuste os filtros ou cadastre um novo membro no painel lateral."
-                />
-              }
-              columns={[
-                {
-                  key: "member",
-                  header: "Membro",
-                  sortable: true,
-                  sortValue: (member) => member.fullName,
-                  render: (member) => (
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          {filteredMembers.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px", color: "rgba(255,255,255,0.5)" }}>
+              Nenhum membro encontrado
+            </div>
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+                  <th
+                    style={{
+                      textAlign: "left",
+                      padding: "12px 8px",
+                      color: "rgba(255,255,255,0.5)",
+                      fontSize: "0.75rem",
+                      fontWeight: 600,
+                      textTransform: "uppercase"
+                    }}
+                  >
+                    Membro
+                  </th>
+                  <th
+                    style={{
+                      textAlign: "left",
+                      padding: "12px 8px",
+                      color: "rgba(255,255,255,0.5)",
+                      fontSize: "0.75rem",
+                      fontWeight: 600,
+                      textTransform: "uppercase"
+                    }}
+                  >
+                    Local
+                  </th>
+                  <th
+                    style={{
+                      textAlign: "left",
+                      padding: "12px 8px",
+                      color: "rgba(255,255,255,0.5)",
+                      fontSize: "0.75rem",
+                      fontWeight: 600,
+                      textTransform: "uppercase"
+                    }}
+                  >
+                    Status
+                  </th>
+                  <th
+                    style={{
+                      textAlign: "right",
+                      padding: "12px 8px",
+                      color: "rgba(255,255,255,0.5)",
+                      fontSize: "0.75rem",
+                      fontWeight: 600,
+                      textTransform: "uppercase"
+                    }}
+                  >
+                    Ações
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredMembers.map((member) => (
+                  <tr key={member.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                    <td style={{ padding: "12px 8px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <span
+                          style={{
+                            width: "36px",
+                            height: "36px",
+                            display: "grid",
+                            placeItems: "center",
+                            borderRadius: "8px",
+                            background: "rgba(134,90,255,0.15)",
+                            fontWeight: 700,
+                            fontSize: "0.875rem"
+                          }}
+                        >
+                          {initials(member.fullName)}
+                        </span>
+                        <div>
+                          <div style={{ fontWeight: 600 }}>{member.fullName}</div>
+                          <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.5)" }}>
+                            {member.email}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td style={{ padding: "12px 8px" }}>
+                      <div style={{ fontSize: "0.9rem" }}>
+                        {member.city}/{member.state}
+                      </div>
+                      <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.5)" }}>
+                        {member.area}
+                      </div>
+                    </td>
+                    <td style={{ padding: "12px 8px" }}>
                       <span
                         style={{
-                          width: "42px",
-                          height: "42px",
-                          display: "grid",
-                          placeItems: "center",
-                          borderRadius: "14px",
-                          background: "rgba(134, 90, 255, 0.12)",
-                          color: "var(--elo-orbit, #865AFF)",
-                          fontWeight: 800
+                          display: "inline-block",
+                          padding: "4px 10px",
+                          borderRadius: "999px",
+                          fontSize: "0.75rem",
+                          fontWeight: 600,
+                          background: member.active
+                            ? "rgba(34,197,94,0.15)"
+                            : "rgba(107,114,128,0.15)",
+                          color: member.active ? "#22c55e" : "#9ca3af"
                         }}
                       >
-                        {initials(member.fullName)}
+                        {member.active ? "Ativo" : "Inativo"}
                       </span>
-                      <span style={{ display: "grid", gap: "4px" }}>
-                        <strong>{member.fullName}</strong>
-                        <span style={{ color: "var(--elo-text-secondary, #374151)", fontSize: ".9rem" }}>{member.email}</span>
-                      </span>
-                    </div>
-                  )
-                },
-                {
-                  key: "location",
-                  header: "Praça e área",
-                  sortable: true,
-                  sortValue: (member) => `${member.city}-${member.state}-${member.area}`,
-                  render: (member) => (
-                    <div style={{ display: "grid", gap: "6px" }}>
-                      <strong>
-                        {member.city}/{member.state}
-                      </strong>
-                      <span style={{ color: "var(--elo-text-secondary, #374151)", fontSize: ".92rem" }}>
-                        {member.area}
-                      </span>
-                      <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                        <Badge variant={hasWhatsapp(member) ? "success" : "neutral"}>
-                          {hasWhatsapp(member) ? "WhatsApp ativo" : "Sem WhatsApp"}
-                        </Badge>
-                        {hasWhatsapp(member) ? (
-                          <Badge variant="info">{formatBrazilianPhoneInput(member.whatsapp)}</Badge>
-                        ) : null}
-                      </div>
-                    </div>
-                  )
-                },
-                {
-                  key: "signals",
-                  header: "Sinais",
-                  width: "220px",
-                  sortable: true,
-                  sortValue: (member) => profileCompleteness(member).label,
-                  render: (member) => (
-                    <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                      <Badge variant={profileCompleteness(member).variant}>{profileCompleteness(member).label}</Badge>
-                      {member.specialty ? <Badge variant="info">{member.specialty}</Badge> : null}
-                    </div>
-                  )
-                },
-                {
-                  key: "status",
-                  header: "Status",
-                  width: "140px",
-                  sortable: true,
-                  sortValue: (member) => (member.active ? 1 : 0),
-                  render: (member) => <Badge variant={statusBadge(member.active).variant}>{statusBadge(member.active).label}</Badge>
-                },
-                {
-                  key: "actions",
-                  header: "Ações",
-                  width: "220px",
-                  align: "right",
-                  render: (member) => (
-                    <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", flexWrap: "wrap" }}>
-                      <Button size="sm" variant="secondary" onClick={() => handleEdit(member)}>
-                        Editar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant={member.active ? "danger" : "secondary"}
-                        disabled={statusChangeMemberId === member.id}
-                        onClick={() => toggleMemberActive(member)}
+                    </td>
+                    <td style={{ padding: "12px 8px", textAlign: "right" }}>
+                      <button
+                        onClick={() => handleEdit(member)}
+                        style={{
+                          marginRight: "8px",
+                          padding: "6px 12px",
+                          borderRadius: "6px",
+                          border: "1px solid rgba(255,255,255,0.1)",
+                          background: "transparent",
+                          color: "#fff",
+                          cursor: "pointer",
+                          fontSize: "0.8rem"
+                        }}
                       >
-                        {statusChangeMemberId === member.id
-                          ? "Atualizando..."
-                          : member.active
-                            ? "Inativar"
-                            : "Reativar"}
-                      </Button>
-                    </div>
-                  )
-                }
-              ]}
-            />
-          </div>
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => toggleMemberActive(member)}
+                        style={{
+                          padding: "6px 12px",
+                          borderRadius: "6px",
+                          border: "none",
+                          background: member.active ? "rgba(239,68,68,0.2)" : "rgba(34,197,94,0.2)",
+                          color: member.active ? "#ef4444" : "#22c55e",
+                          cursor: "pointer",
+                          fontSize: "0.8rem"
+                        }}
+                      >
+                        {member.active ? "Inativar" : "Reativar"}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
 
-          <SidePanelForm
-            badge={<Badge variant={isEditing ? "warning" : "brand"}>{isEditing ? "Modo edição" : "Novo cadastro"}</Badge>}
-            title={isEditing ? "Editar membro" : "Cadastrar membro"}
-            description="A gestão acontece com lista e formulário no mesmo campo de visão, sem perder contexto operacional."
-          >
-            <div
-              style={{
-                display: "grid",
-                gap: "8px",
-                padding: "14px 16px",
-                borderRadius: "18px",
-                background: "rgba(134, 90, 255, 0.08)",
-                border: "1px solid rgba(134, 90, 255, 0.14)",
-                marginBottom: "14px"
-              }}
-            >
-              <span style={{ fontSize: ".78rem", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--elo-orbit, #865AFF)" }}>
-                Playbook rápido
-              </span>
-              <p style={{ margin: 0, color: "var(--elo-text-secondary, #374151)", lineHeight: 1.65 }}>
-                Capture dados essenciais, complemente especialidade e bio, e só então avance para a ativação comercial da pessoa na
-                comunidade.
-              </p>
+        {/* Formulário lateral */}
+        <div
+          style={{
+            background: "#1a1a1a",
+            borderRadius: "12px",
+            padding: "20px",
+            border: "1px solid rgba(255,255,255,0.06)",
+            height: "fit-content"
+          }}
+        >
+          <h3 style={{ margin: "0 0 16px", fontSize: "1rem", fontWeight: 600 }}>
+            {isEditing ? "Editar membro" : "Novo membro"}
+          </h3>
+
+          <form onSubmit={handleSubmit} style={{ display: "grid", gap: "12px" }}>
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "0.75rem",
+                  color: "rgba(255,255,255,0.5)",
+                  marginBottom: "4px"
+                }}
+              >
+                Nome
+              </label>
+              <input
+                value={form.fullName}
+                onChange={(e) => setForm((p) => ({ ...p, fullName: e.target.value }))}
+                required
+                style={inputStyle}
+              />
             </div>
-
-            <form onSubmit={handleSubmit} style={{ display: "grid", gap: "12px" }}>
-              {statesError || citiesError ? (
-                <Alert variant="warning" title="Localização indisponível">
-                  {statesError ?? citiesError}
-                </Alert>
-              ) : null}
-
-              <label style={{ display: "grid", gap: "6px" }}>
-                <span>Nome completo</span>
-                <Input
-                  value={form.fullName}
-                  onChange={(event) => setForm((prev) => ({ ...prev, fullName: event.target.value }))}
-                  minLength={3}
-                  required
-                  style={darkFieldStyle}
-                />
-              </label>
-
-              <label style={{ display: "grid", gap: "6px" }}>
-                <span>E-mail</span>
-                <Input
-                  type="email"
-                  value={form.email}
-                  onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
-                  required
-                  disabled={isEditing}
-                  style={darkFieldStyle}
-                />
-              </label>
-
-              <div
+            <div>
+              <label
                 style={{
-                  display: "grid",
-                  gap: "10px",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))"
+                  display: "block",
+                  fontSize: "0.75rem",
+                  color: "rgba(255,255,255,0.5)",
+                  marginBottom: "4px"
                 }}
               >
-                <label style={{ display: "grid", gap: "6px" }}>
-                  <span>Celular</span>
-                  <Input
-                    value={form.phone}
-                    onChange={(event) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        phone: formatBrazilianPhoneInput(event.target.value)
-                      }))
-                    }
-                    required
-                    inputMode="numeric"
-                    style={darkFieldStyle}
-                  />
+                E-mail
+              </label>
+              <input
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
+                required
+                disabled={isEditing}
+                style={inputStyle}
+              />
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "0.75rem",
+                    color: "rgba(255,255,255,0.5)",
+                    marginBottom: "4px"
+                  }}
+                >
+                  Celular
                 </label>
-                <label style={{ display: "grid", gap: "6px" }}>
-                  <span>WhatsApp</span>
-                  <Input
-                    value={form.whatsapp}
-                    onChange={(event) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        whatsapp: formatBrazilianPhoneInput(event.target.value)
-                      }))
-                    }
-                    required
-                    inputMode="numeric"
-                    style={darkFieldStyle}
-                  />
-                </label>
+                <input
+                  value={form.phone}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, phone: formatBrazilianPhoneInput(e.target.value) }))
+                  }
+                  required
+                  style={inputStyle}
+                />
               </div>
-
-              <div
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "0.75rem",
+                    color: "rgba(255,255,255,0.5)",
+                    marginBottom: "4px"
+                  }}
+                >
+                  WhatsApp
+                </label>
+                <input
+                  value={form.whatsapp}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, whatsapp: formatBrazilianPhoneInput(e.target.value) }))
+                  }
+                  required
+                  style={inputStyle}
+                />
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "80px 1fr", gap: "12px" }}>
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "0.75rem",
+                    color: "rgba(255,255,255,0.5)",
+                    marginBottom: "4px"
+                  }}
+                >
+                  UF
+                </label>
+                <select
+                  value={form.state}
+                  onChange={(e) => setForm((p) => ({ ...p, state: e.target.value, city: "" }))}
+                  required
+                  style={inputStyle}
+                >
+                  <option value="">UF</option>
+                  {states.map((s) => (
+                    <option key={s.code} value={s.code}>
+                      {s.code}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "0.75rem",
+                    color: "rgba(255,255,255,0.5)",
+                    marginBottom: "4px"
+                  }}
+                >
+                  Cidade
+                </label>
+                <select
+                  value={form.city}
+                  onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))}
+                  required
+                  disabled={!form.state}
+                  style={inputStyle}
+                >
+                  <option value="">Cidade</option>
+                  {cities.map((c) => (
+                    <option key={c.name} value={c.name}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label
                 style={{
-                  display: "grid",
-                  gap: "10px",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 140px), 1fr))"
+                  display: "block",
+                  fontSize: "0.75rem",
+                  color: "rgba(255,255,255,0.5)",
+                  marginBottom: "4px"
                 }}
               >
-                <label style={{ display: "grid", gap: "6px" }}>
-                  <span>UF</span>
-                  <Select
-                    value={form.state}
-                    onChange={(event) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        state: event.target.value,
-                        city: ""
-                      }))
-                    }
-                    required
-                    disabled={loadingStates}
-                    style={darkFieldStyle}
-                  >
-                    <option value="" disabled>
-                      {loadingStates ? "Carregando..." : "Selecione a UF"}
-                    </option>
-                    {states.map((currentState) => (
-                      <option key={currentState.code} value={currentState.code}>
-                        {currentState.code}
-                      </option>
-                    ))}
-                  </Select>
+                Área
+              </label>
+              <input
+                value={form.area}
+                onChange={(e) => setForm((p) => ({ ...p, area: e.target.value }))}
+                required
+                style={inputStyle}
+              />
+            </div>
+            {!isEditing && (
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "0.75rem",
+                    color: "rgba(255,255,255,0.5)",
+                    marginBottom: "4px"
+                  }}
+                >
+                  Validade
                 </label>
-                <label style={{ display: "grid", gap: "6px" }}>
-                  <span>Cidade</span>
-                  <Select
-                    value={form.city}
-                    onChange={(event) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        city: event.target.value
-                      }))
-                    }
-                    required
-                    disabled={!form.state || loadingCities || Boolean(citiesError)}
-                    style={darkFieldStyle}
-                  >
-                    <option value="" disabled>
-                      {!form.state ? "Selecione a UF primeiro" : loadingCities ? "Carregando..." : "Selecione a cidade"}
-                    </option>
-                    {cities.map((currentCity) => (
-                      <option key={currentCity.name} value={currentCity.name}>
-                        {currentCity.name}
-                      </option>
-                    ))}
-                  </Select>
-                </label>
-              </div>
-
-              <label style={{ display: "grid", gap: "6px" }}>
-                <span>Área</span>
-                <Input
-                  value={form.area}
-                  onChange={(event) => setForm((prev) => ({ ...prev, area: event.target.value }))}
+                <input
+                  type="datetime-local"
+                  value={form.membershipExpiresAt}
+                  onChange={(e) => setForm((p) => ({ ...p, membershipExpiresAt: e.target.value }))}
                   required
-                  style={darkFieldStyle}
+                  style={inputStyle}
                 />
-              </label>
-
-              {!isEditing ? (
-                <label style={{ display: "grid", gap: "6px" }}>
-                  <span>Validade da associação</span>
-                  <Input
-                    type="datetime-local"
-                    value={form.membershipExpiresAt}
-                    onChange={(event) => setForm((prev) => ({ ...prev, membershipExpiresAt: event.target.value }))}
-                    required
-                    style={darkFieldStyle}
-                  />
-                </label>
-              ) : null}
-
-              <label style={{ display: "grid", gap: "6px" }}>
-                <span>Especialidade</span>
-                <Input
-                  value={form.specialty}
-                  onChange={(event) => setForm((prev) => ({ ...prev, specialty: event.target.value }))}
-                  style={darkFieldStyle}
-                />
-              </label>
-
-              <label style={{ display: "grid", gap: "6px" }}>
-                <span>Bio</span>
-                <Textarea
-                  value={form.bio}
-                  onChange={(event) => setForm((prev) => ({ ...prev, bio: event.target.value }))}
-                  style={{ ...darkFieldStyle, minHeight: "120px" }}
-                />
-              </label>
-
-              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                <Button type="submit" disabled={saving}>
-                  {saving ? "Salvando..." : isEditing ? "Salvar edição" : "Cadastrar membro"}
-                </Button>
-                {isEditing ? (
-                  <Button type="button" variant="secondary" onClick={cancelEdit}>
-                    Cancelar
-                  </Button>
-                ) : null}
               </div>
-            </form>
-          </SidePanelForm>
-        </section>
+            )}
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "0.75rem",
+                  color: "rgba(255,255,255,0.5)",
+                  marginBottom: "4px"
+                }}
+              >
+                Especialidade
+              </label>
+              <input
+                value={form.specialty}
+                onChange={(e) => setForm((p) => ({ ...p, specialty: e.target.value }))}
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "0.75rem",
+                  color: "rgba(255,255,255,0.5)",
+                  marginBottom: "4px"
+                }}
+              >
+                Bio
+              </label>
+              <textarea
+                value={form.bio}
+                onChange={(e) => setForm((p) => ({ ...p, bio: e.target.value }))}
+                rows={3}
+                style={{ ...inputStyle, resize: "vertical" }}
+              />
+            </div>
+            <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+              <button
+                type="submit"
+                disabled={saving}
+                style={{
+                  flex: 1,
+                  padding: "12px",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: "linear-gradient(90deg, #5932d1 0%, #9b027c 100%)",
+                  color: "#fff",
+                  fontWeight: 600,
+                  cursor: "pointer"
+                }}
+              >
+                {saving ? "Salvando..." : isEditing ? "Salvar" : "Cadastrar"}
+              </button>
+              {isEditing && (
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  style={{
+                    padding: "12px 16px",
+                    borderRadius: "8px",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    background: "transparent",
+                    color: "rgba(255,255,255,0.6)",
+                    cursor: "pointer"
+                  }}
+                >
+                  Cancelar
+                </button>
+              )}
+            </div>
+          </form>
+        </div>
       </div>
     </AdminShell>
   );
