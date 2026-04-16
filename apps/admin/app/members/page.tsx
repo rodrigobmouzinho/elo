@@ -759,59 +759,26 @@ export default function MembersPage() {
                 >
                   Validade
                 </label>
-                <div style={{ position: "relative" }}>
-                  <input
-                    type="date"
-                    value={form.membershipExpiresAt.split("T")[0]}
-                    onChange={(e) =>
-                      setForm((p) => ({
-                        ...p,
-                        membershipExpiresAt: e.target.value ? `${e.target.value}T00:00:00` : ""
-                      }))
-                    }
-                    required
-                    style={{
-                      width: "100%",
-                      padding: "10px 36px 10px 12px",
-                      borderRadius: "8px",
-                      border: "1px solid rgba(255,255,255,0.1)",
-                      background: "#252525",
-                      color: "#fff",
-                      fontSize: "0.875rem",
-                      WebkitAppearance: "none",
-                      MozAppearance: "none"
-                    }}
-                  />
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="rgba(255,255,255,0.5)"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    style={{
-                      position: "absolute",
-                      right: "12px",
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      cursor: "pointer",
-                      pointerEvents: "auto"
-                    }}
-                    onClick={() => {
-                      const input = document.querySelector(
-                        'input[name="membershipExpiresAt"]'
-                      ) as HTMLInputElement;
-                      if (input) input.showPicker();
-                    }}
-                  >
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                  </svg>
-                </div>
+                <input
+                  type="date"
+                  value={form.membershipExpiresAt.split("T")[0]}
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      membershipExpiresAt: e.target.value ? `${e.target.value}T00:00:00` : ""
+                    }))
+                  }
+                  required
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: "8px",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    background: "#252525",
+                    color: "#fff",
+                    fontSize: "0.875rem"
+                  }}
+                />
               </div>
             )}
             <div>
