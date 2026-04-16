@@ -3,7 +3,6 @@
 import { formatBrazilianPhoneInput, isValidBrazilianMobile } from "@elo/core";
 import { useBrazilLocations } from "@elo/ui";
 import type { AlertVariant } from "@elo/ui";
-import { Calendar } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AdminShell } from "../../components/admin-shell";
 import { apiRequest } from "../../lib/auth-client";
@@ -759,36 +758,26 @@ export default function MembersPage() {
                 >
                   Validade
                 </label>
-                <div style={{ position: "relative" }}>
-                  <input
-                    type="date"
-                    value={form.membershipExpiresAt.split("T")[0]}
-                    onChange={(e) =>
-                      setForm((p) => ({
-                        ...p,
-                        membershipExpiresAt: e.target.value ? `${e.target.value}T00:00:00` : ""
-                      }))
-                    }
-                    required
-                    style={{
-                      ...inputStyle,
-                      paddingRight: "36px",
-                      WebkitAppearance: "none",
-                      MozAppearance: "textfield"
-                    }}
-                  />
-                  <Calendar
-                    size={16}
-                    style={{
-                      position: "absolute",
-                      right: "12px",
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      color: "rgba(255,255,255,0.5)",
-                      pointerEvents: "none"
-                    }}
-                  />
-                </div>
+                <input
+                  type="date"
+                  value={form.membershipExpiresAt.split("T")[0]}
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      membershipExpiresAt: e.target.value ? `${e.target.value}T00:00:00` : ""
+                    }))
+                  }
+                  required
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: "8px",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    background: "#252525",
+                    color: "#fff",
+                    fontSize: "0.875rem"
+                  }}
+                />
               </div>
             )}
             <div>
