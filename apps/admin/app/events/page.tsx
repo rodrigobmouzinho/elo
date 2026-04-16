@@ -102,6 +102,7 @@ const cardValueStyle = {
 
 const inputStyle = {
   width: "100%",
+  minWidth: 0,
   padding: "10px 12px",
   borderRadius: "8px",
   border: "1px solid rgba(255,255,255,0.1)",
@@ -112,6 +113,7 @@ const inputStyle = {
 
 const selectStyle: React.CSSProperties = {
   width: "100%",
+  minWidth: 0,
   padding: "10px 32px 10px 12px",
   borderRadius: "8px",
   border: "1px solid rgba(255,255,255,0.1)",
@@ -424,14 +426,17 @@ export default function EventsPage() {
       </div>
 
       {/* Lista + Formulário */}
-      <div style={{ display: "grid", gap: "16px", gridTemplateColumns: "1fr 380px" }}>
+      <div style={{ display: "flex", gap: "16px", alignItems: "flex-start", flexWrap: "wrap" }}>
         {/* Lista de eventos */}
         <div
           style={{
+            flex: "999 1 680px",
+            minWidth: 0,
             background: "#1a1a1a",
             borderRadius: "12px",
             padding: "16px",
-            border: "1px solid rgba(255,255,255,0.06)"
+            border: "1px solid rgba(255,255,255,0.06)",
+            overflowX: "auto"
           }}
         >
           {filteredEvents.length === 0 ? (
@@ -439,7 +444,7 @@ export default function EventsPage() {
               Nenhum evento encontrado
             </div>
           ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <table style={{ width: "100%", minWidth: "720px", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
                   <th
@@ -520,7 +525,7 @@ export default function EventsPage() {
                           )}
                         </div>
                         <div>
-                          <div style={{ fontWeight: 600 }}>{item.title}</div>
+                          <div style={{ fontWeight: 600, color: "#fff" }}>{item.title}</div>
                           <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.5)" }}>
                             {item.summary?.slice(0, 40)}
                           </div>
@@ -528,7 +533,7 @@ export default function EventsPage() {
                       </div>
                     </td>
                     <td style={{ padding: "12px 8px" }}>
-                      <div style={{ fontSize: "0.9rem" }}>
+                      <div style={{ fontSize: "0.9rem", color: "#fff" }}>
                         {new Date(item.startsAt).toLocaleDateString("pt-BR")}
                       </div>
                       <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.5)" }}>
@@ -623,6 +628,9 @@ export default function EventsPage() {
         {/* Formulário lateral */}
         <div
           style={{
+            flex: "1 1 340px",
+            minWidth: 0,
+            width: "min(100%, 380px)",
             background: "#1a1a1a",
             borderRadius: "12px",
             padding: "20px",
@@ -630,7 +638,7 @@ export default function EventsPage() {
             height: "fit-content"
           }}
         >
-          <h3 style={{ margin: "0 0 16px", fontSize: "1rem", fontWeight: 600 }}>
+          <h3 style={{ margin: "0 0 16px", fontSize: "1rem", fontWeight: 600, color: "#fff" }}>
             {isEditing ? "Editar evento" : "Novo evento"}
           </h3>
 
@@ -726,8 +734,14 @@ export default function EventsPage() {
                 style={{ ...inputStyle, resize: "vertical" }}
               />
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-              <div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+                gap: "12px"
+              }}
+            >
+              <div style={{ minWidth: 0 }}>
                 <label
                   htmlFor="event-starts-at"
                   style={{
@@ -749,7 +763,7 @@ export default function EventsPage() {
                   style={inputStyle}
                 />
               </div>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <label
                   htmlFor="event-ends-at"
                   style={{
@@ -815,8 +829,14 @@ export default function EventsPage() {
                 style={inputStyle}
               />
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-              <div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+                gap: "12px"
+              }}
+            >
+              <div style={{ minWidth: 0 }}>
                 <label
                   htmlFor="event-access-type"
                   style={{
@@ -845,7 +865,7 @@ export default function EventsPage() {
                   <option value="public_with_member_discount">Público</option>
                 </select>
               </div>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <label
                   htmlFor="event-price-cents"
                   style={{
@@ -915,12 +935,13 @@ export default function EventsPage() {
                 style={{ ...inputStyle, resize: "vertical" }}
               />
             </div>
-            <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+            <div style={{ display: "flex", gap: "8px", marginTop: "8px", flexWrap: "wrap" }}>
               <button
                 type="submit"
                 disabled={saving}
                 style={{
                   flex: 1,
+                  minWidth: "180px",
                   padding: "12px",
                   borderRadius: "8px",
                   border: "none",
