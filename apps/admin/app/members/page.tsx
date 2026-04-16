@@ -3,6 +3,7 @@
 import { formatBrazilianPhoneInput, isValidBrazilianMobile } from "@elo/core";
 import { useBrazilLocations } from "@elo/ui";
 import type { AlertVariant } from "@elo/ui";
+import { Calendar } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AdminShell } from "../../components/admin-shell";
 import { apiRequest } from "../../lib/auth-client";
@@ -44,7 +45,7 @@ type FeedbackState = {
 type MemberStatusFilter = "all" | "active" | "inactive";
 
 const defaultMembershipExpiration = () =>
-  new Date(Date.now() + 365 * 24 * 3600 * 1000).toISOString().slice(0, 16);
+  new Date(Date.now() + 365 * 24 * 3600 * 1000).toISOString().slice(0, 10);
 
 const initialForm: MemberForm = {
   fullName: "",
@@ -407,9 +408,9 @@ export default function MembersPage() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as MemberStatusFilter)}
-          style={selectStyle}
+          style={{ ...selectStyle, width: "140px" }}
         >
-          <option value="all">Todos</option>
+          <option value="all">Status</option>
           <option value="active">Ativos</option>
           <option value="inactive">Inativos</option>
         </select>
@@ -583,7 +584,14 @@ export default function MembersPage() {
             height: "fit-content"
           }}
         >
-          <h3 style={{ margin: "0 0 16px", fontSize: "1rem", fontWeight: 600 }}>
+          <h3
+            style={{
+              margin: "0 0 16px",
+              fontSize: "1rem",
+              fontWeight: 600,
+              color: "rgba(255,255,255,0.7)"
+            }}
+          >
             {isEditing ? "Editar membro" : "Novo membro"}
           </h3>
 
@@ -751,13 +759,31 @@ export default function MembersPage() {
                 >
                   Validade
                 </label>
-                <input
-                  type="datetime-local"
-                  value={form.membershipExpiresAt}
-                  onChange={(e) => setForm((p) => ({ ...p, membershipExpiresAt: e.target.value }))}
-                  required
-                  style={inputStyle}
-                />
+                <div style={{ position: "relative" }}>
+                  <input
+                    type="date"
+                    value={form.membershipExpiresAt.split("T")[0]}
+                    onChange={(e) =>
+                      setForm((p) => ({
+                        ...p,
+                        membershipExpiresAt: e.target.value ? `${e.target.value}T00:00:00` : ""
+                      }))
+                    }
+                    required
+                    style={{ ...inputStyle, paddingRight: "36px" }}
+                  />
+                  <Calendar
+                    size={16}
+                    style={{
+                      position: "absolute",
+                      right: "12px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      color: "rgba(255,255,255,0.5)",
+                      pointerEvents: "none"
+                    }}
+                  />
+                </div>
               </div>
             )}
             <div>
