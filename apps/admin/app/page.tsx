@@ -1,10 +1,6 @@
 "use client";
 
-import { Badge, DataTable, MetricStrip } from "@elo/ui";
-import type { BadgeVariant } from "@elo/ui";
-import { CalendarDays, CreditCard, Sparkles, Users2 } from "lucide-react";
-import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { AdminShell } from "../components/admin-shell";
 import { apiRequest } from "../lib/auth-client";
 
@@ -16,15 +12,7 @@ type DashboardState = {
   pendingMembershipPayments: number;
   pendingEventPayments: number;
   overduePayments: number;
-};
-
-type ModuleRow = {
-  id: string;
-  module: string;
-  status: string;
-  count: number;
-  href: string;
-  variant: BadgeVariant;
+  newMembersThisMonth: number;
 };
 
 function formatCurrency(cents: number) {
@@ -35,6 +23,30 @@ function formatCurrency(cents: number) {
   }).format(cents / 100);
 }
 
+const cardStyle = {
+  display: "flex",
+  flexDirection: "column" as const,
+  gap: "8px",
+  padding: "20px",
+  borderRadius: "12px",
+  background: "#1a1a1a",
+  border: "1px solid rgba(255,255,255,0.06)"
+};
+
+const cardLabelStyle = {
+  fontSize: "0.75rem",
+  fontWeight: 600,
+  color: "rgba(255,255,255,0.5)",
+  textTransform: "uppercase" as const,
+  letterSpacing: "0.05em"
+};
+
+const cardValueStyle = {
+  fontSize: "1.75rem",
+  fontWeight: 700,
+  color: "#fff"
+};
+
 export default function AdminHomePage() {
   const [state, setState] = useState<DashboardState | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,7 +54,7 @@ export default function AdminHomePage() {
 
   useEffect(() => {
     Promise.allSettled([
-      apiRequest<Array<{ id: string }>>("/admin/members"),
+      apiRequest<Array<{ id: string; createdAt?: string }>>("/admin/members"),
       apiRequest<Array<{ id: string }>>("/admin/events"),
       apiRequest<{
         membershipRevenueCents: number;
@@ -63,105 +75,35 @@ export default function AdminHomePage() {
               overduePayments: 0
             };
 
+      const members = membersResult.status === "fulfilled" ? membersResult.value : [];
+
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+
+      const newMembersThisMonth = members.filter((m) => {
+        if (!m.createdAt) return false;
+        const created = new Date(m.createdAt);
+        return created.getMonth() === currentMonth && created.getFullYear() === currentYear;
+      }).length;
+
       if (financeResult.status === "rejected") {
         setError("Erro ao carregar dados financeiros");
       }
 
       setState({
-        members: membersResult.status === "fulfilled" ? membersResult.value.length : 0,
+        members: members.length,
         events: eventsResult.status === "fulfilled" ? eventsResult.value.length : 0,
         membershipRevenueCents: finance.membershipRevenueCents,
         eventRevenueCents: finance.eventRevenueCents,
         pendingMembershipPayments: finance.pendingMembershipPayments,
         pendingEventPayments: finance.pendingEventPayments,
-        overduePayments: finance.overduePayments
+        overduePayments: finance.overduePayments,
+        newMembersThisMonth
       });
       setLoading(false);
     });
   }, []);
-
-  const totalRevenueCents = state ? state.membershipRevenueCents + state.eventRevenueCents : 0;
-  const totalPending = state ? state.pendingMembershipPayments + state.pendingEventPayments : 0;
-
-  const metrics = useMemo(
-    () =>
-      state
-        ? [
-            {
-              label: "Receita",
-              value: formatCurrency(totalRevenueCents),
-              hint: "Total",
-              badge: <Badge variant="brand">R$</Badge>,
-              tone: "brand" as const
-            },
-            {
-              label: "Membros",
-              value: state.members.toString(),
-              hint: "Total",
-              badge: <Badge variant="success">CRM</Badge>,
-              tone: "success" as const
-            },
-            {
-              label: "Eventos",
-              value: state.events.toString(),
-              hint: "Publicados",
-              badge: <Badge variant="info">Agenda</Badge>,
-              tone: "info" as const
-            },
-            {
-              label: "Pendências",
-              value: totalPending.toString(),
-              hint: "Aguardando",
-              badge: (
-                <Badge variant={totalPending > 0 ? "warning" : "success"}>
-                  {totalPending > 0 ? "Atenção" : "OK"}
-                </Badge>
-              ),
-              tone: totalPending > 0 ? ("warning" as const) : ("success" as const)
-            }
-          ]
-        : [],
-    [state, totalPending, totalRevenueCents]
-  );
-
-  const moduleRows: ModuleRow[] = useMemo(() => {
-    if (!state) return [];
-
-    return [
-      {
-        id: "members",
-        module: "Membros",
-        status: state.members > 0 ? `${state.members} ativos` : "Nenhum",
-        count: state.members,
-        href: "/members",
-        variant: state.members > 0 ? "success" : ("warning" as BadgeVariant)
-      },
-      {
-        id: "events",
-        module: "Eventos",
-        status: state.events > 0 ? `${state.events} publicados` : "Nenhum",
-        count: state.events,
-        href: "/events",
-        variant: state.events > 0 ? "success" : ("warning" as BadgeVariant)
-      },
-      {
-        id: "finance",
-        module: "Financeiro",
-        status: totalPending > 0 ? `${totalPending} pendente(s)` : "Em dia",
-        count: totalPending,
-        href: "/financeiro",
-        variant: totalPending > 0 ? "warning" : ("success" as BadgeVariant)
-      },
-      {
-        id: "gamification",
-        module: "Gamificação",
-        status: "Ativo",
-        count: 0,
-        href: "/gamification",
-        variant: "brand" as BadgeVariant
-      }
-    ];
-  }, [state, totalPending]);
 
   if (loading) {
     return (
@@ -180,6 +122,9 @@ export default function AdminHomePage() {
     );
   }
 
+  const totalRevenue = state ? state.membershipRevenueCents + state.eventRevenueCents : 0;
+  const totalPending = state ? state.pendingMembershipPayments + state.pendingEventPayments : 0;
+
   return (
     <AdminShell>
       {error && (
@@ -196,63 +141,34 @@ export default function AdminHomePage() {
         </div>
       )}
 
-      <MetricStrip items={metrics} />
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(4, 1fr)",
+          gap: "16px"
+        }}
+      >
+        <div style={cardStyle}>
+          <span style={cardLabelStyle}>Total de Receita</span>
+          <span style={cardValueStyle}>{formatCurrency(totalRevenue)}</span>
+        </div>
 
-      <div style={{ marginTop: "24px" }}>
-        <DataTable
-          rows={moduleRows}
-          rowKey={(row) => row.id}
-          columns={[
-            {
-              key: "module",
-              header: "Módulo",
-              render: (row) => (
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <span
-                    style={{
-                      width: "36px",
-                      height: "36px",
-                      display: "grid",
-                      placeItems: "center",
-                      borderRadius: "8px",
-                      background: "rgba(134, 90, 255, 0.1)"
-                    }}
-                  >
-                    {row.module === "Membros" && <Users2 size={18} />}
-                    {row.module === "Eventos" && <CalendarDays size={18} />}
-                    {row.module === "Financeiro" && <CreditCard size={18} />}
-                    {row.module === "Gamificação" && <Sparkles size={18} />}
-                  </span>
-                  <strong>{row.module}</strong>
-                </div>
-              )
-            },
-            {
-              key: "status",
-              header: "Status",
-              render: (row) => <Badge variant={row.variant}>{row.status}</Badge>
-            },
-            {
-              key: "action",
-              header: "",
-              align: "right",
-              width: "100px",
-              render: (row) => (
-                <Link
-                  href={row.href}
-                  style={{
-                    color: "#865aff",
-                    fontWeight: 600,
-                    fontSize: "0.9rem",
-                    textDecoration: "none"
-                  }}
-                >
-                  Acessar →
-                </Link>
-              )
-            }
-          ]}
-        />
+        <div style={cardStyle}>
+          <span style={cardLabelStyle}>Total de Pendentes</span>
+          <span style={{ ...cardValueStyle, color: totalPending > 0 ? "#f59e0b" : "#22c55e" }}>
+            {formatCurrency(totalPending)}
+          </span>
+        </div>
+
+        <div style={cardStyle}>
+          <span style={cardLabelStyle}>Membros Ativos</span>
+          <span style={cardValueStyle}>{state?.members ?? 0}</span>
+        </div>
+
+        <div style={cardStyle}>
+          <span style={cardLabelStyle}>Novos Membros do Mês</span>
+          <span style={cardValueStyle}>{state?.newMembersThisMonth ?? 0}</span>
+        </div>
       </div>
     </AdminShell>
   );

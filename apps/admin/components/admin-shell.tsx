@@ -2,6 +2,8 @@
 
 import {
   CalendarDays,
+  ChevronLeft,
+  ChevronRight,
   CreditCard,
   Gauge,
   LogOut,
@@ -17,93 +19,19 @@ import { useEffect, useState } from "react";
 import { clearStoredAuth, fetchMe, getStoredAuth } from "../lib/auth-client";
 
 const navItems = [
-  { href: "/", label: "Visão geral", icon: <Gauge size={20} /> },
-  { href: "/members", label: "Membros", icon: <Users2 size={20} /> },
-  { href: "/adesoes", label: "Adesões", icon: <UserRoundPlus size={20} /> },
-  { href: "/events", label: "Eventos", icon: <CalendarDays size={20} /> },
-  { href: "/gamification", label: "Gamificação", icon: <Trophy size={20} /> },
-  { href: "/financeiro", label: "Financeiro", icon: <CreditCard size={20} /> }
+  { href: "/", label: "Visão geral", icon: <Gauge size={18} /> },
+  { href: "/members", label: "Membros", icon: <Users2 size={18} /> },
+  { href: "/adesoes", label: "Adesões", icon: <UserRoundPlus size={18} /> },
+  { href: "/events", label: "Eventos", icon: <CalendarDays size={18} /> },
+  { href: "/gamification", label: "Gamificação", icon: <Trophy size={18} /> },
+  { href: "/financeiro", label: "Financeiro", icon: <CreditCard size={18} /> }
 ];
-
-const styles = {
-  container: {
-    display: "grid",
-    gridTemplateColumns: "240px 1fr",
-    minHeight: "100vh",
-    background: "#131313"
-  } as React.CSSProperties,
-  sidebar: {
-    display: "grid",
-    gridTemplateRows: "auto 1fr auto",
-    gap: "24px",
-    padding: "24px 16px",
-    background: "#131313",
-    borderRight: "1px solid rgba(255,255,255,0.06)"
-  } as React.CSSProperties,
-  logo: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "8px"
-  } as React.CSSProperties,
-  logoImg: {
-    width: "48px",
-    height: "48px",
-    objectFit: "contain"
-  } as React.CSSProperties,
-  nav: {
-    display: "grid",
-    gap: "4px"
-  } as React.CSSProperties,
-  navLink: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    padding: "12px 14px",
-    borderRadius: "10px",
-    color: "rgba(255,255,255,0.72)",
-    textDecoration: "none",
-    fontSize: "0.94rem",
-    fontWeight: 600,
-    transition: "all 140ms ease"
-  } as React.CSSProperties,
-  navLinkActive: {
-    background: "rgba(134, 90, 255, 0.15)",
-    color: "#ffffff"
-  } as React.CSSProperties,
-  navIcon: {
-    display: "grid",
-    placeItems: "center",
-    width: "36px",
-    height: "36px",
-    borderRadius: "10px",
-    background: "rgba(255,255,255,0.06)",
-    flexShrink: 0
-  } as React.CSSProperties,
-  logout: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    padding: "12px 14px",
-    borderRadius: "10px",
-    background: "none",
-    border: "none",
-    color: "rgba(255,255,255,0.5)",
-    fontSize: "0.94rem",
-    fontWeight: 600,
-    cursor: "pointer",
-    transition: "color 140ms ease"
-  } as React.CSSProperties,
-  main: {
-    padding: "24px 32px",
-    overflowY: "auto" as const
-  }
-};
 
 export function AdminShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [ready, setReady] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     const stored = getStoredAuth();
@@ -143,20 +71,77 @@ export function AdminShell({ children }: { children: ReactNode }) {
     );
   }
 
+  const sidebarWidth = collapsed ? "72px" : "220px";
+
   return (
-    <div style={styles.container}>
-      <aside style={styles.sidebar}>
-        <div style={styles.logo}>
-          <Image
-            src="/brand/elo-mark.png"
-            alt="Elo"
-            width={64}
-            height={64}
-            style={styles.logoImg}
-          />
+    <div
+      style={{
+        display: "flex",
+        minHeight: "100vh",
+        background: "#131313"
+      }}
+    >
+      <aside
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          width: sidebarWidth,
+          padding: collapsed ? "16px 12px" : "24px 16px",
+          background: "#131313",
+          borderRight: "1px solid rgba(255,255,255,0.06)",
+          transition: "width 200ms ease",
+          overflow: "hidden"
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: collapsed ? "center" : "space-between",
+            marginBottom: "24px"
+          }}
+        >
+          {!collapsed && (
+            <Image
+              src="/brand/elo-mark.png"
+              alt="Elo"
+              width={56}
+              height={56}
+              style={{
+                width: "56px",
+                height: "56px",
+                objectFit: "contain"
+              }}
+            />
+          )}
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "32px",
+              height: "32px",
+              borderRadius: "6px",
+              border: "none",
+              background: "rgba(255,255,255,0.06)",
+              color: "rgba(255,255,255,0.6)",
+              cursor: "pointer",
+              flexShrink: 0
+            }}
+          >
+            {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </button>
         </div>
 
-        <nav style={styles.nav}>
+        <nav
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "4px",
+            flex: 1
+          }}
+        >
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -164,24 +149,75 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 key={item.href}
                 href={item.href}
                 style={{
-                  ...styles.navLink,
-                  ...(isActive ? styles.navLinkActive : {})
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  height: "44px",
+                  padding: "0 12px",
+                  borderRadius: "8px",
+                  color: isActive ? "#fff" : "rgba(255,255,255,0.6)",
+                  background: isActive ? "rgba(134, 90, 255, 0.15)" : "transparent",
+                  textDecoration: "none",
+                  fontSize: "0.875rem",
+                  fontWeight: 500,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  transition: "all 140ms ease"
                 }}
               >
-                <span style={styles.navIcon}>{item.icon}</span>
-                {item.label}
+                <span
+                  style={{
+                    display: "grid",
+                    placeItems: "center",
+                    width: "28px",
+                    height: "28px",
+                    borderRadius: "6px",
+                    background: isActive ? "rgba(134, 90, 255, 0.2)" : "rgba(255,255,255,0.06)",
+                    flexShrink: 0
+                  }}
+                >
+                  {item.icon}
+                </span>
+                {!collapsed && <span>{item.label}</span>}
               </Link>
             );
           })}
         </nav>
 
-        <button onClick={handleLogout} style={styles.logout}>
-          <LogOut size={20} />
-          Sair
+        <button
+          onClick={handleLogout}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            height: "44px",
+            padding: "0 12px",
+            borderRadius: "8px",
+            background: "none",
+            border: "none",
+            color: "rgba(255,255,255,0.5)",
+            fontSize: "0.875rem",
+            fontWeight: 500,
+            cursor: "pointer",
+            marginTop: "auto",
+            whiteSpace: "nowrap",
+            overflow: "hidden"
+          }}
+        >
+          <LogOut size={18} />
+          {!collapsed && <span>Sair</span>}
         </button>
       </aside>
 
-      <main style={styles.main}>{children}</main>
+      <main
+        style={{
+          flex: 1,
+          padding: "24px",
+          overflowY: "auto"
+        }}
+      >
+        {children}
+      </main>
     </div>
   );
 }
