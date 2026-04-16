@@ -50,6 +50,18 @@ const cardValueStyle = {
   color: "#fff"
 };
 
+const primaryTextStyle = {
+  color: "#fff"
+};
+
+const secondaryTextStyle = {
+  color: "rgba(255,255,255,0.7)"
+};
+
+const mutedTextStyle = {
+  color: "rgba(255,255,255,0.55)"
+};
+
 const inputStyle = {
   width: "100%",
   padding: "10px 12px",
@@ -500,6 +512,7 @@ export default function AdesoesPage() {
                             placeItems: "center",
                             borderRadius: "8px",
                             background: "rgba(134,90,255,0.15)",
+                            color: "#fff",
                             fontWeight: 700,
                             fontSize: "0.875rem"
                           }}
@@ -507,18 +520,20 @@ export default function AdesoesPage() {
                           {initials(item.fullName)}
                         </span>
                         <div>
-                          <div style={{ fontWeight: 600 }}>{item.fullName}</div>
-                          <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.5)" }}>
+                          <div style={{ ...primaryTextStyle, fontWeight: 600 }}>
+                            {item.fullName}
+                          </div>
+                          <div style={{ fontSize: "0.8rem", ...mutedTextStyle }}>
                             {item.email}
                           </div>
                         </div>
                       </div>
                     </td>
                     <td style={{ padding: "12px 8px" }}>
-                      <div style={{ fontSize: "0.9rem" }}>
+                      <div style={{ fontSize: "0.9rem", ...primaryTextStyle }}>
                         {item.city}/{item.state}
                       </div>
-                      <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.5)" }}>
+                      <div style={{ fontSize: "0.8rem", ...mutedTextStyle }}>
                         {item.area}
                       </div>
                     </td>
@@ -584,22 +599,20 @@ export default function AdesoesPage() {
             <div style={{ display: "grid", gap: "16px" }}>
               <div>
                 <div
-                  style={{
-                    fontSize: "0.75rem",
-                    color: "rgba(255,255,255,0.5)",
-                    marginBottom: "4px"
-                  }}
+                  style={{ fontSize: "0.75rem", ...mutedTextStyle, marginBottom: "4px" }}
                 >
                   CANDIDATO
                 </div>
-                <div style={{ fontWeight: 600, fontSize: "1.1rem" }}>
+                <div style={{ ...primaryTextStyle, fontWeight: 600, fontSize: "1.1rem" }}>
                   {selectedApplication.fullName}
                 </div>
-                <div style={{ fontSize: "0.9rem", color: "rgba(255,255,255,0.7)" }}>
+                <div style={{ fontSize: "0.9rem", ...secondaryTextStyle }}>
                   {selectedApplication.email}
                 </div>
-                <div style={{ fontSize: "0.9rem" }}>{selectedApplication.whatsapp}</div>
-                <div style={{ fontSize: "0.9rem" }}>
+                <div style={{ fontSize: "0.9rem", ...primaryTextStyle }}>
+                  {selectedApplication.whatsapp}
+                </div>
+                <div style={{ fontSize: "0.9rem", ...primaryTextStyle }}>
                   {selectedApplication.city}/{selectedApplication.state}
                 </div>
               </div>
