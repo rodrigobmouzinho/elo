@@ -2,9 +2,9 @@
 
 import Image from "next/image";
 import type { AlertVariant } from "@elo/ui";
-import React, { FormEvent, useEffect, useMemo, useState } from "react";
+import React, { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { AdminShell } from "../../components/admin-shell";
-import { apiRequest } from "../../lib/auth-client";
+import { apiRequest, getStoredAuth } from "../../lib/auth-client";
 import {
   formatLocalDateTimeInput,
   toIsoFromLocalDateTimeInput
@@ -54,6 +54,12 @@ type FeedbackState = {
   title: string;
   description: string;
   variant: AlertVariant;
+};
+
+type UploadHeroResponse = {
+  file: {
+    url: string;
+  };
 };
 
 type AccessFilter = "all" | EventForm["accessType"];
@@ -173,6 +179,7 @@ export default function EventsPage() {
   const [search, setSearch] = useState("");
   const [accessFilter, setAccessFilter] = useState<AccessFilter>("all");
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
+  const [uploadingHero, setUploadingHero] = useState(false);
 
   const isEditing = Boolean(editingEventId);
   const isPaidAccess = form.accessType !== "free_members";
@@ -322,6 +329,66 @@ export default function EventsPage() {
       });
     } finally {
       setRemovingEventId(null);
+    }
+  }
+
+  async function handleHeroImageUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    const auth = getStoredAuth();
+    const token = auth?.session?.accessToken;
+
+    if (!token) {
+      setFeedback({
+        title: "Erro",
+        description: "Voce precisa estar autenticado para enviar arquivos.",
+        variant: "danger"
+      });
+      return;
+    }
+
+    setUploadingHero(true);
+    setFeedback(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/backend/admin/events/cover-upload", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${token}`
+        },
+        body: formData,
+        cache: "no-store"
+      });
+
+      const payload = (await response.json()) as {
+        success?: boolean;
+        data?: UploadHeroResponse;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.success || !payload.data?.file?.url) {
+        throw new Error(payload.error ?? "Falha ao enviar capa do evento.");
+      }
+
+      setForm((prev) => ({ ...prev, heroImageUrl: payload.data!.file.url }));
+      setFeedback({
+        title: "Capa enviada",
+        description: "Imagem carregada com sucesso.",
+        variant: "success"
+      });
+    } catch (error) {
+      setFeedback({
+        title: "Erro no upload",
+        description: normalizeApiError((error as Error).message),
+        variant: "danger"
+      });
+    } finally {
+      setUploadingHero(false);
     }
   }
 
@@ -911,6 +978,30 @@ export default function EventsPage() {
                 placeholder="/uploads/..."
                 style={inputStyle}
               />
+            </div>
+            <div>
+              <label
+                htmlFor="event-hero-image-file"
+                style={{
+                  display: "block",
+                  fontSize: "0.75rem",
+                  color: "rgba(255,255,255,0.5)",
+                  marginBottom: "4px"
+                }}
+              >
+                Upload da capa
+              </label>
+              <input
+                id="event-hero-image-file"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(event) => void handleHeroImageUpload(event)}
+                disabled={uploadingHero}
+                style={inputStyle}
+              />
+              <p style={{ margin: "6px 0 0", fontSize: "0.75rem", color: "rgba(255,255,255,0.5)" }}>
+                {uploadingHero ? "Enviando imagem..." : "JPG, PNG ou WebP (max 3 MB)."}
+              </p>
             </div>
             <div>
               <label
