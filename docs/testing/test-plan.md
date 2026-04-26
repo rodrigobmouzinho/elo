@@ -21,11 +21,13 @@
 - Upload de imagem principal e galeria de eventos no CRUD admin e exibicao no app
 - Evento online com link de acesso informado no admin e exibido no app
 - Confirmacao de presenca pelo membro em evento aberto (com idempotencia e bloqueio para membro inativo)
+- Feature flag de ocultacao da gamificacao bloqueando exposicao em release quando desativada
 - Criacao e ativacao de temporadas de gamificacao com ranking filtrado pela temporada ativa
 - Lancamento de pontos por admin apenas com participacao validada (evento confirmado)
 - Job de concessao automatica de badges por regras de ranking (com idempotencia)
 - Ranking da temporada no app com exibicao de posicao e pontuacao do membro autenticado
 - Historico de temporadas encerradas no app com campeao e classificacao
+- Observacao: os testes de gamificacao permanecem ativos como regressao de funcionalidade preservada, mesmo com a feature oculta por padrao na release atual
 
 ## E2E
 - Fluxo critico financeiro ponta a ponta: login member/admin -> checkout manual PIX -> aprovacao admin -> checkout-status `paid`
@@ -50,11 +52,11 @@
 - Captura e comparacao de screenshots via `pnpm qa:visual-regression`
 - Rotas padrao:
   - `/login`
-  - `/`
-  - `/membros`
-  - `/perfil`
-  - `/projetos`
-  - `/gamificacao`
+- `/`
+- `/membros`
+- `/perfil`
+- `/projetos`
+- `/gamificacao` (somente quando a flag de gamificacao estiver habilitada)
 - Baseline em `docs/qa/visual-baseline/pwa`
 - Evidencias em `reports/visual-current/pwa` e `reports/visual-diff/pwa`
 

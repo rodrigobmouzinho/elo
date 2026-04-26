@@ -17,6 +17,7 @@ import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { clearStoredAuth, fetchMe, getStoredAuth } from "../lib/auth-client";
+import { isGamificationEnabled } from "../lib/gamification-visibility";
 
 const navItems = [
   { href: "/", label: "Visão geral", icon: <Gauge size={18} /> },
@@ -32,6 +33,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [ready, setReady] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const visibleNavItems = isGamificationEnabled()
+    ? navItems
+    : navItems.filter((item) => item.href !== "/gamification");
 
   useEffect(() => {
     const stored = getStoredAuth();
@@ -159,7 +163,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             flex: 1
           }}
         >
-          {navItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const isActive = pathname === item.href;
             return (
               <Link

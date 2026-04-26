@@ -1,4 +1,8 @@
 import { requireAuth } from "../../../../../../../lib/auth";
+import {
+  disabledGamificationError,
+  isGamificationEnabled
+} from "../../../../../../../lib/gamification-visibility";
 import { fail, ok } from "../../../../../../../lib/http";
 import { activateSeason } from "../../../../../../../lib/repositories";
 
@@ -7,6 +11,11 @@ type RouteContext = {
 };
 
 export async function POST(request: Request, context: RouteContext) {
+  if (!isGamificationEnabled()) {
+    const disabled = disabledGamificationError();
+    return fail(disabled.message, disabled.status);
+  }
+
   const auth = await requireAuth(request, ["admin"]);
   if (!auth.ok) return auth.response;
 

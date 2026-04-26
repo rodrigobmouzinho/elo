@@ -2,6 +2,8 @@
 
 Base URL local: `http://localhost:3002`
 
+> Nota de release: as rotas de gamificacao abaixo permanecem preservadas no contrato, mas ficam ocultas quando a feature flag de release estiver desativada.
+
 ## Auth
 - `POST /api/auth/login`
 - `GET /api/auth/me`
@@ -78,6 +80,10 @@ Base URL local: `http://localhost:3002`
 - Checkout pago retorna `manualPayment` com `pixQrCodeImage` e `pixCopyPaste` para UX de pagamento.
 - CRUD de eventos suporta `onlineUrl`, `heroImageUrl` e `galleryImageUrls` (array de ate 8 imagens).
 - `POST /api/app/events/:id/confirm` confirma presenca apenas para membros ativos em evento sem cobranca direta.
+- A exposicao operacional da gamificacao depende de feature flags de release:
+  - API: `GAMIFICATION_ENABLED`
+  - Admin: `NEXT_PUBLIC_GAMIFICATION_ENABLED`
+  - PWA: `NEXT_PUBLIC_GAMIFICATION_ENABLED`
 - Temporadas de gamificacao podem ser criadas/inativadas no admin; o ranking usa sempre a temporada `active=true`.
 - `GET /api/app/gamification/ranking` retorna entradas com `rank` e `points` para exibicao de posicao/pontuacao no app.
 - `GET /api/app/gamification/ranking` tambem retorna `champions` com historico de temporadas encerradas (campeao + classificacao).

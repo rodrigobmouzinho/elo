@@ -4,6 +4,7 @@ import { Award, Crown, Medal, Rocket, Sparkles, TimerReset, TrendingUp, Trophy }
 import { useEffect, useMemo, useState } from "react";
 import { MemberShell } from "../../components/member-shell";
 import { apiRequest, getStoredAuth } from "../../lib/auth-client";
+import { isGamificationEnabled } from "../../lib/gamification-visibility";
 import styles from "./page.module.css";
 
 type RankingEntry = {
@@ -130,6 +131,7 @@ function rankingDescriptor(entry: RankingEntry, isLeader: boolean) {
 }
 
 export default function GamificacaoPage() {
+  const gamificationEnabled = isGamificationEnabled();
   const [season, setSeason] = useState("-");
   const [ranking, setRanking] = useState<RankingEntry[]>([]);
   const [champions, setChampions] = useState<SeasonChampionHistory[]>([]);
@@ -138,6 +140,10 @@ export default function GamificacaoPage() {
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
 
   useEffect(() => {
+    if (!gamificationEnabled) {
+      return;
+    }
+
     const auth = getStoredAuth();
     setMemberId(auth?.user.memberId ?? null);
 
@@ -167,7 +173,7 @@ export default function GamificacaoPage() {
     }
 
     void loadRanking();
-  }, []);
+  }, [gamificationEnabled]);
 
   const currentMemberRanking = useMemo(
     () => (memberId ? ranking.find((entry) => entry.memberId === memberId) ?? null : null),
@@ -183,6 +189,19 @@ export default function GamificacaoPage() {
       ? "Ainda fora do ranking desta temporada"
       : "Temporada em aquecimento";
   const hallItems = champions.slice(0, 6);
+
+  if (!gamificationEnabled) {
+    return (
+      <MemberShell>
+        <section className={styles.statusCard}>
+          <h2 className={styles.statusTitle}>Gamificação em pausa</h2>
+          <p className={styles.statusText}>
+            Esta jornada foi preservada para uma próxima versão e pode ser reativada sem perda do trabalho já feito.
+          </p>
+        </section>
+      </MemberShell>
+    );
+  }
 
   return (
     <MemberShell>

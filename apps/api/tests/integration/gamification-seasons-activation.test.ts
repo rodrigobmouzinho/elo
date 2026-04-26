@@ -8,6 +8,7 @@ describe("gamification seasons activation", () => {
   beforeEach(() => {
     vi.resetModules();
     process.env.ALLOW_MOCK_AUTH = "true";
+    process.env.GAMIFICATION_ENABLED = "true";
     delete process.env.NEXT_PUBLIC_SUPABASE_URL;
     delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     delete process.env.SUPABASE_SERVICE_ROLE_KEY;

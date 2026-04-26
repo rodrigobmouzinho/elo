@@ -8,6 +8,7 @@ import {
   formatLocalDateTimeInput,
   toIsoFromLocalDateTimeInput
 } from "../../lib/datetime";
+import { isGamificationEnabled } from "../../lib/gamification-visibility";
 
 type RankingEntry = {
   memberId: string;
@@ -105,6 +106,7 @@ function formatSeasonPeriod(season: SeasonItem) {
 }
 
 export default function GamificationPage() {
+  const gamificationEnabled = isGamificationEnabled();
   const [ranking, setRanking] = useState<RankingEntry[]>([]);
   const [seasons, setSeasons] = useState<SeasonItem[]>([]);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
@@ -173,8 +175,33 @@ export default function GamificationPage() {
   }, [loadRanking, loadSeasons]);
 
   useEffect(() => {
+    if (!gamificationEnabled) {
+      return;
+    }
+
     void refreshGamificationData();
-  }, [refreshGamificationData]);
+  }, [gamificationEnabled, refreshGamificationData]);
+
+  if (!gamificationEnabled) {
+    return (
+      <AdminShell>
+        <div
+          style={{
+            padding: "24px",
+            borderRadius: "16px",
+            background: "#1a1a1a",
+            border: "1px solid rgba(255,255,255,0.06)",
+            color: "#fff"
+          }}
+        >
+          <h1 style={{ margin: "0 0 12px", fontSize: "1.4rem" }}>Gamificação oculta nesta versão</h1>
+          <p style={{ margin: 0, color: "rgba(255,255,255,0.7)", maxWidth: "62ch", lineHeight: 1.6 }}>
+            O módulo foi preservado no código para continuidade futura, mas está oculto na versão atual do sistema.
+          </p>
+        </div>
+      </AdminShell>
+    );
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
