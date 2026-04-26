@@ -1,18 +1,20 @@
-# Padrão de Design - Elo Admin
+# Padrao de Design - Elo Admin
 
-Este documento define o padrão de design para todas as páginas do painel administrativo Elo.
+Este documento define o padrao visual e estrutural para todas as paginas do painel administrativo Elo.
 
 ---
 
-## 1. Visão Geral
+## 1. Visao Geral
 
-O design do admin segue os princípios de **minimalismo funcional**: interface limpa, focada no essencial, sem complexidade visual desnecessária.
+O Admin segue os principios de minimalismo funcional: interface escura, limpa, com foco em leitura, operacao rapida e consistencia entre telas.
 
 ### Valores do Design
 
-- **Simplicidade:** Apenas o necessário na tela
-- **Funcionalidade:** Elementos de tamanho padrão, UI intuitiva
-- **Consistência:** Mesmo padrão em todas as páginas
+- Simplicidade
+- Funcionalidade
+- Consistencia
+- Legibilidade
+- Reuso de padroes
 
 ---
 
@@ -20,143 +22,77 @@ O design do admin segue os princípios de **minimalismo funcional**: interface l
 
 ### Layout Geral
 
-```
-┌─────────────────────────────────────────────────────┐
-│ [Logo] [Botão collapse]                             │  ← Sidebar (220px→72px)
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│  ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐                   │  ← Cards de métricas
-│  │Card1│ │Card2│ │Card3│ │Card4│                   │
-│  └─────┘ └─────┘ └─────┘ └─────┘                   │
-│                                                     │
-│  ┌─────────────────────────────────────────────┐  │  ← Conteúdo principal
-│  │                                             │  │
-│  └─────────────────────────────────────────────┘  │
-│                                                     │
-└─────────────────────────────────────────────────────┘
-```
+- tema escuro como padrao
+- sidebar fixa com estado expandido/recolhido
+- area principal com cards de metricas no topo quando fizer sentido
+- bloco de conteudo principal em fundo `#1a1a1a`
 
-### Configuração do Layout (layout.tsx)
+### AdminShell
 
-```tsx
-// Tema escuro como padrão
-<html lang="pt-BR" data-theme="dark">
-```
+- localizacao: `apps/admin/components/admin-shell.tsx`
+- largura da sidebar: `220px` expandida, `72px` recolhida
+- background principal: `#131313`
+- cards e paineis: `#1a1a1a`
+- borda sutil: `1px solid rgba(255,255,255,0.06)`
 
 ---
 
-## 3. Sidebar (Menu)
+## 3. Paleta e Contraste
 
-### Estrutura do Componente
+### Paleta Principal
 
-- **Localização:** `apps/admin/components/admin-shell.tsx`
-- **Layout:** Flexbox com collapse
-- **Largura:** 220px expandido | 72px recolhido
+| Uso | Cor |
+| --- | --- |
+| Background principal | `#131313` |
+| Background cards | `#1a1a1a` |
+| Control background | `#252525` |
+| Texto principal | `#fff` |
+| Texto secundario | `rgba(255,255,255,0.7)` |
+| Texto muted | `rgba(255,255,255,0.5)` |
+| Texto muted reforcado | `rgba(255,255,255,0.55)` |
+| Accent | `#865aff` |
+| Sucesso | `#22c55e` |
+| Alerta | `#f59e0b` |
+| Erro | `#ef4444` |
 
-### Especificações
+### Regra de Contraste
 
-| Propriedade | Valor                                             |
-| ----------- | ------------------------------------------------- |
-| Padding     | `24px 16px` (expandido) / `16px 12px` (recolhido) |
-| Background  | `#131313`                                         |
-| Border      | `1px solid rgba(255,255,255,0.06)`                |
-| Transição   | `200ms ease`                                      |
+Em qualquer superficie escura do Admin:
 
-### Logo
+- textos principais devem usar `#fff`
+- textos secundarios devem usar `rgba(255,255,255,0.7)`
+- labels, metadados e texto de apoio devem usar `rgba(255,255,255,0.5)` ou `rgba(255,255,255,0.55)`
 
-```tsx
-<Image src="/brand/elo-mark.png" width={56} height={56} />
-```
+Nao depender de cor herdada para:
 
-### Botão de Collapse
-
-- Ícone: `ChevronLeft` / `ChevronRight`
-- Tamanho: `32px x 32px`
-- Border-radius: `6px`
-
-### Itens de Navegação
-
-```tsx
-<Link
-  style={{
-    height: "44px", // Altura fixa padrão
-    padding: "0 12px", // Padding padrão
-    borderRadius: "8px", // Border-radius padrão
-    gap: "10px",
-    fontSize: "0.875rem", // 14px
-    fontWeight: 500
-  }}
->
-  <span style={{ width: "28px", height: "28px" }}>{icon}</span>
-  {label}
-</Link>
-```
-
-| Propriedade   | Valor                      |
-| ------------- | -------------------------- |
-| Altura        | `44px`                     |
-| Padding       | `0 12px` (12px horizontal) |
-| Gap           | `10px`                     |
-| Border-radius | `8px`                      |
-| Font-size     | `0.875rem` (14px)          |
-| Font-weight   | `500`                      |
-
-### Botão Sair
-
-- Estilo similar aos itens de navegação
-- Cor: `rgba(255,255,255,0.5)`
-- Posição: Rodapé do menu (`marginTop: "auto"`)
+- nome principal em tabelas
+- valores monetarios ou numericos importantes
+- datas e localizacoes em listas
+- titulos de formularios laterais
 
 ---
 
-## 4. Dashboard - Cards de Métricas
+## 4. Cards de Metricas
 
-### Estrutura do Componente
-
-- **Localização:** `apps/admin/app/page.tsx`
-- **Layout:** Grid com 4 colunas
-
-### Especificações dos Cards
-
-```tsx
-<div
-  style={{
-    display: "grid",
-    gridTemplateColumns: "repeat(4, 1fr)",
-    gap: "16px"
-  }}
->
-  <Card>...</Card>
-</div>
-```
-
-### Estilo do Card
+### Card base
 
 ```tsx
 const cardStyle = {
   display: "flex",
   flexDirection: "column",
   gap: "8px",
-  padding: "20px",
+  padding: "16px",
   borderRadius: "12px",
   background: "#1a1a1a",
   border: "1px solid rgba(255,255,255,0.06)"
 };
 ```
 
-| Propriedade   | Valor                              |
-| ------------- | ---------------------------------- |
-| Padding       | `20px`                             |
-| Border-radius | `12px`                             |
-| Background    | `#1a1a1a`                          |
-| Border        | `1px solid rgba(255,255,255,0.06)` |
-| Gap           | `8px`                              |
-
-### Estilo do Label
+### Label
 
 ```tsx
 const cardLabelStyle = {
-  fontSize: "0.75rem", // 12px
+  fontSize: "0.75rem",
   fontWeight: 600,
   color: "rgba(255,255,255,0.5)",
   textTransform: "uppercase",
@@ -164,11 +100,11 @@ const cardLabelStyle = {
 };
 ```
 
-### Estilo do Valor
+### Valor
 
 ```tsx
 const cardValueStyle = {
-  fontSize: "1.75rem", // 28px
+  fontSize: "1.5rem",
   fontWeight: 700,
   color: "#fff"
 };
@@ -176,109 +112,148 @@ const cardValueStyle = {
 
 ---
 
-## 5. Cores
+## 5. Inputs, Selects e Formularios
 
-### Paleta Principal
-
-| Uso                   | Cor                      |
-| --------------------- | ------------------------ |
-| Background principal  | `#131313`                |
-| Background cards      | `#1a1a1a`                |
-| Texto principal       | `#fff`                   |
-| Texto secundário      | `rgba(255,255,255,0.6)`  |
-| Texto terciário/muted | `rgba(255,255,255,0.5)`  |
-| Borda sutil           | `rgba(255,255,255,0.06)` |
-| Accent (brand)        | `#865aff`                |
-| Accent hover          | `#9370ff`                |
-| Sucesso               | `#22c55e`                |
-| Alerta                | `#f59e0b`                |
-| Erro                  | `#ef4444`                |
-
----
-
-## 6. Componentes UI
-
-### AdminShell (Shell Customizado)
-
-O `AdminShell` não depende da biblioteca `@elo/ui`. É um componente customizado com:
-
-- Autenticação integrada (verifica token, redirect para login)
-- Sidebar com collapse
-- Logo símbolo no topo
-- Navegação com 6 itens fixos
-- Botão de logout
-
-### Exemplos de Uso
+### Estilos base
 
 ```tsx
-import { AdminShell } from "../components/admin-shell";
+const inputStyle = {
+  width: "100%",
+  minWidth: 0,
+  padding: "10px 12px",
+  borderRadius: "8px",
+  border: "1px solid rgba(255,255,255,0.1)",
+  background: "#252525",
+  color: "#fff",
+  fontSize: "0.875rem"
+};
 
-export default function MinhaPagina() {
-  return (
-    <AdminShell>
-      <div>Meu conteúdo aqui</div>
-    </AdminShell>
-  );
-}
+const selectStyle: React.CSSProperties = {
+  width: "100%",
+  minWidth: 0,
+  padding: "10px 32px 10px 12px",
+  borderRadius: "8px",
+  border: "1px solid rgba(255,255,255,0.1)",
+  background: "#252525",
+  color: "#fff",
+  fontSize: "0.875rem",
+  appearance: "none" as const,
+  backgroundRepeat: "no-repeat",
+  backgroundPosition: "right 12px center",
+  cursor: "pointer"
+};
 ```
 
----
+`minWidth: 0` faz parte do padrao.
 
-## 7. Boas Práticas
+### Formularios laterais
 
-### ✅ Faça
+Para telas com lista + painel lateral:
 
-- Use o `AdminShell` em todas as páginas
-- Mantenha 4 cards de métricas no topo do dashboard
-- Use cores da paleta definida
-- Mantenha altura de botões em `44px`
-- Use padding padrão de `12px` a `16px`
-
-### ❌ Não Faça
-
-- Não use gradientes complexos
-- Não use textos longos ou descrições densas
-- Não use a biblioteca `@elo/ui` para o layout base
-- Não crie tabelas desnecessárias
-- Não use tamanhos arbitrários para botões
+- preferir layout fluido
+- permitir empilhamento do painel abaixo da lista em larguras menores
+- usar `minWidth: 0` nos blocos criticos
+- grupos de duas colunas devem quebrar com `repeat(auto-fit, minmax(...))`
+- botoes finais podem usar `flexWrap: "wrap"`
 
 ---
 
-## 8. Aplicação em Outras Páginas
+## 6. Tabelas
 
-Ao criar uma nova página no admin:
+Padrao minimo para tabelas em fundo `#1a1a1a`:
 
-1. **Use o AdminShell:**
+- cabecalho com texto muted
+- linha principal com texto branco
+- linha secundaria com texto muted
+- valores importantes com cor branca explicita
+- acoes alinhadas a direita quando fizer sentido
 
-   ```tsx
-   import { AdminShell } from "../components/admin-shell";
+Exemplos de campos que devem receber cor explicita:
 
-   export default function NovaPagina() {
-     return <AdminShell>{/* seu conteúdo */}</AdminShell>;
-   }
-   ```
-
-2. **Cards de métricas (se aplicável):**
-
-   ```tsx
-   const cardStyle = {
-     padding: "20px",
-     borderRadius: "12px",
-     background: "#1a1a1a",
-     border: "1px solid rgba(255,255,255,0.06)"
-   };
-   ```
-
-3. **Menu lateral** já está incluso no AdminShell - não precisa criar novamente.
+- nome de membro
+- nome de evento
+- valor em dinheiro
+- data importante quando o fundo for muito escuro
 
 ---
 
-## 9. Referência
+## 7. Feedback e Acessibilidade
 
-Última atualização: 15/04/2026
+### Feedback visual
 
-Padrão aplicado em:
+Alertas e mensagens no topo das telas devem usar:
 
-- Login (`apps/admin/app/login/page.tsx`)
-- Dashboard (`apps/admin/app/page.tsx`)
-- Menu (`apps/admin/components/admin-shell.tsx`)
+```tsx
+role="status"
+aria-live="polite"
+```
+
+### Nomes acessiveis
+
+Quando um botao ou link perde texto visivel em algum estado, manter:
+
+- `aria-label`
+- `aria-expanded` quando aplicavel
+- `aria-current` em navegacao ativa
+
+---
+
+## 8. Upload de Imagem
+
+Quando a tela administrar imagem de capa, avatar ou imagem de apoio:
+
+- manter campo de URL manual como fallback
+- oferecer upload por arquivo quando o fluxo for operacional
+- preencher automaticamente a URL do formulario apos upload bem-sucedido
+- manter preview visual atualizado
+
+Esse padrao ja foi aplicado em `Eventos`.
+
+---
+
+## 9. Boas Praticas
+
+### Faca
+
+- use o `AdminShell` em todas as paginas
+- reuse `cardStyle`, `inputStyle` e `selectStyle`
+- declare contraste explicitamente em textos principais sobre fundo escuro
+- garanta quebra sem overflow em formularios laterais
+- reuse o padrao de upload por arquivo quando a tela gerenciar imagens
+
+### Nao faca
+
+- nao deixe nome, valor ou data importante depender de cor herdada
+- nao use grids fixos de formulario que comprimam campos ate ultrapassar a borda
+- nao use gradientes ou adornos visuais que fujam da linguagem atual do admin
+- nao misture mais de um comportamento visual para tabelas equivalentes
+
+---
+
+## 10. Aplicacao em Novas Paginas
+
+Ao criar ou revisar uma nova tela do Admin:
+
+1. usar `AdminShell`
+2. aplicar a paleta escura padrao
+3. validar contraste dos textos principais
+4. garantir responsividade do conteudo principal e do painel lateral
+5. avaliar se ha necessidade de upload por arquivo para imagens gerenciadas
+6. conferir feedback acessivel com `role="status"`
+
+---
+
+## 11. Referencia Atual
+
+Padrao ja aplicado em:
+
+- `apps/admin/components/admin-shell.tsx`
+- `apps/admin/app/page.tsx`
+- `apps/admin/app/members/page.tsx`
+- `apps/admin/app/adesoes/page.tsx`
+- `apps/admin/app/events/page.tsx`
+- `apps/admin/app/financeiro/page.tsx`
+- `apps/admin/app/gamification/page.tsx`
+
+Ultima atualizacao: Abril de 2026
+Branch de referencia: `codex/pwa-redesign`
