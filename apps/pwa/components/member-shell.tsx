@@ -6,7 +6,7 @@ import { ArrowLeft, Bell, CalendarDays, LogOut, Rocket, Share2, Trophy, UsersRou
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import type { MouseEvent, ReactNode } from "react";
+import type { CSSProperties, MouseEvent, ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
   AUTH_UPDATED_EVENT,
@@ -79,6 +79,9 @@ export function MemberShell({ children, detailHeader, hideBottomNav = Boolean(de
   const visibleNavItems = isGamificationEnabled()
     ? navItems
     : navItems.filter((item) => item.href !== "/gamificacao");
+  const bottomDockStyle = {
+    "--shell-nav-count": visibleNavItems.length
+  } as CSSProperties;
 
   useEffect(() => {
     const stored = getStoredAuth();
@@ -294,7 +297,7 @@ export function MemberShell({ children, detailHeader, hideBottomNav = Boolean(de
         <main className={styles.content}>{children}</main>
 
         {!hideBottomNav ? (
-          <nav className={styles.bottomDock} aria-label={"Navega\u00e7\u00e3o principal"}>
+          <nav className={styles.bottomDock} aria-label={"Navega\u00e7\u00e3o principal"} style={bottomDockStyle}>
             {visibleNavItems.map((item) => {
               const active = item.href === activeHref;
 

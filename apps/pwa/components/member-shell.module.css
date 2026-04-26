@@ -302,6 +302,7 @@
 }
 
 .bottomDock {
+  --shell-nav-count: 4;
   position: fixed;
   z-index: 25;
   left: 50%;
@@ -310,7 +311,7 @@
   width: min(calc(100% - (var(--shell-gutter) * 2)), 30rem);
   max-width: calc(100vw - (var(--shell-gutter) * 2));
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--shell-nav-count), minmax(0, 1fr));
   gap: 0.4rem;
   padding: 0.55rem;
   border-radius: 1.55rem;
