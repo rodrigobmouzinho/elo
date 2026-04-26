@@ -6,6 +6,19 @@ Monorepo do MVP Elo Networking com três apps principais:
 - `apps/pwa`: aplicativo PWA mobile para membros
 - `apps/api`: BFF/API com Route Handlers
 
+## Status da Gamificacao
+
+A gamificacao permanece implementada no codigo e preservada no banco, mas esta oculta na versao atual do produto por feature flags de release.
+
+- API: `GAMIFICATION_ENABLED`
+- Admin: `NEXT_PUBLIC_GAMIFICATION_ENABLED`
+- PWA: `NEXT_PUBLIC_GAMIFICATION_ENABLED`
+
+Referencias:
+
+- `docs/architecture/gamification-current-state.md`
+- `docs/operations/gamification-reactivation-runbook.md`
+
 ## Stack
 
 - Next.js 15 (App Router)

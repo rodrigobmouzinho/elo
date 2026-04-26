@@ -16,6 +16,7 @@ import {
   getStoredAuth,
   updateStoredAuthUser
 } from "../lib/auth-client";
+import { isGamificationEnabled } from "../lib/gamification-visibility";
 import type { ProjectNotificationsFeed } from "../lib/project-ideas";
 import styles from "./member-shell.module.css";
 
@@ -75,6 +76,9 @@ export function MemberShell({ children, detailHeader, hideBottomNav = Boolean(de
   const [displayName, setDisplayName] = useState("Membro Elo");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const visibleNavItems = isGamificationEnabled()
+    ? navItems
+    : navItems.filter((item) => item.href !== "/gamificacao");
 
   useEffect(() => {
     const stored = getStoredAuth();
@@ -166,7 +170,7 @@ export function MemberShell({ children, detailHeader, hideBottomNav = Boolean(de
   }, [pathname, ready]);
 
   const activeHref = resolveActiveHref(pathname);
-  const activeItem = navItems.find((item) => item.href === activeHref);
+  const activeItem = visibleNavItems.find((item) => item.href === activeHref);
   const memberName = useMemo(() => firstNameOf(displayName), [displayName]);
   const heading = activeHref === "/" ? `Ol\u00e1, ${memberName}` : activeItem?.label ?? displayName;
 
@@ -291,7 +295,7 @@ export function MemberShell({ children, detailHeader, hideBottomNav = Boolean(de
 
         {!hideBottomNav ? (
           <nav className={styles.bottomDock} aria-label={"Navega\u00e7\u00e3o principal"}>
-            {navItems.map((item) => {
+            {visibleNavItems.map((item) => {
               const active = item.href === activeHref;
 
               return (

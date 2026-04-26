@@ -1,9 +1,18 @@
 import { seasonSchema } from "@elo/core";
 import { requireAuth } from "../../../../../lib/auth";
+import {
+  disabledGamificationError,
+  isGamificationEnabled
+} from "../../../../../lib/gamification-visibility";
 import { fail, ok, parseJson } from "../../../../../lib/http";
 import { createSeason, listSeasons } from "../../../../../lib/repositories";
 
 export async function GET(request: Request) {
+  if (!isGamificationEnabled()) {
+    const disabled = disabledGamificationError();
+    return fail(disabled.message, disabled.status);
+  }
+
   const auth = await requireAuth(request, ["admin"]);
   if (!auth.ok) return auth.response;
 
@@ -15,6 +24,11 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (!isGamificationEnabled()) {
+    const disabled = disabledGamificationError();
+    return fail(disabled.message, disabled.status);
+  }
+
   const auth = await requireAuth(request, ["admin"]);
   if (!auth.ok) return auth.response;
 
