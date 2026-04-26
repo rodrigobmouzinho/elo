@@ -555,7 +555,7 @@ export default function FinancePage() {
                     style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
                   >
                     <td style={{ padding: "12px" }}>
-                      <div style={{ fontWeight: 600 }}>{m.memberName}</div>
+                      <div style={{ fontWeight: 600, color: "#fff" }}>{m.memberName}</div>
                       <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.5)" }}>
                         Expira: {new Date(m.expiresAt).toLocaleDateString("pt-BR")}
                       </div>
@@ -612,7 +612,8 @@ export default function FinancePage() {
                         padding: "12px",
                         textAlign: "right",
                         fontFamily: "monospace",
-                        fontWeight: 700
+                        fontWeight: 700,
+                        color: "#fff"
                       }}
                     >
                       {formatCurrency(m.latestPaymentAmountCents)}
@@ -728,7 +729,7 @@ export default function FinancePage() {
               {filteredEventPayments.map((p) => (
                 <tr key={p.paymentId} style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
                   <td style={{ padding: "12px" }}>
-                    <div style={{ fontWeight: 600 }}>{p.eventTitle}</div>
+                    <div style={{ fontWeight: 600, color: "#fff" }}>{p.eventTitle}</div>
                     <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.5)" }}>
                       {p.memberName}
                     </div>
@@ -767,12 +768,13 @@ export default function FinancePage() {
                       padding: "12px",
                       textAlign: "right",
                       fontFamily: "monospace",
-                      fontWeight: 700
+                      fontWeight: 700,
+                      color: "#fff"
                     }}
                   >
                     {formatCurrency(p.amountCents)}
                   </td>
-                  <td style={{ padding: "12px", fontSize: "0.85rem" }}>
+                  <td style={{ padding: "12px", fontSize: "0.85rem", color: "#fff" }}>
                     {formatDateTime(p.createdAt)}
                   </td>
                   <td style={{ padding: "12px", textAlign: "right" }}>
